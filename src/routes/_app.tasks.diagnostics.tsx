@@ -1179,9 +1179,26 @@ function TaskDiagnosticsPage() {
                     </td>
                   </tr>
                 )}
-                {pagedFailures.map((r) => (
+                {pagedFailures.map((r) => {
+                  const isRec = r.state === "success" && r.stepFailures > 0;
+                  const dCause = r.cause ?? r.recoveredCause;
+                  const dText = r.causeText || r.recoveredText;
+                  const dStep = r.cause ? r.step : r.recoveredStep;
+                  const dLevel = isRec ? "WARN" : r.level;
+                  return (
                   <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-muted/40">
                     <td className="px-3 py-2 font-mono text-xs">{r.id}</td>
+                    <td className="px-3 py-2">
+                      {isRec ? (
+                        <Badge variant="outline" className="whitespace-nowrap text-[10px] text-warning">
+                          过程异常·已恢复
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="whitespace-nowrap text-[10px] text-destructive">
+                          最终失败
+                        </Badge>
+                      )}
+                    </td>
                     <td className="px-3 py-2">{r.taskName}</td>
                     <td className="px-3 py-2">
                       <Badge variant="outline" className={cn("text-[10px]", TASK_CATEGORY_CLS[r.category])}>
