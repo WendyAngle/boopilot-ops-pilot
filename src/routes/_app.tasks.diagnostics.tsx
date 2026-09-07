@@ -306,6 +306,7 @@ function TaskDiagnosticsPage() {
   const [dim, setDim] = useState<DimKey>("category");
   const [anomalyTab, setAnomalyTab] = useState<"account" | "proxy" | "machine">("account");
   const [page, setPage] = useState(1);
+  const [detailType, setDetailType] = useState<"all" | "failed" | "recovered">("all");
   const [showFailed, setShowFailed] = useState(true);
   const [showRate, setShowRate] = useState(true);
   const [viewAll, setViewAll] = useState<null | "account" | "proxy" | "machine" | "goal">(null);
@@ -357,8 +358,16 @@ function TaskDiagnosticsPage() {
     return { topPlatform, topCategory, topCause, topStep };
   }, [failed, causes]);
 
-  const pagedFailures = failed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.max(1, Math.ceil(failed.length / PAGE_SIZE));
+  // 失败明细：最终失败 + 过程异常但最终成功
+  const detailRows = useMemo(() => {
+    const rows =
+      detailType === "failed" ? failed
+      : detailType === "recovered" ? recovered
+      : [...failed, ...recovered].sort((a, b) => b.ts - a.ts);
+    return rows;
+  }, [detailType, failed, recovered]);
+  const pagedFailures = detailRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(detailRows.length / PAGE_SIZE));
 
   const drillTags = [
     filter.step && { label: `执行步骤：${filter.step}`, clear: () => patch({ step: undefined }) },
