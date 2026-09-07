@@ -1328,7 +1328,15 @@ function GoalTable({ rows }: { rows: ReturnType<typeof buildGoalRows> }) {
               <td className="px-3 py-2 tabular-nums">{g.goalTotal}</td>
               <td className="px-3 py-2 tabular-nums text-success">{g.done}</td>
               <td className="px-3 py-2 tabular-nums text-destructive">{g.failed}</td>
+              <td className="px-3 py-2 tabular-nums">
+                {g.recovered > 0 ? (
+                  <span className="text-warning">{g.recovered}</span>
+                ) : (
+                  <span className="text-muted-foreground">0</span>
+                )}
+              </td>
               <td className="px-3 py-2 tabular-nums text-muted-foreground">{g.running}</td>
+
               <td className="w-40 px-3 py-2">
                 <div className="flex items-center gap-2">
                   <Progress value={g.rate} className="h-1.5" />
