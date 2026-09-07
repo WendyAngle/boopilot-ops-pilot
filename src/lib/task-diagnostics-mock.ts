@@ -327,7 +327,7 @@ function buildSubTasks(): SubTaskRec[] {
     // 经自动重试、步骤降级或换代理/换设备后仍然跑完，最终状态记为成功。
     const recoverBase =
       0.18 + (platform === "Facebook" ? 0.08 : 0) + (category === "nurture" ? 0.04 : 0);
-    const isRecovered = state === "success" && h(`rc${s}`) < recoverBase;
+    const isRecovered = state === "success" && h(`hidden-risk-${s}-v2`) < recoverBase;
     const recoveredCause = isRecovered ? pickRecoverCause(`rcz${s}`) : null;
     const recoveredStep = recoveredCause ? pick(CAUSE_STEPS[recoveredCause], `rsp${s}`) : "";
     const recoveryMode = isRecovered
