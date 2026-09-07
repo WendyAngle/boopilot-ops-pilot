@@ -415,9 +415,10 @@ function TaskDiagnosticsPage() {
         return [g.taskName, g.goalType, TASK_CATEGORY_LABEL[g.category]]
           .some((v) => String(v).toLowerCase().includes(q));
       });
-      const head = ["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "执行中", "完成率", "任务结果"];
+      const head = ["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "过程异常但成功", "执行中", "完成率", "任务结果"];
       const lines = rows.map((g) =>
-        [g.taskName, TASK_CATEGORY_LABEL[g.category], g.platform, g.goalType, g.goalTotal, g.done, g.failed, g.running, `${g.rate.toFixed(0)}%`, GOAL_RESULT_LABEL[g.result]]
+        [g.taskName, TASK_CATEGORY_LABEL[g.category], g.platform, g.goalType, g.goalTotal, g.done, g.failed, g.recovered, g.running, `${g.rate.toFixed(0)}%`, GOAL_RESULT_LABEL[g.result]]
+
           .map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","),
       );
       downloadCsv("父任务目标完成度.csv", head, lines, rows.length);
