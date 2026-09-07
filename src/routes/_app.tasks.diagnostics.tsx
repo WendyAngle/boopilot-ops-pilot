@@ -306,6 +306,7 @@ function TaskDiagnosticsPage() {
   const [dim, setDim] = useState<DimKey>("category");
   const [anomalyTab, setAnomalyTab] = useState<"account" | "proxy" | "machine">("account");
   const [page, setPage] = useState(1);
+  const [detailType, setDetailType] = useState<"all" | "failed" | "recovered">("all");
   const [showFailed, setShowFailed] = useState(true);
   const [showRate, setShowRate] = useState(true);
   const [viewAll, setViewAll] = useState<null | "account" | "proxy" | "machine" | "goal">(null);
@@ -357,8 +358,16 @@ function TaskDiagnosticsPage() {
     return { topPlatform, topCategory, topCause, topStep };
   }, [failed, causes]);
 
-  const pagedFailures = failed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.max(1, Math.ceil(failed.length / PAGE_SIZE));
+  // 失败明细：最终失败 + 过程异常但最终成功
+  const detailRows = useMemo(() => {
+    const rows =
+      detailType === "failed" ? failed
+      : detailType === "recovered" ? recovered
+      : [...failed, ...recovered].sort((a, b) => b.ts - a.ts);
+    return rows;
+  }, [detailType, failed, recovered]);
+  const pagedFailures = detailRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(detailRows.length / PAGE_SIZE));
 
   const drillTags = [
     filter.step && { label: `执行步骤：${filter.step}`, clear: () => patch({ step: undefined }) },
@@ -370,19 +379,23 @@ function TaskDiagnosticsPage() {
 
   const exportReport = () => {
     const head = [
-      "子任务ID", "任务名称", "业务类型", "平台", "账号", "动作", "执行步骤",
+      "子任务ID", "明细类型", "任务名称", "业务类型", "平台", "账号", "动作", "执行步骤",
       "日志来源", "失败原因分类", "失败摘要", "日志级别", "耗时(秒)", "重试次数",
       "代理IP", "执行机", "失败时间",
     ];
-    const lines = failed.map((r) =>
-      [
-        r.id, r.taskName, TASK_CATEGORY_LABEL[r.category], r.platform, r.account, r.action,
-        r.step, r.logSource, r.cause ? CAUSE_META[r.cause].label : "", r.causeText,
-        r.level, r.durationSec, r.retries, r.proxyIp, r.machine, fmtTs(r.ts),
+    const lines = detailRows.map((r) => {
+      const isRec = r.state === "success" && r.stepFailures > 0;
+      const dCause = r.cause ?? r.recoveredCause;
+      return [
+        r.id, isRec ? "过程异常·已恢复" : "最终失败", r.taskName, TASK_CATEGORY_LABEL[r.category], r.platform, r.account,
+        isRec ? r.recoveredAction : r.action,
+        r.cause ? r.step : r.recoveredStep,
+        r.logSource, dCause ? CAUSE_META[dCause].label : "", r.causeText || r.recoveredText,
+        isRec ? "WARN" : r.level, r.durationSec, r.retries, r.proxyIp, r.machine, fmtTs(r.ts),
       ]
         .map((c) => `"${String(c).replace(/"/g, '""')}"`)
-        .join(","),
-    );
+        .join(",");
+    });
     const blob = new Blob(["\uFEFF" + [head.join(","), ...lines].join("\n")], {
       type: "text/csv;charset=utf-8",
     });
@@ -391,7 +404,7 @@ function TaskDiagnosticsPage() {
     a.download = `任务诊断报告_${RANGE_LABEL[filter.range]}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
-    toast.success(`已导出 ${failed.length} 条失败明细`);
+    toast.success(`已导出 ${detailRows.length} 条异常明细`);
   };
 
   const exportViewAll = () => {
@@ -1125,8 +1138,28 @@ function TaskDiagnosticsPage() {
               <ListChecks className="h-4 w-4 text-primary" />
               <h2 className="text-base font-semibold">失败明细列表</h2>
               <span className="text-xs text-muted-foreground">
-                仅展示失败子任务，共 {failed.length} 条
+                含最终失败与「过程异常但最终成功」明细，共 {detailRows.length} 条
               </span>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-0.5 text-xs">
+              {([
+                ["all", `全部 ${failed.length + recovered.length}`],
+                ["failed", `最终失败 ${failed.length}`],
+                ["recovered", `过程异常但成功 ${recovered.length}`],
+              ] as const).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => { setDetailType(k); setPage(1); }}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 transition-colors",
+                    detailType === k
+                      ? "bg-background font-medium shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
             <Button variant="outline" onClick={exportReport}>
               <Download className="h-4 w-4" />
@@ -1137,7 +1170,7 @@ function TaskDiagnosticsPage() {
             <table className="w-full min-w-[1180px] text-sm">
               <thead>
                 <tr className="border-b text-xs text-muted-foreground">
-                  {["子任务ID", "任务名称", "业务类型", "平台", "账号", "执行步骤", "失败原因", "级别 / 耗时", "失败时间", "操作"].map((t) => (
+                  {["子任务ID", "明细类型", "任务名称", "业务类型", "平台", "账号", "执行步骤", "失败原因", "级别 / 耗时", "失败时间", "操作"].map((t) => (
                     <th key={t} className="px-3 py-2 text-left font-medium">{t}</th>
                   ))}
                 </tr>
@@ -1145,14 +1178,31 @@ function TaskDiagnosticsPage() {
               <tbody>
                 {pagedFailures.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-3 py-12 text-center text-sm text-muted-foreground">
-                      当前筛选条件下暂无失败子任务
+                    <td colSpan={11} className="px-3 py-12 text-center text-sm text-muted-foreground">
+                      当前筛选条件下暂无失败或过程异常明细
                     </td>
                   </tr>
                 )}
-                {pagedFailures.map((r) => (
+                {pagedFailures.map((r) => {
+                  const isRec = r.state === "success" && r.stepFailures > 0;
+                  const dCause = r.cause ?? r.recoveredCause;
+                  const dText = r.causeText || r.recoveredText;
+                  const dStep = r.cause ? r.step : r.recoveredStep;
+                  const dLevel = isRec ? "WARN" : r.level;
+                  return (
                   <tr key={r.id} className="border-b border-border/60 last:border-0 hover:bg-muted/40">
                     <td className="px-3 py-2 font-mono text-xs">{r.id}</td>
+                    <td className="px-3 py-2">
+                      {isRec ? (
+                        <Badge variant="outline" className="whitespace-nowrap text-[10px] text-warning">
+                          过程异常·已恢复
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="whitespace-nowrap text-[10px] text-destructive">
+                          最终失败
+                        </Badge>
+                      )}
+                    </td>
                     <td className="px-3 py-2">{r.taskName}</td>
                     <td className="px-3 py-2">
                       <Badge variant="outline" className={cn("text-[10px]", TASK_CATEGORY_CLS[r.category])}>
@@ -1165,22 +1215,22 @@ function TaskDiagnosticsPage() {
                       </Badge>
                     </td>
                     <td className="px-3 py-2">{r.account}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{r.step}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{dStep}</td>
                     <td className="max-w-[280px] px-3 py-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div>
-                            <Badge variant="outline" className="text-[10px] text-destructive">
-                              {r.cause ? CAUSE_META[r.cause].label : "-"}
+                            <Badge variant="outline" className={cn("text-[10px]", isRec ? "text-warning" : "text-destructive")}>
+                              {dCause ? CAUSE_META[dCause].label : "-"}
                             </Badge>
-                            <p className="mt-1 truncate text-xs text-muted-foreground">{r.causeText}</p>
+                            <p className="mt-1 truncate text-xs text-muted-foreground">{dText}</p>
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent className="max-w-sm">{r.causeText}</TooltipContent>
+                        <TooltipContent className="max-w-sm">{dText}{isRec && r.recoveryMode ? `（${r.recoveryMode}）` : ""}</TooltipContent>
                       </Tooltip>
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      <span className={r.level === "ERROR" ? "text-destructive" : "text-warning"}>{r.level}</span>
+                      <span className={dLevel === "ERROR" ? "text-destructive" : "text-warning"}>{dLevel}</span>
                       <span className="text-muted-foreground"> · {fmtDuration(r.durationSec)}</span>
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">{fmtTs(r.ts)}</td>
@@ -1194,11 +1244,12 @@ function TaskDiagnosticsPage() {
                       </Button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          <PaginationBar page={page} totalPages={totalPages} total={failed.length} setPage={setPage} />
+          <PaginationBar page={page} totalPages={totalPages} total={detailRows.length} setPage={setPage} />
         </div>
       </div>
 
