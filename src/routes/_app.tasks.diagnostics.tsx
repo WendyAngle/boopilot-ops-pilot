@@ -1345,9 +1345,15 @@ function GoalTable({ rows }: { rows: ReturnType<typeof buildGoalRows> }) {
                   </span>
                 </div>
               </td>
-              <td className="px-3 py-2">
+              <td className="whitespace-nowrap px-3 py-2">
                 <Badge variant="outline" className="text-[10px]">{GOAL_RESULT_LABEL[g.result]}</Badge>
+                {g.result === "success" && g.recovered > 0 && (
+                  <Badge variant="outline" className="ml-1 border-warning/40 bg-warning/10 text-[10px] text-warning">
+                    含过程异常
+                  </Badge>
+                )}
               </td>
+
             </tr>
           ))}
         </tbody>
