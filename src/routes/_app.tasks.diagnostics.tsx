@@ -1211,22 +1211,22 @@ function TaskDiagnosticsPage() {
                       </Badge>
                     </td>
                     <td className="px-3 py-2">{r.account}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{r.step}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{dStep}</td>
                     <td className="max-w-[280px] px-3 py-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div>
-                            <Badge variant="outline" className="text-[10px] text-destructive">
-                              {r.cause ? CAUSE_META[r.cause].label : "-"}
+                            <Badge variant="outline" className={cn("text-[10px]", isRec ? "text-warning" : "text-destructive")}>
+                              {dCause ? CAUSE_META[dCause].label : "-"}
                             </Badge>
-                            <p className="mt-1 truncate text-xs text-muted-foreground">{r.causeText}</p>
+                            <p className="mt-1 truncate text-xs text-muted-foreground">{dText}</p>
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent className="max-w-sm">{r.causeText}</TooltipContent>
+                        <TooltipContent className="max-w-sm">{dText}{isRec && r.recoveryMode ? `（${r.recoveryMode}）` : ""}</TooltipContent>
                       </Tooltip>
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      <span className={r.level === "ERROR" ? "text-destructive" : "text-warning"}>{r.level}</span>
+                      <span className={dLevel === "ERROR" ? "text-destructive" : "text-warning"}>{dLevel}</span>
                       <span className="text-muted-foreground"> · {fmtDuration(r.durationSec)}</span>
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">{fmtTs(r.ts)}</td>
