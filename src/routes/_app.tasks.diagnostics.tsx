@@ -1134,8 +1134,28 @@ function TaskDiagnosticsPage() {
               <ListChecks className="h-4 w-4 text-primary" />
               <h2 className="text-base font-semibold">失败明细列表</h2>
               <span className="text-xs text-muted-foreground">
-                仅展示失败子任务，共 {failed.length} 条
+                含最终失败与「过程异常但最终成功」明细，共 {detailRows.length} 条
               </span>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-0.5 text-xs">
+              {([
+                ["all", `全部 ${failed.length + recovered.length}`],
+                ["failed", `最终失败 ${failed.length}`],
+                ["recovered", `过程异常但成功 ${recovered.length}`],
+              ] as const).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => { setDetailType(k); setPage(1); }}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 transition-colors",
+                    detailType === k
+                      ? "bg-background font-medium shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
             <Button variant="outline" onClick={exportReport}>
               <Download className="h-4 w-4" />
