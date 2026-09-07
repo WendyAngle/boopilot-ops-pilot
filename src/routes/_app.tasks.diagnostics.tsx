@@ -1298,7 +1298,7 @@ function GoalTable({ rows }: { rows: ReturnType<typeof buildGoalRows> }) {
       <table className="w-full min-w-[900px] text-sm">
         <thead>
           <tr className="border-b text-xs text-muted-foreground">
-            {["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "执行中", "完成率", "任务结果"].map((t) => (
+            {["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "过程异常但成功", "执行中", "完成率", "任务结果"].map((t) => (
               <th key={t} className="px-3 py-2 text-left font-medium">{t}</th>
             ))}
           </tr>
