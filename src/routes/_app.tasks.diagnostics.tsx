@@ -1306,7 +1306,7 @@ function GoalTable({ rows }: { rows: ReturnType<typeof buildGoalRows> }) {
         <tbody>
           {rows.length === 0 && (
             <tr>
-              <td colSpan={10} className="px-3 py-10 text-center text-sm text-muted-foreground">
+              <td colSpan={11} className="px-3 py-10 text-center text-sm text-muted-foreground">
                 当前筛选条件下暂无任务
               </td>
             </tr>
