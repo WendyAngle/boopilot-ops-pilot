@@ -321,6 +321,32 @@ function buildSubTasks(): SubTaskRec[] {
     const tenant =
       ACTIVE_TENANTS[int(`TN-${taskSeed}`, 0, Math.max(ACTIVE_TENANTS.length - 1, 0))] ??
       ({ id: "", name: "" } as { id: string; name: string });
+
+    // ---- 过程异常但最终成功（隐性风险）----
+    // 最终成功的子任务中约 20%（Facebook / 养号更高）在执行过程中出现过失败的动作或步骤，
+    // 经自动重试、步骤降级或换代理/换设备后仍然跑完，最终状态记为成功。
+    const recoverBase =
+      0.18 + (platform === "Facebook" ? 0.08 : 0) + (category === "nurture" ? 0.04 : 0);
+    const isRecovered = state === "success" && h(`rc${s}`) < recoverBase;
+    const recoveredCause = isRecovered ? pickRecoverCause(`rcz${s}`) : null;
+    const recoveredStep = recoveredCause ? pick(CAUSE_STEPS[recoveredCause], `rsp${s}`) : "";
+    const recoveryMode = isRecovered
+      ? (h(`rm${s}`) < 0.58
+          ? "自动重试成功"
+          : h(`rm2${s}`) < 0.45
+            ? "步骤降级跳过"
+            : h(`rm3${s}`) < 0.5
+              ? "更换代理重跑"
+              : "更换设备重跑")
+      : "";
+    const stepFailures =
+      state === "failed"
+        ? 1 + int(`sf${s}`, 0, 2)
+        : isRecovered
+          ? int(`sf2${s}`, 1, 3)
+          : 0;
+    const baseRetries = h(`rt${s}`) > 0.86 ? int(`rt2${s}`, 1, 3) : 0;
+
     out.push({
       id: `SUB${String(100000 + i)}`,
       taskId: `T${String(taskIdx).padStart(4, "0")}-${category}`,
@@ -336,15 +362,24 @@ function buildSubTasks(): SubTaskRec[] {
       cause,
       causeText: cause ? CAUSE_TEXT[cause] : "",
       level: cause === "network" || cause === "timeout" ? "WARN" : "ERROR",
-      durationSec: int(`d${s}`, 45, 900),
-      retries: h(`rt${s}`) > 0.86 ? int(`rt2${s}`, 1, 3) : 0,
+      durationSec: int(`d${s}`, 45, 900) + (isRecovered ? int(`dr${s}`, 40, 260) : 0),
+      retries: isRecovered && recoveryMode === "自动重试成功"
+        ? Math.max(1, baseRetries)
+        : baseRetries,
       ts,
       state,
       proxyIp: PROXY_POOL[int(`px${s}`, 0, PROXY_POOL.length - 1)].ip,
       machine: MACHINE_POOL[int(`mc${s}`, 0, MACHINE_POOL.length - 1)].name,
       goalLabel,
       goalUnit: 1,
+      stepFailures,
+      recoveredCause,
+      recoveredStep,
+      recoveredText: recoveredCause ? CAUSE_TEXT[recoveredCause] : "",
+      recoveredAction: isRecovered ? pick(ACTIONS, `rac${s}`) : "",
+      recoveryMode,
     });
+
   }
   return out.sort((a, b) => b.ts - a.ts);
 }
