@@ -1166,7 +1166,7 @@ function TaskDiagnosticsPage() {
             <table className="w-full min-w-[1180px] text-sm">
               <thead>
                 <tr className="border-b text-xs text-muted-foreground">
-                  {["子任务ID", "任务名称", "业务类型", "平台", "账号", "执行步骤", "失败原因", "级别 / 耗时", "失败时间", "操作"].map((t) => (
+                  {["子任务ID", "明细类型", "任务名称", "业务类型", "平台", "账号", "执行步骤", "失败原因", "级别 / 耗时", "失败时间", "操作"].map((t) => (
                     <th key={t} className="px-3 py-2 text-left font-medium">{t}</th>
                   ))}
                 </tr>
@@ -1174,8 +1174,8 @@ function TaskDiagnosticsPage() {
               <tbody>
                 {pagedFailures.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-3 py-12 text-center text-sm text-muted-foreground">
-                      当前筛选条件下暂无失败子任务
+                    <td colSpan={11} className="px-3 py-12 text-center text-sm text-muted-foreground">
+                      当前筛选条件下暂无失败或过程异常明细
                     </td>
                   </tr>
                 )}
