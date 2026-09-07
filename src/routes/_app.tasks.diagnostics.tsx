@@ -661,7 +661,16 @@ function TaskDiagnosticsPage() {
                 <b>{summary.topCategory ? TASK_CATEGORY_LABEL[summary.topCategory.name as TaskCategory] : "-"}</b>；
                 Top 失败原因为 <b>{summary.topCause?.label}</b>（占 {summary.topCause?.pct.toFixed(0)}%），
                 典型发生在 <b>{summary.topStep?.name}</b> 步骤。
+                {kpi.recovered > 0 && (
+                  <>
+                    {" "}另有 <b className="text-warning">{kpi.recovered}</b> 个子任务最终成功，但过程中出现过{" "}
+                    <b className="text-warning">{kpi.recoveredStepFails}</b> 次失败的动作/步骤
+                    （隐性异常率 {kpi.recoveredRate.toFixed(1)}%），涉及{" "}
+                    <b>{kpi.hiddenRiskTasks}</b> 个最终判定成功的父任务，建议一并复盘。
+                  </>
+                )}
               </p>
+
               <div className="mt-4 grid gap-3 md:grid-cols-3">
                 {causes.slice(0, 3).map((c, i) => (
                   <div key={c.key} className="rounded-lg border bg-card p-3">
