@@ -242,7 +242,44 @@ export interface SubTaskRec {
   machine: string;
   goalLabel: string;
   goalUnit: number;
+  /** 过程中失败的动作/步骤数量（最终成功的子任务也可能 > 0） */
+  stepFailures: number;
+  /** 过程异常但最终成功：首个过程失败的原因分类 */
+  recoveredCause: CauseKey | null;
+  /** 过程异常发生的步骤 */
+  recoveredStep: string;
+  /** 过程异常摘要 */
+  recoveredText: string;
+  /** 过程异常涉及的动作 */
+  recoveredAction: string;
+  /** 恢复方式：自动重试 / 步骤降级 / 换设备重跑 / 换代理重跑 */
+  recoveryMode: string;
 }
+
+/** 过程异常恢复方式（用于「过程异常但最终成功」板块） */
+export const RECOVERY_MODES = [
+  "自动重试成功",
+  "步骤降级跳过",
+  "更换代理重跑",
+  "更换设备重跑",
+] as const;
+export type RecoveryMode = (typeof RECOVERY_MODES)[number];
+
+/** 过程异常（最终成功）高发原因权重：更偏向可自愈的瞬时异常 */
+const RECOVER_CAUSE_WEIGHT: [CauseKey, number][] = [
+  ["detect", 26], ["network", 22], ["ai", 16], ["device", 12],
+  ["session", 10], ["risk", 8], ["business", 6],
+];
+
+function pickRecoverCause(seed: string): CauseKey {
+  const total = RECOVER_CAUSE_WEIGHT.reduce((s, [, w]) => s + w, 0);
+  let r = h(seed) * total;
+  for (const [k, w] of RECOVER_CAUSE_WEIGHT) {
+    if ((r -= w) <= 0) return k;
+  }
+  return "detect";
+}
+
 
 const DAY = 86400_000;
 /** 固定"当前时间"，保证 SSR / CSR 一致 */
