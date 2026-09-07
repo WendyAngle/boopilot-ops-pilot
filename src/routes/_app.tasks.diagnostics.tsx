@@ -1249,7 +1249,7 @@ function TaskDiagnosticsPage() {
               </tbody>
             </table>
           </div>
-          <PaginationBar page={page} totalPages={totalPages} total={failed.length} setPage={setPage} />
+          <PaginationBar page={page} totalPages={totalPages} total={detailRows.length} setPage={setPage} />
         </div>
       </div>
 
