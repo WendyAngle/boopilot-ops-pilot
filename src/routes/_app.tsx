@@ -33,7 +33,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { changePassword, getCurrentUser, logout, type AuthUser } from "@/lib/auth";
+import { changePassword, initSession, setCurrentUser, signOut, type AuthUser } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 import {
   Select,
@@ -55,28 +56,44 @@ function AppLayout() {
   const [pwdOpen, setPwdOpen] = useState(false);
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      navigate({ to: "/login" });
-      return;
-    }
-    setUser(u);
-    // 根据用户权限初始化租户作用域
-    if (u.allowedTenantNames && u.allowedTenantNames.length > 0) {
-      const defaultName = u.defaultTenantName ?? u.allowedTenantNames[0];
-      const target =
-        ACTIVE_TENANTS.find((t) => t.name === defaultName) ??
-        ACTIVE_TENANTS.find((t) => u.allowedTenantNames!.includes(t.name));
-      if (target) setTenantScope(target.id);
-    } else if (ACTIVE_TENANTS[0]) {
-      // 管理员等无租户限制账号：默认选中第一个租户，避免“全部租户”作为初始值
-      setTenantScope(ACTIVE_TENANTS[0].id);
-    }
-    setReady(true);
+    let mounted = true;
+    const apply = (u: AuthUser | null) => {
+      if (!mounted) return;
+      if (!u) {
+        navigate({ to: "/login" });
+        return;
+      }
+      setUser(u);
+      // 根据用户权限初始化租户作用域
+      if (u.allowedTenantNames && u.allowedTenantNames.length > 0) {
+        const defaultName = u.defaultTenantName ?? u.allowedTenantNames[0];
+        const target =
+          ACTIVE_TENANTS.find((t) => t.name === defaultName) ??
+          ACTIVE_TENANTS.find((t) => u.allowedTenantNames!.includes(t.name));
+        if (target) setTenantScope(target.id);
+      } else if (ACTIVE_TENANTS[0]) {
+        // 管理员等无租户限制账号：默认选中第一个租户，避免“全部租户”作为初始值
+        setTenantScope(ACTIVE_TENANTS[0].id);
+      }
+      setReady(true);
+    };
+    initSession().then(apply);
+    // 监听登出：会话消失时回到登录页
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session && mounted) {
+        setCurrentUser(null);
+        setUser(null);
+        navigate({ to: "/login" });
+      }
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, [navigate]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     setTenantScope("all");
     toast.success("已退出登录");
     navigate({ to: "/login" });
@@ -179,7 +196,7 @@ function ChangePasswordDialog({
     setConfirmPwd("");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!oldPwd || !newPwd || !confirmPwd) {
       toast.error("请填写完整");
       return;
@@ -192,8 +209,9 @@ function ChangePasswordDialog({
       toast.error("两次输入的新密码不一致");
       return;
     }
-    if (!changePassword(oldPwd, newPwd)) {
-      toast.error("当前密码不正确");
+    const ok = await changePassword(newPwd);
+    if (!ok) {
+      toast.error("密码修改失败，请重新登录后再试");
       return;
     }
     toast.success("密码修改成功");

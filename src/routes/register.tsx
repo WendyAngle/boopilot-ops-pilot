@@ -8,6 +8,8 @@ import {
   Eye,
   EyeOff,
   Cloud,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,8 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2 } from "lucide-react";
-import { registerPendingUser } from "@/lib/auth";
+import { signUpWithEmail } from "@/lib/auth";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -40,56 +41,52 @@ export const Route = createFileRoute("/register")({
 function RegisterPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    username: "",
     phone: "",
     email: "",
     password: "",
     confirm: "",
-    code: "",
   });
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [joinCloud, setJoinCloud] = useState(true);
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [cdLeft, setCdLeft] = useState(0);
   const [successOpen, setSuccessOpen] = useState(false);
 
   const update = (k: keyof typeof form, v: string) =>
     setForm((p) => ({ ...p, [k]: v }));
 
-  const sendCode = () => {
-    if (!/^1\d{10}$/.test(form.phone)) {
-      toast.error("请输入正确的 11 位手机号");
-      return;
-    }
-    toast.success("验证码已发送（mock：123456）");
-    setCdLeft(60);
-    const t = setInterval(() => {
-      setCdLeft((s) => {
-        if (s <= 1) {
-          clearInterval(t);
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!/^1\d{10}$/.test(form.phone)) return toast.error("请输入正确的手机号");
-    if (!form.code.trim()) return toast.error("请输入验证码");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      return toast.error("请输入正确的邮箱");
     if (form.password.length < 6) return toast.error("密码至少 6 位");
     if (form.password !== form.confirm) return toast.error("两次密码不一致");
     if (!agree) return toast.error("请先阅读并同意用户协议");
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      registerPendingUser(form.phone.trim());
-      setSuccessOpen(true);
-    }, 600);
+    const res = await signUpWithEmail(
+      form.email.trim(),
+      form.password,
+      form.phone.trim() || form.email.split("@")[0],
+    );
+    setLoading(false);
+
+    if (res.error && res.confirmed === undefined) {
+      // 真正的错误
+      toast.error(res.error);
+      return;
+    }
+
+    if (!res.error) {
+      // 已自动登录（无需邮箱确认）
+      toast.success("注册成功");
+      navigate({ to: "/" });
+      return;
+    }
+
+    // 需要邮箱确认
+    setSuccessOpen(true);
   };
 
   return (
@@ -125,61 +122,33 @@ function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="mt-7 space-y-4">
             <Field
-              id="phone"
-              label="手机号"
-              required
-              icon={<Phone className="h-4 w-4" />}
-            >
-              <Input
-                id="phone"
-                value={form.phone}
-                onChange={(e) => update("phone", e.target.value.replace(/\D/g, ""))}
-                placeholder="请输入手机号"
-                maxLength={11}
-                className="h-11 rounded-xl bg-muted/40 pl-9"
-              />
-            </Field>
-
-            <div className="space-y-2">
-              <Label htmlFor="code">
-                验证码 <span className="text-destructive">*</span>
-              </Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <ShieldCheck className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="code"
-                    value={form.code}
-                    onChange={(e) => update("code", e.target.value)}
-                    placeholder="请输入验证码"
-                    maxLength={6}
-                    className="h-11 rounded-xl bg-muted/40 pl-9"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={cdLeft > 0}
-                  onClick={sendCode}
-                  className="h-11 shrink-0 rounded-xl"
-                >
-                  {cdLeft > 0 ? `${cdLeft}s 后重发` : "获取验证码"}
-                </Button>
-              </div>
-            </div>
-
-            <Field
               id="email"
               label="邮箱"
+              required
               icon={<Mail className="h-4 w-4" />}
-              hint="选填"
             >
               <Input
                 id="email"
                 type="email"
                 value={form.email}
                 onChange={(e) => update("email", e.target.value)}
-                placeholder="请输入邮箱（选填）"
+                placeholder="请输入邮箱"
+                className="h-11 rounded-xl bg-muted/40 pl-9"
+              />
+            </Field>
+
+            <Field
+              id="phone"
+              label="手机号"
+              icon={<Phone className="h-4 w-4" />}
+              hint="选填"
+            >
+              <Input
+                id="phone"
+                value={form.phone}
+                onChange={(e) => update("phone", e.target.value.replace(/\D/g, ""))}
+                placeholder="请输入手机号（选填）"
+                maxLength={11}
                 className="h-11 rounded-xl bg-muted/40 pl-9"
               />
             </Field>
@@ -263,7 +232,14 @@ function RegisterPage() {
               className="h-11 w-full rounded-xl"
               style={{ background: "var(--gradient-primary)" }}
             >
-              {loading ? "注册中..." : "注 册"}
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  注册中...
+                </span>
+              ) : (
+                "注 册"
+              )}
             </Button>
           </form>
 
@@ -292,7 +268,7 @@ function RegisterPage() {
               注册成功
             </DialogTitle>
             <DialogDescription className="pt-2 text-sm leading-6 text-foreground">
-              恭喜您已成功注册，请及时联系博海悦意工作人员为您开通业务权限方可登录系统开展业务
+              恭喜您已成功注册。请前往邮箱完成验证后即可登录系统开展业务。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
