@@ -597,7 +597,7 @@ function TaskDiagnosticsPage() {
         </Card>
 
         {/* KPI */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-4">
           <KpiCard
             title="子任务总数"
             value={kpi.subTotal.toLocaleString()}
@@ -622,6 +622,17 @@ function TaskDiagnosticsPage() {
             delta={pctDelta(kpi.partialTasks, kpiPrev.partialTasks)}
           />
           <KpiCard
+            title="过程异常但成功"
+            value={kpi.recovered.toLocaleString()}
+            delta={pctDelta(kpi.recovered, kpiPrev.recovered)}
+          />
+          <KpiCard
+            title="隐性异常率（异常成功/成功）"
+            value={kpi.recoveredRate.toFixed(1)}
+            unit="%"
+            delta={pctDelta(kpi.recoveredRate, kpiPrev.recoveredRate)}
+          />
+          <KpiCard
             title="平均耗时"
             value={fmtDuration(kpi.avgDurationSec)}
             delta={pctDelta(kpi.avgDurationSec, kpiPrev.avgDurationSec)}
@@ -633,6 +644,7 @@ function TaskDiagnosticsPage() {
             delta={pctDelta(kpi.retryRate, kpiPrev.retryRate)}
           />
         </div>
+
 
         {/* 智能诊断摘要 */}
         <Card className="border-primary/30 bg-primary/5 p-5">
