@@ -40,8 +40,8 @@ const HIGHLIGHTS = [
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("demo@boopilot.com");
+  const [password, setPassword] = useState("BooPilot-Demo-2026!");
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
