@@ -337,6 +337,13 @@ function TaskDiagnosticsPage() {
   const proxyRank = useMemo(() => buildProxyRank(scoped, filter), [scoped, filter]);
   const machineRank = useMemo(() => buildMachineRank(scoped, filter), [scoped, filter]);
   const goals = useMemo(() => buildGoalRows(scoped, filter), [scoped, filter]);
+  // 过程异常但最终成功（隐性风险）
+  const recovered = useMemo(() => recoveredOf(scoped, filter), [scoped, filter]);
+  const recoveredCauses = useMemo(() => buildRecoveredCauseCluster(recovered), [recovered]);
+  const recoveryModes = useMemo(() => buildRecoveryModeDist(recovered), [recovered]);
+  const recoveredSteps = useMemo(() => buildRecoveredStepDist(recovered), [recovered]);
+  const hiddenTasks = useMemo(() => buildHiddenRiskTasks(scoped, filter), [scoped, filter]);
+
 
   const pctDelta = (cur: number, before: number) =>
     before === 0 ? (cur === 0 ? 0 : 100) : ((cur - before) / before) * 100;
