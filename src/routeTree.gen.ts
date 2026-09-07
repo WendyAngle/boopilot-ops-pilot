@@ -13,6 +13,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as ApiPublicBootstrapDemoRouteImport } from './routes/api/public/bootstrap-demo'
 import { Route as AppTenantsResourcesRouteImport } from './routes/_app.tenants.resources'
 import { Route as AppTenantsListRouteImport } from './routes/_app.tenants.list'
 import { Route as AppTasksTemplatesRouteImport } from './routes/_app.tasks.templates'
@@ -68,6 +69,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiPublicBootstrapDemoRoute = ApiPublicBootstrapDemoRouteImport.update({
+  id: '/api/public/bootstrap-demo',
+  path: '/api/public/bootstrap-demo',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppTenantsResourcesRoute = AppTenantsResourcesRouteImport.update({
   id: '/tenants/resources',
@@ -286,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/tasks/templates': typeof AppTasksTemplatesRoute
   '/tenants/list': typeof AppTenantsListRoute
   '/tenants/resources': typeof AppTenantsResourcesRoute
+  '/api/public/bootstrap-demo': typeof ApiPublicBootstrapDemoRoute
   '/accounts/managed/$id': typeof AppAccountsManagedIdRoute
   '/accounts/managed/': typeof AppAccountsManagedIndexRoute
   '/tasks/$taskId/logs/$logId': typeof AppTasksTaskIdLogsLogIdRoute
@@ -327,6 +334,7 @@ export interface FileRoutesByTo {
   '/tasks/templates': typeof AppTasksTemplatesRoute
   '/tenants/list': typeof AppTenantsListRoute
   '/tenants/resources': typeof AppTenantsResourcesRoute
+  '/api/public/bootstrap-demo': typeof ApiPublicBootstrapDemoRoute
   '/accounts/managed/$id': typeof AppAccountsManagedIdRoute
   '/accounts/managed': typeof AppAccountsManagedIndexRoute
   '/tasks/$taskId/logs/$logId': typeof AppTasksTaskIdLogsLogIdRoute
@@ -370,6 +378,7 @@ export interface FileRoutesById {
   '/_app/tasks/templates': typeof AppTasksTemplatesRoute
   '/_app/tenants/list': typeof AppTenantsListRoute
   '/_app/tenants/resources': typeof AppTenantsResourcesRoute
+  '/api/public/bootstrap-demo': typeof ApiPublicBootstrapDemoRoute
   '/_app/accounts/managed/$id': typeof AppAccountsManagedIdRoute
   '/_app/accounts/managed/': typeof AppAccountsManagedIndexRoute
   '/_app/tasks/$taskId_/logs/$logId': typeof AppTasksTaskIdLogsLogIdRoute
@@ -413,6 +422,7 @@ export interface FileRouteTypes {
     | '/tasks/templates'
     | '/tenants/list'
     | '/tenants/resources'
+    | '/api/public/bootstrap-demo'
     | '/accounts/managed/$id'
     | '/accounts/managed/'
     | '/tasks/$taskId/logs/$logId'
@@ -454,6 +464,7 @@ export interface FileRouteTypes {
     | '/tasks/templates'
     | '/tenants/list'
     | '/tenants/resources'
+    | '/api/public/bootstrap-demo'
     | '/accounts/managed/$id'
     | '/accounts/managed'
     | '/tasks/$taskId/logs/$logId'
@@ -496,6 +507,7 @@ export interface FileRouteTypes {
     | '/_app/tasks/templates'
     | '/_app/tenants/list'
     | '/_app/tenants/resources'
+    | '/api/public/bootstrap-demo'
     | '/_app/accounts/managed/$id'
     | '/_app/accounts/managed/'
     | '/_app/tasks/$taskId_/logs/$logId'
@@ -507,6 +519,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
+  ApiPublicBootstrapDemoRoute: typeof ApiPublicBootstrapDemoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -538,6 +551,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/public/bootstrap-demo': {
+      id: '/api/public/bootstrap-demo'
+      path: '/api/public/bootstrap-demo'
+      fullPath: '/api/public/bootstrap-demo'
+      preLoaderRoute: typeof ApiPublicBootstrapDemoRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/tenants/resources': {
       id: '/_app/tenants/resources'
@@ -880,6 +900,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
+  ApiPublicBootstrapDemoRoute: ApiPublicBootstrapDemoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
