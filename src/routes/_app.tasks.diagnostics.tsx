@@ -1099,7 +1099,7 @@ function TaskDiagnosticsPage() {
               </Button>
             }
           />
-          <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-5">
+          <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
             <MiniStat t="父任务总数" v={String(goals.length)} />
             <MiniStat t="目标总量" v={kpi.subTotal.toLocaleString()} />
             <MiniStat
@@ -1112,7 +1112,9 @@ function TaskDiagnosticsPage() {
               v={`${kpi.subTotal ? ((goals.reduce((s, g) => s + g.done, 0) / kpi.subTotal) * 100).toFixed(1) : "0"}%`}
             />
             <MiniStat t="失败目标" v={String(kpi.failed)} tone="text-destructive" />
+            <MiniStat t="过程异常但成功" v={String(kpi.recovered)} tone="text-warning" />
           </div>
+
           <GoalTable rows={goals.slice(0, 8)} />
         </Card>
 
