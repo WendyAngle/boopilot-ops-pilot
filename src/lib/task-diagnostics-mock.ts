@@ -749,6 +749,8 @@ export interface GoalRow {
   running: number;
   rate: number;
   result: "success" | "partial" | "failed" | "none";
+  /** 过程异常但最终成功的子任务数（隐性风险） */
+  recovered: number;
 }
 
 export function buildGoalRows(rows: SubTaskRec[], f: DiagFilter): GoalRow[] {
@@ -781,8 +783,12 @@ export function buildGoalRows(rows: SubTaskRec[], f: DiagFilter): GoalRow[] {
         running,
         rate,
         result,
+        recovered: recoveredOf(list, f).length,
       };
     })
+    .sort((a, b) => a.rate - b.rate);
+}
+
     .sort((a, b) => a.rate - b.rate);
 }
 
