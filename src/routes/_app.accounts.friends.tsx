@@ -1,0 +1,1181 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState, useEffect } from "react";
+import {
+  Search,
+  UserPlus,
+  UserCheck,
+  UserX,
+  Users,
+  MessageSquareText,
+  Languages,
+  
+  Trash2,
+  Sparkles,
+  Info,
+  Bell,
+  BellRing,
+  Clock,
+  AlertCircle,
+  ScrollText,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import {
+  getFriendData,
+  platformMeta,
+  translateZhTo,
+  LANG_LABEL,
+  SOURCE_LABEL,
+  type FriendRequest,
+  type FriendStatus,
+} from "@/lib/friends-mock";
+import { useTasks } from "@/lib/operations-store";
+import { ensureActivityTasksSeeded, recordActivity } from "@/lib/activity-tasks";
+
+ensureActivityTasksSeeded();
+
+export const Route = createFileRoute("/_app/accounts/friends")({
+  head: () => ({
+    meta: [
+      { title: "好友管理 — BooPilot" },
+      {
+        name: "description",
+        content: "统一处理各账号收到的加好友请求，管理好友关系与备注信息。",
+      },
+      { property: "og:title", content: "好友管理 — BooPilot" },
+      {
+        property: "og:description",
+        content: "统一处理各账号收到的加好友请求，管理好友关系与备注信息。",
+      },
+    ],
+  }),
+  component: FriendsPage,
+});
+
+type TabKey = FriendStatus | "watchlist";
+
+function daysSince(dt: string): number {
+  // "YYYY-MM-DD HH:mm"
+  const t = new Date(dt.replace(" ", "T") + ":00").getTime();
+  if (Number.isNaN(t)) return 0;
+  return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+}
+
+function FriendsPage() {
+  const { accounts, requests: initial } = useMemo(() => getFriendData(), []);
+  const [requests, setRequests] = useState<FriendRequest[]>(initial);
+  const [activeAccountId, setActiveAccountId] = useState(accounts[0]?.id ?? "");
+  const [tab, setTab] = useState<TabKey>("pending");
+  const [activeId, setActiveId] = useState<string>("");
+  const [keyword, setKeyword] = useState("");
+
+  // 账号维度待处理计数
+  const pendingByAccount = useMemo(() => {
+    const map = new Map<string, number>();
+    requests.forEach((r) => {
+      if (r.status === "pending") {
+        map.set(r.accountId, (map.get(r.accountId) ?? 0) + 1);
+      }
+    });
+    return map;
+  }, [requests]);
+
+  // 「再次申请」映射：key = accountId::peerHandle
+  // 只有当同一账号下，该 peer 既有 pending 又有 rejected+watchlisted 时才算「再次申请」
+  const reappMap = useMemo(() => {
+    const pendingKeys = new Set(
+      requests
+        .filter((r) => r.status === "pending")
+        .map((r) => `${r.accountId}::${r.peerHandle}`),
+    );
+    const map = new Map<string, FriendRequest>(); // key -> pending 申请
+    requests.forEach((r) => {
+      const k = `${r.accountId}::${r.peerHandle}`;
+      if (r.status === "pending" && pendingKeys.has(k)) {
+        map.set(k, r);
+      }
+    });
+    // 仅保留同时存在 watchlisted rejected 的
+    const result = new Map<string, FriendRequest>();
+    requests.forEach((r) => {
+      if (r.status === "rejected" && r.watchlisted) {
+        const k = `${r.accountId}::${r.peerHandle}`;
+        const p = map.get(k);
+        if (p) result.set(k, p);
+      }
+    });
+    return result;
+  }, [requests]);
+
+  // 全局再次申请数量（用于顶部横幅）
+  const reappGlobal = reappMap.size;
+
+  const countsForActive = useMemo(() => {
+    const c = { pending: 0, accepted: 0, rejected: 0, watchlist: 0 };
+    requests
+      .filter((r) => r.accountId === activeAccountId)
+      .forEach((r) => {
+        c[r.status]++;
+        if (r.status === "rejected" && r.watchlisted) c.watchlist++;
+      });
+    return c;
+  }, [requests, activeAccountId]);
+
+  // 计算某条 rejected+watchlisted 的紧迫度
+  const urgencyOf = (r: FriendRequest): "reapplied" | "overdue" | "watching" => {
+    const k = `${r.accountId}::${r.peerHandle}`;
+    if (reappMap.has(k)) return "reapplied";
+    const days = daysSince(r.decidedAt ?? r.requestedAt);
+    if (days > 30) return "overdue";
+    return "watching";
+  };
+
+  const listItems = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    const matchKw = (r: FriendRequest) =>
+      kw
+        ? r.peerName.toLowerCase().includes(kw) ||
+          r.peerHandle.toLowerCase().includes(kw) ||
+          (r.requestText ?? "").toLowerCase().includes(kw)
+        : true;
+    if (tab === "watchlist") {
+      const order: Record<"reapplied" | "overdue" | "watching", number> = {
+        reapplied: 0,
+        overdue: 1,
+        watching: 2,
+      };
+      return requests
+        .filter(
+          (r) =>
+            r.accountId === activeAccountId &&
+            r.status === "rejected" &&
+            r.watchlisted,
+        )
+        .filter(matchKw)
+        .sort((a, b) => {
+          const ua = urgencyOf(a);
+          const ub = urgencyOf(b);
+          if (ua !== ub) return order[ua] - order[ub];
+          return (b.decidedAt ?? "").localeCompare(a.decidedAt ?? "");
+        });
+    }
+    return requests
+      .filter((r) => r.accountId === activeAccountId && r.status === tab)
+      .filter(matchKw);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requests, activeAccountId, tab, keyword, reappMap]);
+
+  useEffect(() => {
+    if (!listItems.length) {
+      setActiveId("");
+      return;
+    }
+    if (!listItems.find((r) => r.id === activeId)) {
+      setActiveId(listItems[0].id);
+    }
+  }, [listItems, activeId]);
+
+  const active = requests.find((r) => r.id === activeId);
+  const activeAccount = accounts.find((a) => a.id === activeAccountId);
+
+  const allTasks = useTasks();
+  const approveTaskId = allTasks.find(
+    (t) => t.source === "friend-approve" && t.sourceAccountId === activeAccountId,
+  )?.id;
+  const rejectTaskId = allTasks.find(
+    (t) => t.source === "friend-reject" && t.sourceAccountId === activeAccountId,
+  )?.id;
+
+  // 动作弹窗
+  const [approveOpen, setApproveOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  
+  const [noteEditOpen, setNoteEditOpen] = useState(false);
+
+  const patch = (id: string, p: Partial<FriendRequest>) => {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...p } : r)));
+  };
+
+  const now = () => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const approve = (welcomeZh: string, note: string) => {
+    if (!active || !activeAccount) return;
+    const welcomeText = welcomeZh.trim()
+      ? active.peerLang === "zh"
+        ? welcomeZh
+        : translateZhTo(active.peerLang, welcomeZh)
+      : undefined;
+    patch(active.id, {
+      status: "accepted",
+      decidedAt: now(),
+      welcomeZh: welcomeZh.trim() || undefined,
+      welcomeText,
+      note: note.trim() || undefined,
+    });
+    recordActivity({
+      accountId: activeAccount.id,
+      accountName: activeAccount.username,
+      platform: activeAccount.platform,
+      source: "friend-approve",
+      target: active.peerName,
+      status: "success",
+      detail: welcomeZh.trim() || "已通过好友申请",
+    });
+    toast.success(
+      welcomeText ? "已通过，欢迎语已发送给对方" : "已通过好友申请",
+    );
+    setApproveOpen(false);
+  };
+
+  const reject = (publicReasonZh: string, note: string) => {
+    if (!active || !activeAccount) return;
+    const snapshot = active;
+    const publicReasonText = publicReasonZh.trim()
+      ? active.peerLang === "zh"
+        ? publicReasonZh.trim()
+        : translateZhTo(active.peerLang, publicReasonZh.trim())
+      : undefined;
+    patch(active.id, {
+      status: "rejected",
+      decidedAt: now(),
+      publicReasonZh: publicReasonZh.trim() || undefined,
+      publicReasonText,
+      note: note.trim() || undefined,
+    });
+    recordActivity({
+      accountId: activeAccount.id,
+      accountName: activeAccount.username,
+      platform: activeAccount.platform,
+      source: "friend-reject",
+      target: active.peerName,
+      status: "success",
+      detail: publicReasonZh.trim() || "已拒绝好友申请",
+    });
+    toast.success(
+      publicReasonText ? "已拒绝，说明已发送给对方" : "已拒绝好友申请",
+      {
+        duration: 5000,
+        action: {
+          label: "撤销",
+          onClick: () => {
+            setRequests((prev) =>
+              prev.map((r) => (r.id === snapshot.id ? snapshot : r)),
+            );
+            toast.success("已撤销拒绝，申请恢复为待处理");
+          },
+        },
+      },
+    );
+    setRejectOpen(false);
+  };
+
+  const toggleWatchlist = () => {
+    if (!active) return;
+    const next = !active.watchlisted;
+    patch(active.id, { watchlisted: next });
+    toast.success(next ? "已加入持续关注：对方再次申请将高亮提醒" : "已移出持续关注");
+  };
+
+  const invitePeer = () => {
+    if (!active || !activeAccount) return;
+    toast.success(
+      `已生成主动添加任务：将由「${activeAccount.username}」向「${active.peerName}」发起好友邀请`,
+    );
+  };
+
+  const removeFriend = () => {
+    if (!active) return;
+    setRequests((prev) => prev.filter((r) => r.id !== active.id));
+    toast.success("已解除好友关系");
+    setRemoveOpen(false);
+  };
+
+  const jumpToFirstReapplication = () => {
+    const first = Array.from(reappMap.values())[0];
+    if (!first) return;
+    if (first.accountId !== activeAccountId) {
+      setActiveAccountId(first.accountId);
+    }
+    setTab("pending");
+    setActiveId(first.id);
+  };
+
+  return (
+    <div className="flex h-[calc(100vh-8rem)] flex-col gap-3">
+      <div>
+        <h1 className="text-xl font-semibold">好友管理</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          统一查看各账号收到的加好友请求，通过或拒绝后附加备注/欢迎语，已通过的好友进入「好友列表」。
+        </p>
+      </div>
+
+      {reappGlobal > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+          <div className="flex items-center gap-2">
+            <BellRing className="h-4 w-4 text-primary" />
+            <span>
+              有 <span className="font-semibold text-primary">{reappGlobal}</span> 位「持续关注」对象再次发来好友申请
+            </span>
+          </div>
+          <Button size="sm" variant="outline" onClick={jumpToFirstReapplication}>
+            立即查看
+          </Button>
+        </div>
+      )}
+
+      <div className="grid flex-1 min-h-0 grid-cols-[220px_360px_1fr] gap-3">
+        {/* 左：账号列表 */}
+        <div className="rounded-lg border bg-card">
+          <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
+            账号（{accounts.length}）
+          </div>
+          <ScrollArea className="h-[calc(100%-33px)]">
+            <div className="p-1">
+              {accounts.map((a) => {
+                const meta = platformMeta(a.platform);
+                const pend = pendingByAccount.get(a.id) ?? 0;
+                const isActive = a.id === activeAccountId;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => setActiveAccountId(a.id)}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left transition-colors",
+                      isActive ? "bg-accent" : "hover:bg-accent/50",
+                    )}
+                  >
+                    <div className="relative shrink-0">
+                      <img
+                        src={a.avatar}
+                        alt={a.username}
+                        className="h-8 w-8 rounded-full border object-cover"
+                      />
+                      <span
+                        className={cn(
+                          "absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold",
+                          meta.cls,
+                        )}
+                      >
+                        {meta.letter}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium" title={a.username}>
+                        {a.username}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground" title={a.platformId}>
+                        {a.platformId}
+                      </div>
+                    </div>
+                    {pend > 0 && (
+                      <Badge
+                        variant="destructive"
+                        className="h-5 min-w-5 shrink-0 px-1.5 text-[10px]"
+                      >
+                        {pend}
+                      </Badge>
+                    )}
+                  </button>
+                );
+              })}
+              {accounts.length === 0 && (
+                <div className="px-3 py-8 text-center text-xs text-muted-foreground">
+                  当前租户下暂无账号
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* 中：分类与列表 */}
+        <div className="flex min-h-0 flex-col rounded-lg border bg-card">
+          <div className="border-b p-2">
+            <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+              <TabsList className="grid w-full grid-cols-4 gap-0.5">
+                <TabsTrigger value="pending" className="gap-1 px-1.5 text-xs">
+                  待处理
+                  {countsForActive.pending > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="h-4 min-w-4 px-1 text-[10px]"
+                    >
+                      {countsForActive.pending}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="accepted" className="gap-1 px-1.5 text-xs">
+                  好友
+                  <span className="text-[10px] text-muted-foreground">
+                    {countsForActive.accepted}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger value="rejected" className="gap-1 px-1.5 text-xs">
+                  已拒绝
+                  <span className="text-[10px] text-muted-foreground">
+                    {countsForActive.rejected}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger value="watchlist" className="gap-1 px-1.5 text-xs">
+                  持续关注
+                  {countsForActive.watchlist > 0 && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {countsForActive.watchlist}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <div className="relative mt-2">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="搜索昵称 / 句柄 / 留言"
+                className="h-8 pl-7 text-xs"
+              />
+            </div>
+          </div>
+          <ScrollArea className="flex-1">
+            <div className="space-y-1 p-2">
+              {listItems.map((r) => {
+                const urgency = tab === "watchlist" ? urgencyOf(r) : null;
+                const days =
+                  tab === "watchlist"
+                    ? daysSince(r.decidedAt ?? r.requestedAt)
+                    : 0;
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => setActiveId(r.id)}
+                    className={cn(
+                      "flex w-full items-start gap-2 rounded-md border p-2 text-left transition-colors",
+                      r.id === activeId
+                        ? "border-primary bg-accent"
+                        : "border-transparent hover:bg-accent/50",
+                    )}
+                  >
+                    <img
+                      src={r.peerAvatar}
+                      alt={r.peerName}
+                      className="h-9 w-9 shrink-0 rounded-full border object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <div className="truncate text-sm font-medium">
+                            {r.peerName}
+                          </div>
+                          {urgency && <UrgencyBadge urgency={urgency} />}
+                        </div>
+                        <div className="shrink-0 text-[10px] text-muted-foreground">
+                          {r.decidedAt ?? r.requestedAt}
+                        </div>
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {r.peerHandle}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1">
+                        {tab === "watchlist" ? (
+                          <span className="text-[10px] text-muted-foreground">
+                            拒绝已 {days} 天
+                          </span>
+                        ) : (
+                          <>
+                            <Badge
+                              variant="outline"
+                              className="h-4 px-1 text-[10px] font-normal"
+                            >
+                              {SOURCE_LABEL[r.source]}
+                            </Badge>
+                            {r.mutualFriends > 0 && (
+                              <span className="text-[10px] text-muted-foreground">
+                                共同好友 {r.mutualFriends}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+              {listItems.length === 0 && (
+                <div className="px-3 py-12 text-center text-xs text-muted-foreground">
+                  暂无
+                  {tab === "pending"
+                    ? "待处理申请"
+                    : tab === "accepted"
+                      ? "好友"
+                      : tab === "rejected"
+                        ? "已拒绝记录"
+                        : "持续关注对象"}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* 右：详情与操作 */}
+        <div className="flex min-h-0 flex-col rounded-lg border bg-card">
+          {active && activeAccount ? (
+            <>
+              <div className="border-b px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <img
+                    src={active.peerAvatar}
+                    alt={active.peerName}
+                    className="h-12 w-12 rounded-full border object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="text-base font-semibold">
+                        {active.peerName}
+                      </div>
+                      <StatusBadge status={active.status} />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {active.peerHandle} · {LANG_LABEL[active.peerLang]}
+                    </div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      请求账号：{activeAccount.username} · {activeAccount.platform}
+                    </div>
+                  </div>
+                  {(() => {
+                    const taskId =
+                      active.status === "accepted"
+                        ? approveTaskId
+                        : active.status === "rejected"
+                          ? rejectTaskId
+                          : undefined;
+                    if (!taskId) return null;
+                    const label =
+                      active.status === "accepted" ? "查看通过任务" : "查看拒绝任务";
+                    const tip =
+                      active.status === "accepted"
+                        ? "该账号所有好友通过记录已归档到任务列表，点击查看"
+                        : "该账号所有好友拒绝记录已归档到任务列表，点击查看";
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 shrink-0 gap-1 px-2 text-xs text-muted-foreground hover:text-primary"
+                          >
+                            <Link to="/tasks/$taskId" params={{ taskId }}>
+                              <ScrollText className="h-3.5 w-3.5" />
+                              {label}
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{tip}</TooltipContent>
+                      </Tooltip>
+                    );
+                  })()}
+                </div>
+              </div>
+
+
+              <ScrollArea className="flex-1">
+                <div className="space-y-4 p-4">
+                  {/* 元信息 */}
+                  <div className="grid grid-cols-3 gap-3 text-xs">
+                    <MetaCell
+                      icon={<Users className="h-3.5 w-3.5" />}
+                      label="共同好友"
+                      value={String(active.mutualFriends)}
+                    />
+                    <MetaCell
+                      icon={<Sparkles className="h-3.5 w-3.5" />}
+                      label="来源"
+                      value={SOURCE_LABEL[active.source]}
+                    />
+                    <MetaCell
+                      icon={<MessageSquareText className="h-3.5 w-3.5" />}
+                      label="申请时间"
+                      value={active.requestedAt}
+                    />
+                  </div>
+
+                  {/* 申请留言 */}
+                  {active.requestText && (
+                    <div className="rounded-md border bg-muted/30 p-3">
+                      <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                        <MessageSquareText className="h-3 w-3" />
+                        申请留言 · {LANG_LABEL[active.peerLang]}
+                      </div>
+                      <div className="text-sm leading-relaxed">
+                        {active.requestText}
+                      </div>
+                      {active.requestTranslation && (
+                        <>
+                          <Separator className="my-2" />
+                          <div className="mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <Languages className="h-3 w-3" />
+                            中文翻译
+                          </div>
+                          <div className="text-sm leading-relaxed text-muted-foreground">
+                            {active.requestTranslation}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 已通过：欢迎语与备注 */}
+                  {active.status === "accepted" && (
+                    <>
+                      {active.welcomeZh && (
+                        <div className="rounded-md border p-3">
+                          <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                            通过时发送的欢迎语
+                          </div>
+                          <div className="text-sm">{active.welcomeZh}</div>
+                          {active.welcomeText &&
+                            active.welcomeText !== active.welcomeZh && (
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                → {active.welcomeText}
+                              </div>
+                            )}
+                        </div>
+                      )}
+                      <MetaLine
+                        label="成为好友时间"
+                        value={active.decidedAt ?? "—"}
+                      />
+                      {active.lastInteractAt && (
+                        <MetaLine
+                          label="最近互动"
+                          value={active.lastInteractAt}
+                        />
+                      )}
+                    </>
+                  )}
+
+                  {/* 已拒绝：平台事实说明 + 拒绝时间 + 对外说明 */}
+                  {active.status === "rejected" && (
+                    <>
+                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                        <Info className="mt-0.5 h-3.5 w-3.5 flex-none" />
+                        <div className="space-y-1 leading-relaxed">
+                          <div className="font-medium">
+                            关于「已拒绝」的平台事实
+                          </div>
+                          <div>
+                            多数平台拒绝后原申请即失效、不可复活。如需重新建立好友关系，请使用下方「主动向 TA 发起邀请」，或等待对方再次申请；若为误操作，可在拒绝后 5 秒内通过 Toast 中的「撤销」按钮回滚。
+                          </div>
+                        </div>
+                      </div>
+                      {active.decidedAt && (
+                        <MetaLine label="拒绝时间" value={active.decidedAt} />
+                      )}
+                      {active.watchlisted && (
+                        <div className="flex items-center gap-1.5 text-xs text-primary">
+                          <BellRing className="h-3.5 w-3.5" />
+                          已加入持续关注，对方再次申请将高亮提醒
+                        </div>
+                      )}
+                      {active.publicReasonZh && (
+                        <div className="rounded-md border p-3">
+                          <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                            拒绝时对外发送的说明
+                          </div>
+                          <div className="text-sm">{active.publicReasonZh}</div>
+                          {active.publicReasonText &&
+                            active.publicReasonText !== active.publicReasonZh && (
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                → {active.publicReasonText}
+                              </div>
+                            )}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* 内部备注 */}
+                  {(active.status !== "pending" || active.note) && (
+                    <div className="rounded-md border border-dashed p-3">
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <span className="text-[11px] font-medium text-muted-foreground">
+                          内部备注（仅自己可见）
+                        </span>
+                        {active.status === "accepted" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setNoteEditOpen(true)}
+                          >
+                            编辑
+                          </Button>
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {active.note || "暂无备注"}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+
+              {/* 底部操作栏 */}
+              <div className="flex items-center justify-end gap-2 border-t bg-muted/30 px-4 py-3">
+                {active.status === "pending" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRejectOpen(true)}
+                      className="gap-1.5"
+                    >
+                      <UserX className="h-3.5 w-3.5" />
+                      拒绝
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setApproveOpen(true)}
+                      className="gap-1.5"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" />
+                      通过
+                    </Button>
+                  </>
+                )}
+                {active.status === "accepted" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRemoveOpen(true)}
+                    className="gap-1.5 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    解除好友
+                  </Button>
+                )}
+                {active.status === "rejected" && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleWatchlist}
+                      className="gap-1.5"
+                    >
+                      {active.watchlisted ? (
+                        <>
+                          <BellRing className="h-3.5 w-3.5 text-primary" />
+                          取消关注
+                        </>
+                      ) : (
+                        <>
+                          <Bell className="h-3.5 w-3.5" />
+                          标记持续关注
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={invitePeer}
+                      className="gap-1.5"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      主动向 TA 发起邀请
+                    </Button>
+                  </>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
+              <div>
+                <UserPlus className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                请选择一条好友申请查看详情
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {active && (
+        <>
+          <ApproveDialog
+            open={approveOpen}
+            onOpenChange={setApproveOpen}
+            request={active}
+            onConfirm={approve}
+          />
+          <RejectDialog
+            open={rejectOpen}
+            onOpenChange={setRejectOpen}
+            request={active}
+            onConfirm={reject}
+          />
+          <NoteEditDialog
+            open={noteEditOpen}
+            onOpenChange={setNoteEditOpen}
+            defaultValue={active.note ?? ""}
+            onConfirm={(note) => {
+              patch(active.id, { note: note.trim() || undefined });
+              toast.success("备注已更新");
+              setNoteEditOpen(false);
+            }}
+          />
+          <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>确认解除好友关系？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  将解除与「{active.peerName}」的好友关系，该记录会从列表中移除，
+                  此操作不可撤销。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={removeFriend}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  确认解除
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
+    </div>
+  );
+}
+
+function UrgencyBadge({
+  urgency,
+}: {
+  urgency: "reapplied" | "overdue" | "watching";
+}) {
+  if (urgency === "reapplied") {
+    return (
+      <Badge
+        variant="outline"
+        className="h-4 gap-0.5 border-destructive/40 bg-destructive/10 px-1 text-[10px] font-normal text-destructive"
+      >
+        <AlertCircle className="h-2.5 w-2.5" />
+        再次申请
+      </Badge>
+    );
+  }
+  if (urgency === "overdue") {
+    return (
+      <Badge
+        variant="outline"
+        className="h-4 gap-0.5 border-warning/40 bg-warning/10 px-1 text-[10px] font-normal text-warning"
+      >
+        <Clock className="h-2.5 w-2.5" />
+        建议跟进
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      variant="outline"
+      className="h-4 gap-0.5 px-1 text-[10px] font-normal text-muted-foreground"
+    >
+      关注中
+    </Badge>
+  );
+}
+
+function StatusBadge({ status }: { status: FriendStatus }) {
+  if (status === "pending")
+    return (
+      <Badge className="border-warning/30 bg-warning/10 text-warning" variant="outline">
+        待处理
+      </Badge>
+    );
+  if (status === "accepted")
+    return (
+      <Badge className="border-success/30 bg-success/10 text-success" variant="outline">
+        好友
+      </Badge>
+    );
+  return (
+    <Badge className="border-muted text-muted-foreground" variant="outline">
+      已拒绝
+    </Badge>
+  );
+}
+
+function MetaCell({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-md border bg-muted/20 p-2">
+      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <div className="mt-0.5 text-sm font-medium">{value}</div>
+    </div>
+  );
+}
+
+function MetaLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+function ApproveDialog({
+  open,
+  onOpenChange,
+  request,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  request: FriendRequest;
+  onConfirm: (welcomeZh: string, note: string) => void;
+}) {
+  const [welcomeZh, setWelcomeZh] = useState("");
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    if (open) {
+      setWelcomeZh("");
+      setNote("");
+    }
+  }, [open]);
+
+  const preview =
+    welcomeZh.trim() && request.peerLang !== "zh"
+      ? translateZhTo(request.peerLang, welcomeZh.trim())
+      : "";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserCheck className="h-4 w-4 text-success" />
+            通过好友申请
+          </DialogTitle>
+          <DialogDescription>
+            通过后「{request.peerName}」将进入好友列表。可以附加欢迎语与内部备注（均为选填）。
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">对外欢迎语（中文，自动翻译发送）</Label>
+            <Textarea
+              value={welcomeZh}
+              onChange={(e) => setWelcomeZh(e.target.value)}
+              placeholder="例如：感谢添加～之后多交流"
+              rows={2}
+              className="text-sm"
+            />
+            {preview && (
+              <div className="rounded-md border border-dashed bg-muted/30 px-2 py-1.5 text-xs text-muted-foreground">
+                <span className="mr-1">→ {LANG_LABEL[request.peerLang]}：</span>
+                {preview}
+              </div>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">内部备注（仅自己可见）</Label>
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="例如：潜在合作对象，保持互动"
+              rows={2}
+              className="text-sm"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            取消
+          </Button>
+          <Button onClick={() => onConfirm(welcomeZh, note)}>确认通过</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RejectDialog({
+  open,
+  onOpenChange,
+  request,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  request: FriendRequest;
+  onConfirm: (publicReasonZh: string, note: string) => void;
+}) {
+  const PRESETS = [
+    "感谢你的关注！近期不便新增好友，欢迎继续互动交流。",
+    "抱歉，账号目前仅接受工作相关联系，感谢理解。",
+    "你好，暂不方便添加为好友，如有商务合作可通过私信联系。",
+  ];
+  const [publicReasonZh, setPublicReasonZh] = useState("");
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    if (open) {
+      setPublicReasonZh("");
+      setNote("");
+    }
+  }, [open]);
+
+  const preview =
+    publicReasonZh.trim() && request.peerLang !== "zh"
+      ? translateZhTo(request.peerLang, publicReasonZh.trim())
+      : "";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserX className="h-4 w-4 text-destructive" />
+            拒绝好友申请
+          </DialogTitle>
+          <DialogDescription>
+            拒绝后可选择性地发送对外说明；若留空则不通知对方，仅在平台内记录。
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">对外说明（中文，自动翻译发送给对方，选填）</Label>
+            </div>
+            <Textarea
+              value={publicReasonZh}
+              onChange={(e) => setPublicReasonZh(e.target.value)}
+              placeholder="留空则不通知对方；填写后将以对方语言礼貌发送"
+              rows={2}
+              className="text-sm"
+            />
+            <div className="flex flex-wrap gap-1">
+              {PRESETS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPublicReasonZh(p)}
+                  className="rounded-full border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent"
+                >
+                  {p.length > 14 ? p.slice(0, 14) + "…" : p}
+                </button>
+              ))}
+            </div>
+            {preview && (
+              <div className="rounded-md border border-dashed bg-muted/30 px-2 py-1.5 text-xs text-muted-foreground">
+                <span className="mr-1">→ {LANG_LABEL[request.peerLang]}：</span>
+                {preview}
+              </div>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">内部备注（仅自己可见，选填）</Label>
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="例如：疑似营销账号，暂不通过"
+              rows={2}
+              className="text-sm"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            取消
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => onConfirm(publicReasonZh, note)}
+          >
+            确认拒绝
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NoteEditDialog({
+  open,
+  onOpenChange,
+  defaultValue,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  defaultValue: string;
+  onConfirm: (note: string) => void;
+}) {
+  const [note, setNote] = useState(defaultValue);
+  useEffect(() => {
+    if (open) setNote(defaultValue);
+  }, [open, defaultValue]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>编辑内部备注</DialogTitle>
+          <DialogDescription>备注仅自己可见，不会发送给对方。</DialogDescription>
+        </DialogHeader>
+        <Textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={3}
+          className="text-sm"
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            取消
+          </Button>
+          <Button onClick={() => onConfirm(note)}>保存</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
