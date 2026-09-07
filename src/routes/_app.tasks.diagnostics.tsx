@@ -1240,7 +1240,8 @@ function TaskDiagnosticsPage() {
                       </Button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
