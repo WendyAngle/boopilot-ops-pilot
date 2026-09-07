@@ -458,6 +458,16 @@ export function failuresOf(rows: SubTaskRec[], f: DiagFilter) {
   );
 }
 
+/** 过程异常但最终成功的子任务（叠加失败原因筛选，按过程异常原因匹配） */
+export function recoveredOf(rows: SubTaskRec[], f: DiagFilter) {
+  return rows.filter(
+    (r) =>
+      r.state === "success" &&
+      r.stepFailures > 0 &&
+      (f.cause === "all" || r.recoveredCause === f.cause),
+  );
+}
+
 export interface Kpi {
   subTotal: number;
   failed: number;
@@ -466,18 +476,31 @@ export interface Kpi {
   avgDurationSec: number;
   retryRate: number;
   running: number;
+  /** 最终成功但过程中出现过失败动作/步骤的子任务数 */
+  recovered: number;
+  /** 隐性异常率 = 过程异常成功 / 成功子任务 */
+  recoveredRate: number;
+  /** 过程中失败的动作/步骤总数（仅统计最终成功的子任务） */
+  recoveredStepFails: number;
+  /** 最终「全部成功」但过程中出现过失败的父任务数 */
+  hiddenRiskTasks: number;
 }
 
 export function computeKpi(rows: SubTaskRec[], f: DiagFilter): Kpi {
   const settled = rows.filter((r) => r.state !== "running");
   const failed = failuresOf(rows, f);
-  const byTask = new Map<string, { ok: number; bad: number }>();
+  const recovered = recoveredOf(rows, f);
+  const byTask = new Map<string, { ok: number; bad: number; hidden: number }>();
   settled.forEach((r) => {
-    const e = byTask.get(r.taskId) ?? { ok: 0, bad: 0 };
+    const e = byTask.get(r.taskId) ?? { ok: 0, bad: 0, hidden: 0 };
     if (r.state === "failed") e.bad++;
-    else e.ok++;
+    else {
+      e.ok++;
+      if (r.stepFailures > 0) e.hidden++;
+    }
     byTask.set(r.taskId, e);
   });
+  const successCount = settled.filter((r) => r.state === "success").length;
   return {
     subTotal: rows.length,
     failed: failed.length,
@@ -490,8 +513,91 @@ export function computeKpi(rows: SubTaskRec[], f: DiagFilter): Kpi {
       ? (settled.filter((r) => r.retries > 0).length / settled.length) * 100
       : 0,
     running: rows.filter((r) => r.state === "running").length,
+    recovered: recovered.length,
+    recoveredRate: successCount ? (recovered.length / successCount) * 100 : 0,
+    recoveredStepFails: recovered.reduce((s, r) => s + r.stepFailures, 0),
+    hiddenRiskTasks: [...byTask.values()].filter((e) => e.bad === 0 && e.hidden > 0).length,
   };
 }
+
+/** 过程异常（最终成功）原因聚类 */
+export function buildRecoveredCauseCluster(recovered: SubTaskRec[]) {
+  const total = recovered.length || 1;
+  return CAUSE_ORDER.map((k) => {
+    const n = recovered.filter((r) => r.recoveredCause === k).length;
+    return { key: k, ...CAUSE_META[k], value: n, pct: (n / total) * 100 };
+  })
+    .filter((c) => c.value > 0)
+    .sort((a, b) => b.value - a.value);
+}
+
+/** 过程异常恢复方式分布 */
+export function buildRecoveryModeDist(recovered: SubTaskRec[]) {
+  const total = recovered.length || 1;
+  return RECOVERY_MODES.map((m) => {
+    const n = recovered.filter((r) => r.recoveryMode === m).length;
+    return { name: m as string, value: n, pct: (n / total) * 100 };
+  })
+    .filter((m) => m.value > 0)
+    .sort((a, b) => b.value - a.value);
+}
+
+/** 过程异常高发步骤 Top N */
+export function buildRecoveredStepDist(recovered: SubTaskRec[], topN = 6) {
+  const map = new Map<string, number>();
+  recovered.forEach((r) => map.set(r.recoveredStep, (map.get(r.recoveredStep) ?? 0) + 1));
+  const total = recovered.length || 1;
+  return [...map.entries()]
+    .map(([name, value]) => ({ name, value, pct: (value / total) * 100 }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, topN);
+}
+
+export interface HiddenRiskTaskRow {
+  taskId: string;
+  taskName: string;
+  category: TaskCategory;
+  platform: Platform;
+  total: number;
+  recovered: number;
+  stepFails: number;
+  hiddenRate: number;
+  topCause: CauseKey | null;
+  lastTs: number;
+}
+
+/** 最终「全部成功」但过程中出现过失败动作/步骤的父任务 */
+export function buildHiddenRiskTasks(
+  rows: SubTaskRec[],
+  f: DiagFilter,
+): HiddenRiskTaskRow[] {
+  const map = new Map<string, SubTaskRec[]>();
+  rows.forEach((r) => (map.get(r.taskId) ?? map.set(r.taskId, []).get(r.taskId)!).push(r));
+  const out: HiddenRiskTaskRow[] = [];
+  map.forEach((list, taskId) => {
+    const settled = list.filter((r) => r.state !== "running");
+    if (settled.length === 0) return;
+    if (settled.some((r) => r.state === "failed")) return; // 任务最终状态非成功
+    const rec = recoveredOf(settled, f);
+    if (rec.length === 0) return;
+    const causeCount = new Map<CauseKey, number>();
+    rec.forEach((r) => r.recoveredCause && causeCount.set(r.recoveredCause, (causeCount.get(r.recoveredCause) ?? 0) + 1));
+    out.push({
+      taskId,
+      taskName: list[0].taskName,
+      category: list[0].category,
+      platform: list[0].platform,
+      total: settled.length,
+      recovered: rec.length,
+      stepFails: rec.reduce((s, r) => s + r.stepFailures, 0),
+      hiddenRate: (rec.length / settled.length) * 100,
+      topCause: [...causeCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
+      lastTs: Math.max(...rec.map((r) => r.ts)),
+    });
+  });
+  return out.sort((a, b) => b.stepFails - a.stepFails || b.hiddenRate - a.hiddenRate);
+}
+
 
 export function fmtDuration(sec: number) {
   const m = Math.floor(sec / 60);
