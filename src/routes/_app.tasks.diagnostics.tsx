@@ -396,9 +396,6 @@ function TaskDiagnosticsPage() {
         .map((c) => `"${String(c).replace(/"/g, '""')}"`)
         .join(",");
     });
-        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
-        .join(","),
-    );
     const blob = new Blob(["\uFEFF" + [head.join(","), ...lines].join("\n")], {
       type: "text/csv;charset=utf-8",
     });
