@@ -340,30 +340,6 @@ function AccountHealthPage() {
           </div>
         </Card>
 
-        {/* 处置入口 */}
-        <Card className="flex flex-wrap items-center gap-3 p-5 shadow-[var(--shadow-card)]">
-          <ShieldAlert className="h-5 w-5 text-primary" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">账号状态台账与人工处置</p>
-            <p className="text-xs text-muted-foreground">
-              账号状态明细、人工确认、登记处理与状态记录已统一并入「账号列表」，在列表中按处置状态筛选并完成闭环。
-            </p>
-          </div>
-          <Button asChild>
-            <Link to="/accounts/managed">
-              前往账号列表处置
-              {stats.todo > 0 && (
-                <Badge
-                  variant="outline"
-                  className="ml-1 rounded-full border-destructive/30 bg-destructive/10 px-1.5 text-[10px] text-destructive"
-                >
-                  {stats.todo}
-                </Badge>
-              )}
-            </Link>
-          </Button>
-        </Card>
-      </div>
     </>
   );
 }
