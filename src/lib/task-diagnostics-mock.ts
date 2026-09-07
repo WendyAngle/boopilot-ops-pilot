@@ -789,8 +789,7 @@ export function buildGoalRows(rows: SubTaskRec[], f: DiagFilter): GoalRow[] {
     .sort((a, b) => a.rate - b.rate);
 }
 
-    .sort((a, b) => a.rate - b.rate);
-}
+
 
 export const GOAL_RESULT_LABEL: Record<GoalRow["result"], string> = {
   success: "全部成功",
