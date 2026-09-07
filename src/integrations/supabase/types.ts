@@ -14,7 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          allowed_tenant_names: string[] | null
+          created_at: string
+          default_tenant_name: string | null
+          display_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_tenant_names?: string[] | null
+          created_at?: string
+          default_tenant_name?: string | null
+          display_name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_tenant_names?: string[] | null
+          created_at?: string
+          default_tenant_name?: string | null
+          display_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
