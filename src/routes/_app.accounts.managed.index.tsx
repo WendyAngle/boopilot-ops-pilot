@@ -129,8 +129,22 @@ import {
   COUNTRIES,
   seedManagedAccounts,
 } from "@/lib/managed-account-mock";
+import {
+  ConfirmStatusDialog,
+  HandleDialog,
+  TimelineSheet,
+} from "@/components/account-health-dialogs";
+import {
+  HANDLE_RESULTS,
+  HANDLE_STATE_CLS,
+  HANDLE_STATE_LABEL,
+  MARK_SOURCE_LABEL,
+  useAccountHealth,
+  type AccountHealthRecord,
+} from "@/lib/account-health-mock";
 
-
+/** 最近一次渲染的账号健康记录索引，供导出字段读取（mock 阶段的轻量共享） */
+let HEALTH_LOOKUP = new Map<string, AccountHealthRecord>();
 
 
 /* ===== 列表派生数据辅助 (与详情页保持一致：基于账号 id 稳定生成) ===== */
@@ -198,9 +212,25 @@ function ManagedAccountsPage() {
   const [tenantFilter, setTenantFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [pendingFilter, setPendingFilter] = useState("all");
-  
+  // 账号健康（原健康看板台账）筛选
+  const [healthTab, setHealthTab] = useState<
+    "all" | "toConfirm" | "todo" | "doing" | "done"
+  >("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [manualFilter, setManualFilter] = useState("all");
+  const [resultFilter, setResultFilter] = useState("all");
+
   const [expanded, setExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
+
+  // 账号健康记录：与账号列表按 accountId 对齐
+  const healthRecords = useAccountHealth();
+  const healthMap = useMemo(() => {
+    const m = new Map<string, AccountHealthRecord>();
+    for (const h of healthRecords) m.set(h.accountId, h);
+    HEALTH_LOOKUP = m;
+    return m;
+  }, [healthRecords]);
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -212,6 +242,30 @@ function ManagedAccountsPage() {
         return false;
       if (pendingFilter === "yes" && !r.pending) return false;
       if (pendingFilter === "no" && r.pending) return false;
+
+      const h = healthMap.get(r.id);
+      if (healthTab === "toConfirm" && h?.status !== "pending") return false;
+      if (
+        healthTab === "todo" &&
+        !(h?.needsManual && h.handleState === "todo")
+      )
+        return false;
+      if (
+        healthTab === "doing" &&
+        !(h?.needsManual && h.handleState === "doing")
+      )
+        return false;
+      if (
+        healthTab === "done" &&
+        !(h?.needsManual && h.handleState === "done")
+      )
+        return false;
+      if (sourceFilter !== "all" && h?.markSource !== sourceFilter) return false;
+      if (manualFilter === "yes" && !h?.needsManual) return false;
+      if (manualFilter === "no" && h?.needsManual) return false;
+      if (resultFilter !== "all" && h?.handleResult !== resultFilter)
+        return false;
+
       if (
         keyword &&
         !r.username.toLowerCase().includes(keyword.toLowerCase()) &&
@@ -229,8 +283,13 @@ function ManagedAccountsPage() {
     tenantFilter,
     statusFilter,
     pendingFilter,
-    
+    healthMap,
+    healthTab,
+    sourceFilter,
+    manualFilter,
+    resultFilter,
   ]);
+
 
   // 分页
   const [pageSize, setPageSize] = useState(10);
@@ -266,6 +325,10 @@ function ManagedAccountsPage() {
   const [interestFor, setInterestFor] = useState<ManagedAccount | null>(null);
   const [loginStatusDialogOpen, setLoginStatusDialogOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  // 账号健康处置弹窗
+  const [confirmRec, setConfirmRec] = useState<AccountHealthRecord | null>(null);
+  const [handleRecs, setHandleRecs] = useState<AccountHealthRecord[] | null>(null);
+  const [timelineRec, setTimelineRec] = useState<AccountHealthRecord | null>(null);
 
   // 统计
   const stats = useMemo(
@@ -280,14 +343,30 @@ function ManagedAccountsPage() {
     [rows],
   );
 
+  // 处置状态统计（基于健康记录）
+  const healthStats = useMemo(() => {
+    const list = rows.map((r) => healthMap.get(r.id)).filter(Boolean) as AccountHealthRecord[];
+    return {
+      toConfirm: list.filter((h) => h.status === "pending").length,
+      todo: list.filter((h) => h.needsManual && h.handleState === "todo").length,
+      doing: list.filter((h) => h.needsManual && h.handleState === "doing").length,
+      done: list.filter((h) => h.needsManual && h.handleState === "done").length,
+    };
+  }, [rows, healthMap]);
+
   const handleReset = () => {
     setKeyword("");
     setPlatformFilter("all");
     setTenantFilter("all");
     setStatusFilter("all");
     setPendingFilter("all");
+    setSourceFilter("all");
+    setManualFilter("all");
+    setResultFilter("all");
+    setHealthTab("all");
     setPage(1);
   };
+
 
   const openAdd = () => {
     setEditing(null);
@@ -483,13 +562,105 @@ function ManagedAccountsPage() {
                   </SelectContent>
                 </Select>
               </FormItem>
+              <FormItem label="状态标记来源">
+                <Select
+                  value={sourceFilter}
+                  onValueChange={(v) => {
+                    setSourceFilter(v);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部来源</SelectItem>
+                    <SelectItem value="system">系统标记</SelectItem>
+                    <SelectItem value="manual">人工确认</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+              <FormItem label="是否需人工处理">
+                <Select
+                  value={manualFilter}
+                  onValueChange={(v) => {
+                    setManualFilter(v);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部</SelectItem>
+                    <SelectItem value="yes">需人工处理</SelectItem>
+                    <SelectItem value="no">无需处理</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+              <FormItem label="处理结果">
+                <Select
+                  value={resultFilter}
+                  onValueChange={(v) => {
+                    setResultFilter(v);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部结果</SelectItem>
+                    {HANDLE_RESULTS.map((res) => (
+                      <SelectItem key={res} value={res}>
+                        {res}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormItem>
             </div>
+
           )}
         </div>
 
         {/* 工具栏 + 表格 */}
         <div className="min-w-0 overflow-hidden rounded-xl border bg-card shadow-[var(--shadow-card)]">
+          {/* 处置状态分组（原账号健康看板台账） */}
+          <div className="flex flex-wrap items-center gap-2 border-b p-4 pb-0">
+            <div className="flex flex-wrap gap-1 rounded-md bg-muted p-1 text-xs">
+              {(
+                [
+                  ["all", "全部账号"],
+                  ["toConfirm", `待人工确认 ${healthStats.toConfirm}`],
+                  ["todo", `待处理 ${healthStats.todo}`],
+                  ["doing", `处理中 ${healthStats.doing}`],
+                  ["done", `已处理 ${healthStats.done}`],
+                ] as const
+              ).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => {
+                    setHealthTab(k);
+                    setPage(1);
+                  }}
+                  className={cn(
+                    "rounded px-3 py-1 transition-colors",
+                    healthTab === k
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              功能受限 / 风控账号需人工介入，可在此登记处理并查看状态记录
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-2 border-b p-4">
+
             <Button onClick={openAdd}>
               <Plus className="h-4 w-4" />
               新增账号
@@ -540,6 +711,21 @@ function ManagedAccountsPage() {
               <Upload className="h-4 w-4" />
               批量导入
             </Button>
+            <Button
+              variant="outline"
+              disabled={selected.length === 0}
+              onClick={() =>
+                setHandleRecs(
+                  selected
+                    .map((id) => healthMap.get(id))
+                    .filter((h): h is AccountHealthRecord => !!h && h.needsManual),
+                )
+              }
+            >
+              <ShieldCheck className="h-4 w-4" />
+              批量标记已处理{selected.length > 0 && ` (${selected.length})`}
+            </Button>
+
             <Button
               variant="outline"
               className="border-primary/40 text-primary hover:text-primary"
@@ -659,6 +845,8 @@ function ManagedAccountsPage() {
                   pageRows.map((r) => {
                     const pm = PLATFORM_META[r.platform];
                     const sm = ACCOUNT_STATUS_META[r.accountStatus];
+                    const hr = healthMap.get(r.id);
+
                     const ipInfo = getIpForAccount(r);
                     const views = getViewsForAccount(r);
                     const dms = getDmsForAccount(r);
@@ -711,13 +899,28 @@ function ManagedAccountsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          <Badge
-                            variant="outline"
-                            className={cn("rounded-full font-medium", sm.cls)}
-                          >
-                            {sm.label}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge
+                              variant="outline"
+                              className={cn("rounded-full font-medium", sm.cls)}
+                            >
+                              {sm.label}
+                            </Badge>
+                            {hr?.needsManual && (
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "rounded-full text-[10px]",
+                                  HANDLE_STATE_CLS[hr.handleState],
+                                )}
+                                title={`${MARK_SOURCE_LABEL[hr.markSource]} · ${hr.statusNote}`}
+                              >
+                                {HANDLE_STATE_LABEL[hr.handleState]}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
+
                         <TableCell className="whitespace-nowrap">
                           {r.pending && (r.pending.msg > 0 || r.pending.friend > 0) ? (
                             <div className="flex flex-nowrap items-center gap-1.5">
@@ -864,7 +1067,29 @@ function ManagedAccountsPage() {
                                   更多
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuContent align="end" className="w-44">
+                                {hr && (
+                                  <>
+                                    {hr.status === "pending" && (
+                                      <DropdownMenuItem onClick={() => setConfirmRec(hr)}>
+                                        <ShieldCheck className="h-3.5 w-3.5" />
+                                        人工确认状态
+                                      </DropdownMenuItem>
+                                    )}
+                                    {hr.needsManual && (
+                                      <DropdownMenuItem onClick={() => setHandleRecs([hr])}>
+                                        <ClipboardPaste className="h-3.5 w-3.5" />
+                                        登记处理
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem onClick={() => setTimelineRec(hr)}>
+                                      <Clock className="h-3.5 w-3.5" />
+                                      状态记录
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                  </>
+                                )}
+
                                 <DropdownMenuItem
                                   onClick={() =>
                                     navigate({
@@ -1156,8 +1381,15 @@ function ManagedAccountsPage() {
           filteredRows={filtered}
         />
 
-
-
+        <ConfirmStatusDialog rec={confirmRec} onClose={() => setConfirmRec(null)} />
+        <HandleDialog
+          recs={handleRecs}
+          onClose={(done) => {
+            setHandleRecs(null);
+            if (done) setSelected([]);
+          }}
+        />
+        <TimelineSheet rec={timelineRec} onClose={() => setTimelineRec(null)} />
 
 
       </div>
@@ -2791,7 +3023,18 @@ const EXPORT_FIELDS: ExportField[] = [
   { key: "proxyGeo", label: "代理IP国家/地区", get: derivedProxyGeo },
   { key: "egressIp", label: "出口IP", get: (r) => { const h = hashNum(r.id) + 1; return `${10 + (h % 240)}.${h % 256}.${(h >> 8) % 256}.${(h >> 16) % 256}`; } },
   { key: "port", label: "端口", get: (r) => 10000 + (hashNum(r.id) % 50000) },
+  // 账号健康与处置
+  { key: "platformStatus", label: "平台侧状态", get: (r) => HEALTH_LOOKUP.get(r.id)?.platformStatus ?? "" },
+  { key: "markSource", label: "状态标记来源", get: (r) => { const h = HEALTH_LOOKUP.get(r.id); return h ? MARK_SOURCE_LABEL[h.markSource] : ""; } },
+  { key: "markedAt", label: "状态标记时间", get: (r) => HEALTH_LOOKUP.get(r.id)?.markedAt ?? "" },
+  { key: "needsManual", label: "需人工处理", get: (r) => { const h = HEALTH_LOOKUP.get(r.id); return h ? (h.needsManual ? "是" : "否") : ""; } },
+  { key: "handleState", label: "处理状态", get: (r) => { const h = HEALTH_LOOKUP.get(r.id); return h?.needsManual ? HANDLE_STATE_LABEL[h.handleState] : ""; } },
+  { key: "handleMethod", label: "处理方式", get: (r) => HEALTH_LOOKUP.get(r.id)?.handleMethod ?? "" },
+  { key: "handleResult", label: "处理结果", get: (r) => HEALTH_LOOKUP.get(r.id)?.handleResult ?? "" },
+  { key: "handler", label: "处理人", get: (r) => HEALTH_LOOKUP.get(r.id)?.handler ?? "" },
+  { key: "handledAt", label: "处理时间", get: (r) => HEALTH_LOOKUP.get(r.id)?.handledAt ?? "" },
 ];
+
 
 const DEFAULT_EXPORT_KEYS = [
   "platform", "username", "platformId", "accountStatus",
@@ -2905,6 +3148,11 @@ function ExportDialog({
                 { subtitle: "镜像实例", keys: ["imageInstanceId","imageInstanceName"] },
                 { subtitle: "代理 IP", keys: ["proxyIp","egressIp","port","proxyGeo"] },
               ] },
+              { title: "账号健康", groups: [
+                { subtitle: "状态", keys: ["platformStatus","markSource","markedAt","needsManual"] },
+                { subtitle: "处置", keys: ["handleState","handleMethod","handleResult","handler","handledAt"] },
+              ] },
+
             ] as { title: string; groups: { subtitle: string; keys: string[] }[] }[]).map((grp) => (
               <div key={grp.title}>
                 <div className="mb-1.5 text-xs font-medium text-muted-foreground">{grp.title}</div>
