@@ -339,7 +339,7 @@ function AccountHealthPage() {
             </table>
           </div>
         </Card>
-
+      </div>
     </>
   );
 }
