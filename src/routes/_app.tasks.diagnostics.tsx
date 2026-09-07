@@ -12,7 +12,9 @@ import {
   ListChecks,
   RotateCcw,
   Search,
+  ShieldAlert,
   Target,
+
   TrendingDown,
   TrendingUp,
   Users2,
@@ -81,12 +83,18 @@ import {
   buildCauseCluster,
   buildDistribution,
   buildGoalRows,
+  buildHiddenRiskTasks,
   buildMachineRank,
   buildProxyRank,
+  buildRecoveredCauseCluster,
+  buildRecoveredStepDist,
+  buildRecoveryModeDist,
   buildTrend,
   computeKpi,
   failuresOf,
+  recoveredOf,
   fmtDuration,
+
   fmtTs,
   getSubTasks,
   filterByTenant,
@@ -329,6 +337,13 @@ function TaskDiagnosticsPage() {
   const proxyRank = useMemo(() => buildProxyRank(scoped, filter), [scoped, filter]);
   const machineRank = useMemo(() => buildMachineRank(scoped, filter), [scoped, filter]);
   const goals = useMemo(() => buildGoalRows(scoped, filter), [scoped, filter]);
+  // 过程异常但最终成功（隐性风险）
+  const recovered = useMemo(() => recoveredOf(scoped, filter), [scoped, filter]);
+  const recoveredCauses = useMemo(() => buildRecoveredCauseCluster(recovered), [recovered]);
+  const recoveryModes = useMemo(() => buildRecoveryModeDist(recovered), [recovered]);
+  const recoveredSteps = useMemo(() => buildRecoveredStepDist(recovered), [recovered]);
+  const hiddenTasks = useMemo(() => buildHiddenRiskTasks(scoped, filter), [scoped, filter]);
+
 
   const pctDelta = (cur: number, before: number) =>
     before === 0 ? (cur === 0 ? 0 : 100) : ((cur - before) / before) * 100;
@@ -400,9 +415,10 @@ function TaskDiagnosticsPage() {
         return [g.taskName, g.goalType, TASK_CATEGORY_LABEL[g.category]]
           .some((v) => String(v).toLowerCase().includes(q));
       });
-      const head = ["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "执行中", "完成率", "任务结果"];
+      const head = ["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "过程异常但成功", "执行中", "完成率", "任务结果"];
       const lines = rows.map((g) =>
-        [g.taskName, TASK_CATEGORY_LABEL[g.category], g.platform, g.goalType, g.goalTotal, g.done, g.failed, g.running, `${g.rate.toFixed(0)}%`, GOAL_RESULT_LABEL[g.result]]
+        [g.taskName, TASK_CATEGORY_LABEL[g.category], g.platform, g.goalType, g.goalTotal, g.done, g.failed, g.recovered, g.running, `${g.rate.toFixed(0)}%`, GOAL_RESULT_LABEL[g.result]]
+
           .map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","),
       );
       downloadCsv("父任务目标完成度.csv", head, lines, rows.length);
@@ -582,7 +598,7 @@ function TaskDiagnosticsPage() {
         </Card>
 
         {/* KPI */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-4">
           <KpiCard
             title="子任务总数"
             value={kpi.subTotal.toLocaleString()}
@@ -607,6 +623,17 @@ function TaskDiagnosticsPage() {
             delta={pctDelta(kpi.partialTasks, kpiPrev.partialTasks)}
           />
           <KpiCard
+            title="过程异常但成功"
+            value={kpi.recovered.toLocaleString()}
+            delta={pctDelta(kpi.recovered, kpiPrev.recovered)}
+          />
+          <KpiCard
+            title="隐性异常率（异常成功/成功）"
+            value={kpi.recoveredRate.toFixed(1)}
+            unit="%"
+            delta={pctDelta(kpi.recoveredRate, kpiPrev.recoveredRate)}
+          />
+          <KpiCard
             title="平均耗时"
             value={fmtDuration(kpi.avgDurationSec)}
             delta={pctDelta(kpi.avgDurationSec, kpiPrev.avgDurationSec)}
@@ -618,6 +645,7 @@ function TaskDiagnosticsPage() {
             delta={pctDelta(kpi.retryRate, kpiPrev.retryRate)}
           />
         </div>
+
 
         {/* 智能诊断摘要 */}
         <Card className="border-primary/30 bg-primary/5 p-5">
@@ -634,7 +662,16 @@ function TaskDiagnosticsPage() {
                 <b>{summary.topCategory ? TASK_CATEGORY_LABEL[summary.topCategory.name as TaskCategory] : "-"}</b>；
                 Top 失败原因为 <b>{summary.topCause?.label}</b>（占 {summary.topCause?.pct.toFixed(0)}%），
                 典型发生在 <b>{summary.topStep?.name}</b> 步骤。
+                {kpi.recovered > 0 && (
+                  <>
+                    {" "}另有 <b className="text-warning">{kpi.recovered}</b> 个子任务最终成功，但过程中出现过{" "}
+                    <b className="text-warning">{kpi.recoveredStepFails}</b> 次失败的动作/步骤
+                    （隐性异常率 {kpi.recoveredRate.toFixed(1)}%），涉及{" "}
+                    <b>{kpi.hiddenRiskTasks}</b> 个最终判定成功的父任务，建议一并复盘。
+                  </>
+                )}
               </p>
+
               <div className="mt-4 grid gap-3 md:grid-cols-3">
                 {causes.slice(0, 3).map((c, i) => (
                   <div key={c.key} className="rounded-lg border bg-card p-3">
@@ -844,7 +881,162 @@ function TaskDiagnosticsPage() {
           </div>
         </Card>
 
+        {/* 过程异常但最终成功（隐性风险） */}
+        <Card className="border-warning/40 bg-warning/5 p-5 shadow-[var(--shadow-card)]">
+          <SectionHead
+            icon={ShieldAlert}
+            title="过程异常但最终成功"
+            sub="任务/子任务最终状态为成功，但执行过程中出现过失败的动作或步骤（自动重试、降级或换资源后跑通），属于易被忽略的隐性风险"
+          />
+
+          <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+            <MiniStat t="过程异常成功子任务" v={kpi.recovered.toLocaleString()} tone="text-warning" />
+            <MiniStat t="隐性异常率（异常成功/成功）" v={`${kpi.recoveredRate.toFixed(1)}%`} tone="text-warning" />
+            <MiniStat t="过程失败动作/步骤数" v={kpi.recoveredStepFails.toLocaleString()} />
+            <MiniStat t="隐性风险父任务数" v={String(kpi.hiddenRiskTasks)} />
+          </div>
+
+          {recovered.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              当前筛选范围内没有「过程异常但最终成功」的执行记录
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-4 xl:grid-cols-3">
+                <div className="rounded-lg border bg-card p-4">
+                  <p className="mb-2.5 text-xs font-medium text-muted-foreground">过程异常原因分布</p>
+                  <div className="space-y-2">
+                    {recoveredCauses.slice(0, 5).map((c) => (
+                      <div key={c.key}>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full" style={{ background: c.color }} />
+                            {c.label}
+                          </span>
+                          <span className="tabular-nums text-muted-foreground">
+                            {c.value} · {c.pct.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                          <div className="h-full rounded-full" style={{ width: `${c.pct}%`, background: c.color }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-card p-4">
+                  <p className="mb-2.5 text-xs font-medium text-muted-foreground">高发步骤 Top 6</p>
+                  <div className="space-y-2">
+                    {recoveredSteps.map((s, i) => (
+                      <button
+                        key={s.name}
+                        className="group w-full text-left"
+                        onClick={() => patch({ step: filter.step === s.name ? undefined : s.name })}
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className={cn(i === 0 && "font-medium text-warning")}>{s.name}</span>
+                          <span className="tabular-nums text-muted-foreground">
+                            {s.value} 次 · {s.pct.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all",
+                              i === 0 ? "bg-warning" : "bg-primary/60 group-hover:bg-primary",
+                            )}
+                            style={{
+                              width: `${recoveredSteps[0] ? (s.value / recoveredSteps[0].value) * 100 : 0}%`,
+                            }}
+                          />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-card p-4">
+                  <p className="mb-2.5 text-xs font-medium text-muted-foreground">恢复方式分布</p>
+                  <div className="space-y-2">
+                    {recoveryModes.map((m) => (
+                      <div key={m.name}>
+                        <div className="flex items-center justify-between text-xs">
+                          <span>{m.name}</span>
+                          <span className="tabular-nums text-muted-foreground">
+                            {m.value} · {m.pct.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                          <div className="h-full rounded-full bg-success/70" style={{ width: `${m.pct}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-3 border-t pt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    建议：优先复盘「自动重试成功」次数偏高的步骤，重试掩盖的瞬时异常若持续恶化，会直接转化为失败任务。
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
+                <table className="w-full min-w-[900px] text-sm">
+                  <thead>
+                    <tr className="border-b text-xs text-muted-foreground">
+                      {["任务名称", "业务类型", "平台", "子任务数", "过程异常子任务", "过程失败动作数", "隐性异常率", "主要过程异常原因", "最近发生"].map((t) => (
+                        <th key={t} className="px-3 py-2 text-left font-medium">{t}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {hiddenTasks.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-3 py-10 text-center text-sm text-muted-foreground">
+                          当前筛选条件下暂无「最终全部成功但过程有失败」的父任务
+                        </td>
+                      </tr>
+                    )}
+                    {hiddenTasks.slice(0, 8).map((t) => (
+                      <tr key={t.taskId} className="border-b border-border/60 last:border-0 hover:bg-muted/40">
+                        <td className="px-3 py-2">{t.taskName}</td>
+                        <td className="px-3 py-2">
+                          <Badge variant="outline" className={cn("text-[10px]", TASK_CATEGORY_CLS[t.category])}>
+                            {TASK_CATEGORY_LABEL[t.category]}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge variant="outline" className={cn("text-[10px]", PLATFORM_CHIP[t.platform])}>
+                            {t.platform}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 tabular-nums">{t.total}</td>
+                        <td className="px-3 py-2 tabular-nums text-warning">{t.recovered}</td>
+                        <td className="px-3 py-2 tabular-nums text-warning">{t.stepFails}</td>
+                        <td className="px-3 py-2 tabular-nums">{t.hiddenRate.toFixed(1)}%</td>
+                        <td className="px-3 py-2">
+                          {t.topCause ? (
+                            <Badge variant="outline" className="text-[10px]">{CAUSE_META[t.topCause].label}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">{fmtTs(t.lastTs)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {hiddenTasks.length > 8 && (
+                <p className="mt-2 text-right text-xs text-muted-foreground">
+                  共 {hiddenTasks.length} 个隐性风险父任务，当前展示前 8 个
+                </p>
+              )}
+            </>
+          )}
+        </Card>
+
         {/* 异常聚集：账号 / 代理 / 执行机 */}
+
         <Card className="p-5 shadow-[var(--shadow-card)]">
           <SectionHead
             icon={AlertTriangle}
@@ -907,7 +1099,7 @@ function TaskDiagnosticsPage() {
               </Button>
             }
           />
-          <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-5">
+          <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
             <MiniStat t="父任务总数" v={String(goals.length)} />
             <MiniStat t="目标总量" v={kpi.subTotal.toLocaleString()} />
             <MiniStat
@@ -920,7 +1112,9 @@ function TaskDiagnosticsPage() {
               v={`${kpi.subTotal ? ((goals.reduce((s, g) => s + g.done, 0) / kpi.subTotal) * 100).toFixed(1) : "0"}%`}
             />
             <MiniStat t="失败目标" v={String(kpi.failed)} tone="text-destructive" />
+            <MiniStat t="过程异常但成功" v={String(kpi.recovered)} tone="text-warning" />
           </div>
+
           <GoalTable rows={goals.slice(0, 8)} />
         </Card>
 
@@ -1104,7 +1298,7 @@ function GoalTable({ rows }: { rows: ReturnType<typeof buildGoalRows> }) {
       <table className="w-full min-w-[900px] text-sm">
         <thead>
           <tr className="border-b text-xs text-muted-foreground">
-            {["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "执行中", "完成率", "任务结果"].map((t) => (
+            {["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "过程异常但成功", "执行中", "完成率", "任务结果"].map((t) => (
               <th key={t} className="px-3 py-2 text-left font-medium">{t}</th>
             ))}
           </tr>
@@ -1112,7 +1306,7 @@ function GoalTable({ rows }: { rows: ReturnType<typeof buildGoalRows> }) {
         <tbody>
           {rows.length === 0 && (
             <tr>
-              <td colSpan={10} className="px-3 py-10 text-center text-sm text-muted-foreground">
+              <td colSpan={11} className="px-3 py-10 text-center text-sm text-muted-foreground">
                 当前筛选条件下暂无任务
               </td>
             </tr>
@@ -1134,7 +1328,15 @@ function GoalTable({ rows }: { rows: ReturnType<typeof buildGoalRows> }) {
               <td className="px-3 py-2 tabular-nums">{g.goalTotal}</td>
               <td className="px-3 py-2 tabular-nums text-success">{g.done}</td>
               <td className="px-3 py-2 tabular-nums text-destructive">{g.failed}</td>
+              <td className="px-3 py-2 tabular-nums">
+                {g.recovered > 0 ? (
+                  <span className="text-warning">{g.recovered}</span>
+                ) : (
+                  <span className="text-muted-foreground">0</span>
+                )}
+              </td>
               <td className="px-3 py-2 tabular-nums text-muted-foreground">{g.running}</td>
+
               <td className="w-40 px-3 py-2">
                 <div className="flex items-center gap-2">
                   <Progress value={g.rate} className="h-1.5" />
@@ -1143,9 +1345,15 @@ function GoalTable({ rows }: { rows: ReturnType<typeof buildGoalRows> }) {
                   </span>
                 </div>
               </td>
-              <td className="px-3 py-2">
+              <td className="whitespace-nowrap px-3 py-2">
                 <Badge variant="outline" className="text-[10px]">{GOAL_RESULT_LABEL[g.result]}</Badge>
+                {g.result === "success" && g.recovered > 0 && (
+                  <Badge variant="outline" className="ml-1 border-warning/40 bg-warning/10 text-[10px] text-warning">
+                    含过程异常
+                  </Badge>
+                )}
               </td>
+
             </tr>
           ))}
         </tbody>
