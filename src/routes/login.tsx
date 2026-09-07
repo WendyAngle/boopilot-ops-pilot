@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Cloud,
@@ -9,11 +9,17 @@ import {
   Sparkles,
   Workflow,
   Users2,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { login } from "@/lib/auth";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { signInWithEmail, signInWithGoogle } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createFileRoute("/login")({
@@ -34,15 +40,40 @@ const HIGHLIGHTS = [
 
 function LoginPage() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleCloudLogin = () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) {
+      toast.error("请输入邮箱与密码");
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
-      login("admin", "admin123");
-      toast.success("已通过博海身份云登录");
-      navigate({ to: "/" });
-    }, 500);
+    const res = await signInWithEmail(email.trim(), password);
+    setLoading(false);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success("登录成功");
+    navigate({ to: "/" });
+  };
+
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    const res = await signInWithGoogle();
+    setGoogleLoading(false);
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    if (res.redirected) return; // 浏览器跳转中
+    toast.success("已通过 Google 登录");
+    navigate({ to: "/" });
   };
 
   return (
@@ -78,6 +109,12 @@ function LoginPage() {
             BooPilot
           </span>
         </div>
+        <Link
+          to="/register"
+          className="text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          注册账号
+        </Link>
       </header>
 
       {/* Centered card */}
@@ -118,25 +155,88 @@ function LoginPage() {
               </p>
             </div>
 
+            <form onSubmit={handleLogin} className="mt-8 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">邮箱</Label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="请输入邮箱"
+                    className="h-11 rounded-xl bg-muted/40 pl-9"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">密码</Label>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPwd ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="请输入密码"
+                    className="h-11 rounded-xl bg-muted/40 pl-9 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPwd ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="group h-11 w-full justify-center rounded-xl text-sm font-medium text-primary-foreground"
+                style={{ background: "var(--gradient-primary)" }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    正在登录...
+                  </>
+                ) : (
+                  <>
+                    登录
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border/60" />
+              或
+              <span className="h-px flex-1 bg-border/60" />
+            </div>
+
             <Button
               type="button"
-              onClick={handleCloudLogin}
-              disabled={loading}
-              className="group mt-8 h-12 w-full justify-center rounded-xl text-base font-medium text-primary-foreground"
-              style={{ background: "var(--gradient-primary)" }}
+              variant="outline"
+              onClick={handleGoogle}
+              disabled={googleLoading}
+              className="h-11 w-full justify-center gap-2 rounded-xl"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  正在跳转身份云...
-                </>
+              {googleLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  <Cloud className="h-4 w-4" />
-                  身份云登录
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </>
+                <Cloud className="h-4 w-4" />
               )}
+              使用 Google 登录
             </Button>
 
             <div className="mt-5 flex items-center gap-2 rounded-xl border border-border/60 bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground">
