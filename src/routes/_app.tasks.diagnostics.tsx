@@ -407,7 +407,7 @@ function TaskDiagnosticsPage() {
     a.download = `任务诊断报告_${RANGE_LABEL[filter.range]}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
-    toast.success(`已导出 ${failed.length} 条失败明细`);
+    toast.success(`已导出 ${detailRows.length} 条异常明细`);
   };
 
   const exportViewAll = () => {
