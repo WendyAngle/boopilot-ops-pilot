@@ -379,16 +379,23 @@ function TaskDiagnosticsPage() {
 
   const exportReport = () => {
     const head = [
-      "子任务ID", "任务名称", "业务类型", "平台", "账号", "动作", "执行步骤",
+      "子任务ID", "明细类型", "任务名称", "业务类型", "平台", "账号", "动作", "执行步骤",
       "日志来源", "失败原因分类", "失败摘要", "日志级别", "耗时(秒)", "重试次数",
       "代理IP", "执行机", "失败时间",
     ];
-    const lines = failed.map((r) =>
-      [
-        r.id, r.taskName, TASK_CATEGORY_LABEL[r.category], r.platform, r.account, r.action,
-        r.step, r.logSource, r.cause ? CAUSE_META[r.cause].label : "", r.causeText,
-        r.level, r.durationSec, r.retries, r.proxyIp, r.machine, fmtTs(r.ts),
+    const lines = detailRows.map((r) => {
+      const isRec = r.state === "success" && r.stepFailures > 0;
+      const dCause = r.cause ?? r.recoveredCause;
+      return [
+        r.id, isRec ? "过程异常·已恢复" : "最终失败", r.taskName, TASK_CATEGORY_LABEL[r.category], r.platform, r.account,
+        isRec ? r.recoveredAction : r.action,
+        r.cause ? r.step : r.recoveredStep,
+        r.logSource, dCause ? CAUSE_META[dCause].label : "", r.causeText || r.recoveredText,
+        isRec ? "WARN" : r.level, r.durationSec, r.retries, r.proxyIp, r.machine, fmtTs(r.ts),
       ]
+        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+        .join(",");
+    });
         .map((c) => `"${String(c).replace(/"/g, '""')}"`)
         .join(","),
     );
