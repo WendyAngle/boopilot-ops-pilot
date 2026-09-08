@@ -410,29 +410,47 @@ export const healthActions = {
     id: string,
     input: { status: AccountStatus; platformStatus: string; note: string; by: string },
   ) {
-    state = state.map((r) =>
-      r.accountId !== id
-        ? r
-        : {
-            ...r,
-            status: input.status,
-            platformStatus: input.platformStatus,
-            statusNote: input.note,
-            markSource: "manual",
-            needsManual: isManualStatus(input.status),
-            handleState: isManualStatus(input.status) ? "todo" : "done",
-            markedAt: nowStr(),
-            timeline: [
-              ...r.timeline,
-              {
-                at: nowStr(),
-                text: `人工确认状态为「${input.platformStatus}」：${input.note}`,
-                by: input.by,
-              },
-            ],
+    const at = nowStr();
+    const manual = isManualStatus(input.status);
+    state = state.map((r) => {
+      if (r.accountId !== id) return r;
+      // 确认为非人工介入状态时，未闭环事项一并核销
+      const issues = manual
+        ? r.issues
+        : r.issues.map((it) =>
+            it.state === "done"
+              ? it
+              : {
+                  ...it,
+                  state: "done" as HandleState,
+                  result: "状态已核实" as HandleResult,
+                  handler: input.by,
+                  handledAt: at,
+                  note: "人工确认状态后核销",
+                },
+          );
+      return {
+        ...r,
+        status: input.status,
+        platformStatus: input.platformStatus,
+        statusNote: input.note,
+        markSource: "manual" as MarkSource,
+        needsManual: manual,
+        issues,
+        handleState: manual ? rollupHandleState(issues) : "done",
+        markedAt: at,
+        timeline: [
+          ...r.timeline,
+          {
+            at,
+            text: `人工确认状态为「${input.platformStatus}」：${input.note}`,
+            by: input.by,
           },
-    );
+        ],
+      };
+    });
     emit();
+
   },
   /**
    * 登记人工处理
