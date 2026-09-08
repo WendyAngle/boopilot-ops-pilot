@@ -217,10 +217,7 @@ function nowStr() {
 }
 
 function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
-  const needsManual =
-    a.accountStatus === "disabled" ||
-    a.accountStatus === "risk" ||
-    a.accountStatus === "loginFail";
+  const needsManual = isManualStatus(a.accountStatus);
   const pool = NOTE_POOL[a.platform];
   const statusNote =
     a.accountStatus === "disabled"
@@ -236,13 +233,16 @@ function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
             : "可登录，功能操作不受限";
   const markSource: MarkSource =
     a.accountStatus === "pending" ? "system" : i % 3 === 0 ? "manual" : "system";
+  // 待确认账号一律为「待确认/处理」，其余需人工介入的状态按 mock 分布
   const handleState: HandleState = !needsManual
     ? "done"
-    : i % 3 === 0
-      ? "done"
-      : i % 3 === 1
-        ? "doing"
-        : "todo";
+    : a.accountStatus === "pending"
+      ? "todo"
+      : i % 3 === 0
+        ? "done"
+        : i % 3 === 1
+          ? "doing"
+          : "todo";
   const methods = recommendMethods(a.platform, a.accountStatus);
   const markedAt = `${dayStr((i % 12) + 1)} ${pad(9 + (i % 9))}:${pad((i * 7) % 60)}`;
   const handler = OPERATORS[i % OPERATORS.length];
