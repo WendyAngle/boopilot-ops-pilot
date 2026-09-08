@@ -2593,38 +2593,43 @@ function ActiveTimeDialog({
 /* 禁/启用动作设置 弹窗                                         */
 /* ============================================================ */
 
+const ACTION_ICONS: Record<
+  AccountActionKey,
+  { icon: typeof ThumbsUp; color: string; bg: string }
+> = {
+  like: { icon: ThumbsUp, color: "text-sky-500", bg: "bg-sky-500/10" },
+  follow: { icon: UserPlus, color: "text-violet-500", bg: "bg-violet-500/10" },
+  comment: { icon: MessageSquare, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  addFriend: { icon: Users2, color: "text-amber-500", bg: "bg-amber-500/10" },
+  message: { icon: Send, color: "text-rose-500", bg: "bg-rose-500/10" },
+};
+
 function ActionToggleDialog({
   open,
   onOpenChange,
   count,
+  onSave,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   count: number;
+  onSave?: (actions: AccountActions) => void;
 }) {
-  const ACTIONS = [
-    { key: "nurture", label: "培育任务", icon: Pencil, color: "text-sky-500", bg: "bg-sky-500/10", desc: "包含浏览、点赞、关注等模拟真人行为的养号动作" },
-    { key: "post", label: "发帖任务", icon: FileText, color: "text-emerald-500", bg: "bg-emerald-500/10", desc: "执行内容发布、定时发帖等对外输出动作" },
-  ] as const;
+  const ACTIONS = ACCOUNT_ACTIONS.map((a) => ({ ...a, ...ACTION_ICONS[a.key] }));
 
-
-  const [states, setStates] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(ACTIONS.map((a) => [a.key, true])),
-  );
+  const [states, setStates] = useState<AccountActions>(() => defaultAccountActions());
 
   useEffect(() => {
-    if (open) {
-      setStates(Object.fromEntries(ACTIONS.map((a) => [a.key, true])));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (open) setStates(defaultAccountActions());
   }, [open]);
 
   const handleConfirm = () => {
-    const disabled = Object.entries(states).filter(([, v]) => !v).length;
+    const disabled = Object.values(states).filter((v) => !v).length;
+    onSave?.(states);
     toast.success("动作设置已保存", {
       description:
         count > 0
-          ? `已为 ${count} 个账号更新动作设置${disabled ? `,共禁用 ${disabled} 项` : ""}。`
+          ? `已为 ${count} 个账号更新动作设置${disabled ? `，共禁用 ${disabled} 项` : ""}。`
           : undefined,
     });
     onOpenChange(false);
