@@ -325,7 +325,7 @@ function ManagedAccountsPage() {
   const [loginStatusDialogOpen, setLoginStatusDialogOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   // 账号健康处置弹窗
-  const [confirmRec, setConfirmRec] = useState<AccountHealthRecord | null>(null);
+  
   const [handleRecs, setHandleRecs] = useState<AccountHealthRecord[] | null>(null);
   const [timelineRec, setTimelineRec] = useState<AccountHealthRecord | null>(null);
 
@@ -1358,7 +1358,7 @@ function ManagedAccountsPage() {
           filteredRows={filtered}
         />
 
-        <ConfirmStatusDialog rec={confirmRec} onClose={() => setConfirmRec(null)} />
+        
         <HandleDialog
           recs={handleRecs}
           onClose={(done) => {
