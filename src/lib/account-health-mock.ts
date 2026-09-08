@@ -41,6 +41,13 @@ export const PLATFORM_STATUS_MAP: Record<
     WhatsApp: "临时封禁 (Temporarily Banned)",
     Instagram: "暂停 (Suspended)",
   },
+  loginFail: {
+    Facebook: "无法登录 (Login Failed)",
+    Tiktok: "登录失败 (Login Failed)",
+    "Twitter/X": "登录失败 (Login Failed)",
+    WhatsApp: "无法登录 (Login Failed)",
+    Instagram: "登录失败 (Login Failed)",
+  },
   fail: {
     Facebook: "已禁用 (Disabled) / 已封禁 (Banned)",
     Tiktok: "永久封禁 (Permanent Ban)",
@@ -56,6 +63,7 @@ export const STATUS_EXPLAIN: Record<AccountStatus, string> = {
   normal: "可登录，功能操作不受限",
   disabled: "可登录，功能受限，可申诉或验证或等待期满【需要人工介入：处理并标记说明】",
   risk: "不可登录，可申诉或验证或等待期满【需要人工介入：处理并标记说明】",
+  loginFail: "无法登录，多为凭据失效、二次验证或设备/IP 异常【需要人工介入：处理并标记说明】",
   fail: "永久封号，不可申诉",
 };
 
@@ -117,6 +125,7 @@ export function recommendMethods(
     if (platform === "WhatsApp") return ["等待期满", "更换官方 App"];
     return ["等待期满", "发起申诉"];
   }
+  if (status === "loginFail") return ["换设备/IP 重登", "身份验证"];
   if (status === "fail") return ["停用账号"];
   return ["其他"];
 }
@@ -182,14 +191,19 @@ function nowStr() {
 }
 
 function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
-  const needsManual = a.accountStatus === "disabled" || a.accountStatus === "risk";
+  const needsManual =
+    a.accountStatus === "disabled" ||
+    a.accountStatus === "risk" ||
+    a.accountStatus === "loginFail";
   const pool = NOTE_POOL[a.platform];
   const statusNote =
     a.accountStatus === "disabled"
       ? pool.disabled[i % pool.disabled.length]
-      : a.accountStatus === "risk"
+        : a.accountStatus === "risk"
         ? pool.risk[i % pool.risk.length]
-        : a.accountStatus === "fail"
+        : a.accountStatus === "loginFail"
+          ? LOGIN_FAIL_NOTES[i % LOGIN_FAIL_NOTES.length]
+          : a.accountStatus === "fail"
           ? "永久封号，不可申诉"
           : a.accountStatus === "pending"
             ? "首次导入，待运营确认平台真实状态"
