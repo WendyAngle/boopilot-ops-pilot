@@ -131,7 +131,6 @@ import {
   seedManagedAccounts,
 } from "@/lib/managed-account-mock";
 import {
-  ConfirmStatusDialog,
   HandleDialog,
   TimelineSheet,
 } from "@/components/account-health-dialogs";
@@ -214,9 +213,9 @@ function ManagedAccountsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [pendingFilter, setPendingFilter] = useState("all");
   // 账号健康（原健康看板台账）筛选
-  const [healthTab, setHealthTab] = useState<
-    "all" | "toConfirm" | "todo" | "doing" | "done"
-  >("all");
+  const [healthTab, setHealthTab] = useState<"all" | "todo" | "doing" | "done">(
+    "all",
+  );
   const [sourceFilter, setSourceFilter] = useState("all");
   const [manualFilter, setManualFilter] = useState("all");
   const [resultFilter, setResultFilter] = useState("all");
@@ -245,7 +244,6 @@ function ManagedAccountsPage() {
       if (pendingFilter === "no" && r.pending) return false;
 
       const h = healthMap.get(r.id);
-      if (healthTab === "toConfirm" && h?.status !== "pending") return false;
       if (
         healthTab === "todo" &&
         !(h?.needsManual && h.handleState === "todo")
