@@ -164,7 +164,7 @@ function AccountHealthPage() {
           <StatCard title="功能受限" value={stats.disabled} icon={Power} tone="warning" />
           <StatCard title="风控" value={stats.risk} icon={AlertTriangle} tone="violet" />
           <StatCard title="账号被封" value={stats.fail} icon={XCircle} tone="destructive" />
-          <StatCard title="待人工处理" value={stats.todo} icon={ShieldAlert} tone="destructive" />
+          <StatCard title="待确认/处理" value={stats.todo} icon={ShieldAlert} tone="destructive" />
         </div>
 
         {/* 时间范围 */}

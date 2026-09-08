@@ -104,6 +104,7 @@ const LOGIN_FAIL_NOTES = [
 
 /** 附件表 2：申诉 / 恢复方式 */
 export const HANDLE_METHODS = [
+  "确认账号状态",
   "等待期满",
   "发起申诉",
   "身份验证",
@@ -114,14 +115,32 @@ export const HANDLE_METHODS = [
 ] as const;
 export type HandleMethod = (typeof HANDLE_METHODS)[number];
 
-export const HANDLE_RESULTS = ["已恢复", "仍受限", "永久封禁", "待观察"] as const;
+export const HANDLE_RESULTS = [
+  "修改账号状态",
+  "已恢复",
+  "仍受限",
+  "永久封禁",
+  "待观察",
+] as const;
 export type HandleResult = (typeof HANDLE_RESULTS)[number];
+
+/** 需要人工确认 / 处理的账号状态 */
+export const MANUAL_STATUSES: AccountStatus[] = [
+  "pending",
+  "disabled",
+  "risk",
+  "loginFail",
+];
+export function isManualStatus(s: AccountStatus) {
+  return MANUAL_STATUSES.includes(s);
+}
 
 /** 平台 + 状态 → 推荐恢复方式提示（附件表 2） */
 export function recommendMethods(
   platform: Platform,
   status: AccountStatus,
 ): HandleMethod[] {
+  if (status === "pending") return ["确认账号状态"];
   if (status === "disabled") {
     if (platform === "WhatsApp") return ["等待期满", "更换官方 App"];
     if (platform === "Twitter/X") return ["身份验证", "等待期满"];
@@ -145,7 +164,7 @@ export const MARK_SOURCE_LABEL: Record<MarkSource, string> = {
   manual: "人工确认",
 };
 export const HANDLE_STATE_LABEL: Record<HandleState, string> = {
-  todo: "待处理",
+  todo: "待确认/处理",
   doing: "处理中",
   done: "已处理",
 };
@@ -198,10 +217,7 @@ function nowStr() {
 }
 
 function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
-  const needsManual =
-    a.accountStatus === "disabled" ||
-    a.accountStatus === "risk" ||
-    a.accountStatus === "loginFail";
+  const needsManual = isManualStatus(a.accountStatus);
   const pool = NOTE_POOL[a.platform];
   const statusNote =
     a.accountStatus === "disabled"
@@ -217,13 +233,16 @@ function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
             : "可登录，功能操作不受限";
   const markSource: MarkSource =
     a.accountStatus === "pending" ? "system" : i % 3 === 0 ? "manual" : "system";
+  // 待确认账号一律为「待确认/处理」，其余需人工介入的状态按 mock 分布
   const handleState: HandleState = !needsManual
     ? "done"
-    : i % 3 === 0
-      ? "done"
-      : i % 3 === 1
-        ? "doing"
-        : "todo";
+    : a.accountStatus === "pending"
+      ? "todo"
+      : i % 3 === 0
+        ? "done"
+        : i % 3 === 1
+          ? "doing"
+          : "todo";
   const methods = recommendMethods(a.platform, a.accountStatus);
   const markedAt = `${dayStr((i % 12) + 1)} ${pad(9 + (i % 9))}:${pad((i * 7) % 60)}`;
   const handler = OPERATORS[i % OPERATORS.length];
@@ -288,16 +307,8 @@ export const healthActions = {
             platformStatus: input.platformStatus,
             statusNote: input.note,
             markSource: "manual",
-            needsManual:
-              input.status === "disabled" ||
-              input.status === "risk" ||
-              input.status === "loginFail",
-            handleState:
-              input.status === "disabled" ||
-              input.status === "risk" ||
-              input.status === "loginFail"
-                ? "todo"
-                : "done",
+            needsManual: isManualStatus(input.status),
+            handleState: isManualStatus(input.status) ? "todo" : "done",
             markedAt: nowStr(),
             timeline: [
               ...r.timeline,

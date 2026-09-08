@@ -131,7 +131,6 @@ import {
   seedManagedAccounts,
 } from "@/lib/managed-account-mock";
 import {
-  ConfirmStatusDialog,
   HandleDialog,
   TimelineSheet,
 } from "@/components/account-health-dialogs";
@@ -214,9 +213,9 @@ function ManagedAccountsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [pendingFilter, setPendingFilter] = useState("all");
   // 账号健康（原健康看板台账）筛选
-  const [healthTab, setHealthTab] = useState<
-    "all" | "toConfirm" | "todo" | "doing" | "done"
-  >("all");
+  const [healthTab, setHealthTab] = useState<"all" | "todo" | "doing" | "done">(
+    "all",
+  );
   const [sourceFilter, setSourceFilter] = useState("all");
   const [manualFilter, setManualFilter] = useState("all");
   const [resultFilter, setResultFilter] = useState("all");
@@ -245,7 +244,6 @@ function ManagedAccountsPage() {
       if (pendingFilter === "no" && r.pending) return false;
 
       const h = healthMap.get(r.id);
-      if (healthTab === "toConfirm" && h?.status !== "pending") return false;
       if (
         healthTab === "todo" &&
         !(h?.needsManual && h.handleState === "todo")
@@ -327,7 +325,7 @@ function ManagedAccountsPage() {
   const [loginStatusDialogOpen, setLoginStatusDialogOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   // 账号健康处置弹窗
-  const [confirmRec, setConfirmRec] = useState<AccountHealthRecord | null>(null);
+  
   const [handleRecs, setHandleRecs] = useState<AccountHealthRecord[] | null>(null);
   const [timelineRec, setTimelineRec] = useState<AccountHealthRecord | null>(null);
 
@@ -349,7 +347,6 @@ function ManagedAccountsPage() {
   const healthStats = useMemo(() => {
     const list = rows.map((r) => healthMap.get(r.id)).filter(Boolean) as AccountHealthRecord[];
     return {
-      toConfirm: list.filter((h) => h.status === "pending").length,
       todo: list.filter((h) => h.needsManual && h.handleState === "todo").length,
       doing: list.filter((h) => h.needsManual && h.handleState === "doing").length,
       done: list.filter((h) => h.needsManual && h.handleState === "done").length,
@@ -635,8 +632,7 @@ function ManagedAccountsPage() {
               {(
                 [
                   ["all", "全部账号"],
-                  ["toConfirm", `待人工确认 ${healthStats.toConfirm}`],
-                  ["todo", `待处理 ${healthStats.todo}`],
+                  ["todo", `待确认/处理 ${healthStats.todo}`],
                   ["doing", `处理中 ${healthStats.doing}`],
                   ["done", `已处理 ${healthStats.done}`],
                 ] as const
@@ -659,7 +655,7 @@ function ManagedAccountsPage() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              功能受限 / 风控 / 登录失败账号需人工介入，可在此登记处理并查看状态记录
+              待确认 / 功能受限 / 风控 / 登录失败账号需人工介入，可在此确认状态、登记处理并查看状态记录
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 border-b p-4">
@@ -726,7 +722,7 @@ function ManagedAccountsPage() {
               }
             >
               <ShieldCheck className="h-4 w-4" />
-              批量标记已处理{selected.length > 0 && ` (${selected.length})`}
+              批量确认/处理{selected.length > 0 && ` (${selected.length})`}
             </Button>
 
             <Button
@@ -1057,16 +1053,10 @@ function ManagedAccountsPage() {
                               <DropdownMenuContent align="end" className="w-44">
                                 {hr && (
                                   <>
-                                    {hr.status === "pending" && (
-                                      <DropdownMenuItem onClick={() => setConfirmRec(hr)}>
-                                        <ShieldCheck className="h-3.5 w-3.5" />
-                                        人工确认状态
-                                      </DropdownMenuItem>
-                                    )}
                                     {hr.needsManual && (
                                       <DropdownMenuItem onClick={() => setHandleRecs([hr])}>
                                         <ClipboardPaste className="h-3.5 w-3.5" />
-                                        登记处理
+                                        确认/登记处理
                                       </DropdownMenuItem>
                                     )}
                                     <DropdownMenuItem onClick={() => setTimelineRec(hr)}>
@@ -1368,7 +1358,7 @@ function ManagedAccountsPage() {
           filteredRows={filtered}
         />
 
-        <ConfirmStatusDialog rec={confirmRec} onClose={() => setConfirmRec(null)} />
+        
         <HandleDialog
           recs={handleRecs}
           onClose={(done) => {
