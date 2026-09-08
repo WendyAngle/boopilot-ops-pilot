@@ -279,17 +279,40 @@ function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
   const handler = OPERATORS[i % OPERATORS.length];
   const methods = recommendMethods(a.platform, a.accountStatus);
 
-  // —— 生成多个待处理事项：功能受限最多 3 条，风控/登录失败 1~2 条 ——
-  const issuePool = ISSUE_POOL[a.accountStatus];
-  const issueCount = !needsManual
+  // —— 生成多个待处理事项：同一账号内事项不重复，且与平台能力匹配 ——
+  const notApplicable: Record<Platform, string[]> = {
+    Facebook: [],
+    Tiktok: ["广告"],
+    "Twitter/X": ["广告"],
+    WhatsApp: ["发帖", "评论", "广告"],
+    Instagram: ["广告"],
+  };
+  let issuePool = (ISSUE_POOL[a.accountStatus] ?? []).filter(
+    (p) => !notApplicable[a.platform].includes(p.scope),
+  );
+  // 风控：账号暂停即全功能不可用，不再拆分其他事项
+  if (a.accountStatus === "risk" && (i % 2 === 0)) {
+    issuePool = issuePool.filter((p) => p.scope === "全功能");
+  } else if (a.accountStatus === "risk") {
+    issuePool = issuePool.filter((p) => p.scope !== "全功能");
+  }
+  // 以账号索引轮转起点，取不重复的前 N 条
+  const offset = issuePool.length > 0 ? i % issuePool.length : 0;
+  const rotated = issuePool.map(
+    (_, k) => issuePool[(offset + k) % issuePool.length],
+  );
+  const wanted = !needsManual
     ? 0
     : a.accountStatus === "pending"
       ? 1
       : a.accountStatus === "disabled"
         ? (i % 3) + 1
         : (i % 2) + 1;
+  const picked = rotated.slice(0, Math.min(wanted, rotated.length));
+  const issueCount = picked.length;
   const issues: HealthIssue[] = Array.from({ length: issueCount }, (_, j) => {
-    const src = issuePool[(i + j * 2) % Math.max(1, issuePool.length)];
+    const src = picked[j];
+
     const st: HandleState =
       a.accountStatus === "pending"
         ? "todo"
