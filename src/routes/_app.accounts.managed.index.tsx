@@ -278,6 +278,18 @@ function ManagedAccountsPage() {
         return false;
 
       if (
+        tagFilter.length > 0 &&
+        !tagFilter.every((t) => (r.tags ?? []).includes(t))
+      )
+        return false;
+
+      if (actionFilter !== "all") {
+        const enabled = r.actions?.[actionFilter as AccountActionKey] ?? true;
+        if (actionStateFilter === "enabled" && !enabled) return false;
+        if (actionStateFilter === "disabled" && enabled) return false;
+      }
+
+      if (
         keyword &&
         !r.username.toLowerCase().includes(keyword.toLowerCase()) &&
         !r.platformId.includes(keyword) &&
@@ -299,6 +311,9 @@ function ManagedAccountsPage() {
     sourceFilter,
     manualFilter,
     resultFilter,
+    tagFilter,
+    actionFilter,
+    actionStateFilter,
   ]);
 
 
@@ -374,6 +389,9 @@ function ManagedAccountsPage() {
     setSourceFilter("all");
     setManualFilter("all");
     setResultFilter("all");
+    setTagFilter([]);
+    setActionFilter("all");
+    setActionStateFilter("enabled");
     setHealthTab("all");
     setPage(1);
   };
