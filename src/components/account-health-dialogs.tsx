@@ -26,6 +26,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
 import {
   ACCOUNT_STATUS_META,
@@ -42,6 +45,8 @@ import {
   type HandleMethod,
   type HandleResult,
   type HandleState,
+  HANDLE_STATE_LABEL,
+  HANDLE_STATE_CLS,
 } from "@/lib/account-health-mock";
 
 function FormItem({
@@ -77,6 +82,7 @@ export function HandleDialog({
   const [method, setMethod] = useState<HandleMethod | null>(null);
   const [result, setResult] = useState<HandleResult | null>(null);
   const [note, setNote] = useState("");
+  const [picked, setPicked] = useState<string[] | null>(null);
   const who = getCurrentUser()?.displayName ?? "当前用户";
 
   if (!recs) return null;
@@ -107,6 +113,9 @@ export function HandleDialog({
   const isConfirmOnly = methodValue === "确认账号状态";
   const defaultResult: HandleResult = isConfirmOnly ? "状态已核实" : "已恢复";
   const resultValue = isConfirmOnly ? "状态已核实" : (result ?? defaultResult);
+  const pickedIds =
+    picked ??
+    (single ? single.issues.filter((it) => it.state !== "done").map((it) => it.id) : []);
   const platformStatus = single
     ? PLATFORM_STATUS_MAP[confirmStatusValue][single.platform]
     : "";
@@ -151,6 +160,48 @@ export function HandleDialog({
                   </SelectContent>
                 </Select>
               </FormItem>
+              {single.issues.length > 0 && (
+                <FormItem label={`本次处理的待处理事项 *（共 ${single.issues.length} 项）`}>
+                  <div className="space-y-2 rounded-md border p-3">
+                    {single.issues.map((it) => {
+                      const checked = pickedIds.includes(it.id);
+                      return (
+                        <label
+                          key={it.id}
+                          className="flex cursor-pointer items-start gap-2 text-sm"
+                        >
+                          <Checkbox
+                            className="mt-0.5"
+                            checked={checked}
+                            onCheckedChange={(v) =>
+                              setPicked(
+                                v
+                                  ? [...pickedIds, it.id]
+                                  : pickedIds.filter((x) => x !== it.id),
+                              )
+                            }
+                          />
+                          <span className="flex-1">
+                            <span className="font-medium">{it.scope}</span>
+                            <Badge
+                              variant="outline"
+                              className={cn("ml-2 text-[11px]", HANDLE_STATE_CLS[it.state])}
+                            >
+                              {HANDLE_STATE_LABEL[it.state]}
+                            </Badge>
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              {it.desc}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    同一状态下可能存在多个受限项，可分次处置；全部事项闭环后账号才会变为「已处理」。
+                  </p>
+                </FormItem>
+              )}
             </>
           )}
           <FormItem label="处理状态 *">
@@ -241,9 +292,16 @@ export function HandleDialog({
                   result: resultValue,
                   note: note.trim(),
                   by: who,
+                  ...(single && single.issues.length > 0
+                    ? { issueIds: pickedIds }
+                    : {}),
                 },
               );
-              toast.success(`已登记 ${recs.length} 个账号的确认/处理记录`);
+              toast.success(
+                single && single.issues.length > 0
+                  ? `已登记 ${pickedIds.length} 项待处理事项的处置记录`
+                  : `已登记 ${recs.length} 个账号的确认/处理记录`,
+              );
               onClose(true);
             }}
           >
