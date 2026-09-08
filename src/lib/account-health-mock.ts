@@ -95,6 +95,13 @@ const NOTE_POOL: Record<Platform, { disabled: string[]; risk: string[] }> = {
   },
 };
 
+/** 登录失败的典型原因说明 */
+const LOGIN_FAIL_NOTES = [
+  "登录失败-Cookie 凭据已失效，需重新登录",
+  "登录失败-触发二次验证（短信/邮箱验证码）",
+  "登录失败-设备/IP 异常，被平台拒绝登录",
+];
+
 /** 附件表 2：申诉 / 恢复方式 */
 export const HANDLE_METHODS = [
   "等待期满",
@@ -281,9 +288,16 @@ export const healthActions = {
             platformStatus: input.platformStatus,
             statusNote: input.note,
             markSource: "manual",
-            needsManual: input.status === "disabled" || input.status === "risk",
+            needsManual:
+              input.status === "disabled" ||
+              input.status === "risk" ||
+              input.status === "loginFail",
             handleState:
-              input.status === "disabled" || input.status === "risk" ? "todo" : "done",
+              input.status === "disabled" ||
+              input.status === "risk" ||
+              input.status === "loginFail"
+                ? "todo"
+                : "done",
             markedAt: nowStr(),
             timeline: [
               ...r.timeline,
@@ -352,6 +366,7 @@ export const STATUS_ORDER: AccountStatus[] = [
   "normal",
   "disabled",
   "risk",
+  "loginFail",
   "fail",
 ];
 
@@ -360,6 +375,7 @@ export const STATUS_COLOR: Record<AccountStatus, string> = {
   normal: "var(--success)",
   disabled: "#E6A23C",
   risk: "#9B5CFF",
+  loginFail: "#F97316",
   fail: "var(--destructive)",
 };
 
@@ -385,6 +401,7 @@ function counts(records: AccountHealthRecord[]) {
     normal: 0,
     disabled: 0,
     risk: 0,
+    loginFail: 0,
     fail: 0,
   };
   records.forEach((r) => (c[r.status] += 1));
