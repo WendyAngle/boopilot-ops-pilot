@@ -1024,7 +1024,7 @@ export function UseTemplateDialog({ template, task, open, onOpenChange, onViewDe
                                   nurtureComment: hasValue,
                                 });
                               }}
-                              placeholder="推荐 3-5 个，以「；」分隔，推荐英文，如：travel；food；parenting"
+                              placeholder="推荐 3-5 个，以「；」分隔，推荐英文，如：LED screen；digital devices；knitwear；game console"
                               className="ml-9 h-8 w-[calc(100%-2.25rem)] text-xs"
                             />
                           </div>
