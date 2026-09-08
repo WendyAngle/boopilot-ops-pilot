@@ -722,7 +722,7 @@ function ManagedAccountsPage() {
               }
             >
               <ShieldCheck className="h-4 w-4" />
-              批量标记已处理{selected.length > 0 && ` (${selected.length})`}
+              批量确认/处理{selected.length > 0 && ` (${selected.length})`}
             </Button>
 
             <Button
@@ -1053,16 +1053,10 @@ function ManagedAccountsPage() {
                               <DropdownMenuContent align="end" className="w-44">
                                 {hr && (
                                   <>
-                                    {hr.status === "pending" && (
-                                      <DropdownMenuItem onClick={() => setConfirmRec(hr)}>
-                                        <ShieldCheck className="h-3.5 w-3.5" />
-                                        人工确认状态
-                                      </DropdownMenuItem>
-                                    )}
                                     {hr.needsManual && (
                                       <DropdownMenuItem onClick={() => setHandleRecs([hr])}>
                                         <ClipboardPaste className="h-3.5 w-3.5" />
-                                        登记处理
+                                        确认/登记处理
                                       </DropdownMenuItem>
                                     )}
                                     <DropdownMenuItem onClick={() => setTimelineRec(hr)}>
