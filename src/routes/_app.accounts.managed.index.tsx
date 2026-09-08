@@ -225,6 +225,12 @@ function ManagedAccountsPage() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [manualFilter, setManualFilter] = useState("all");
   const [resultFilter, setResultFilter] = useState("all");
+  // 标签 / 动作筛选
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [actionFilter, setActionFilter] = useState("all");
+  const [actionStateFilter, setActionStateFilter] = useState<"enabled" | "disabled">(
+    "enabled",
+  );
 
   const [expanded, setExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
@@ -1335,6 +1341,13 @@ function ManagedAccountsPage() {
           open={actionToggleOpen}
           onOpenChange={setActionToggleOpen}
           count={selected.length}
+          onSave={(actions) =>
+            setRows((prev) =>
+              prev.map((r) =>
+                selected.includes(r.id) ? { ...r, actions: { ...actions } } : r,
+              ),
+            )
+          }
         />
 
 
