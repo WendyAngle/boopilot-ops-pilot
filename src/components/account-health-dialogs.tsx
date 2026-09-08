@@ -270,6 +270,7 @@ export function HandleDialog({
             取消
           </Button>
           <Button
+            disabled={!!single && single.issues.length > 0 && pickedIds.length === 0}
             onClick={() => {
               // 单个账号：状态有变化或处理方式为「确认账号状态」时，先写入人工确认
               if (
@@ -331,7 +332,37 @@ export function TimelineSheet({
             {rec.username}（{rec.platformId}）· {rec.platform}
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 max-h-[80vh] space-y-5 overflow-y-auto pr-1">
+          {rec.issues.length > 0 && (
+            <div className="rounded-lg border p-3">
+              <div className="mb-2 text-xs font-semibold text-muted-foreground">
+                待处理事项（{rec.issues.filter((i) => i.state !== "done").length}/
+                {rec.issues.length} 未闭环）
+              </div>
+              <div className="space-y-2">
+                {rec.issues.map((it) => (
+                  <div key={it.id} className="text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{it.scope}</span>
+                      <Badge
+                        variant="outline"
+                        className={cn("text-[11px]", HANDLE_STATE_CLS[it.state])}
+                      >
+                        {HANDLE_STATE_LABEL[it.state]}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">{it.desc}</div>
+                    {it.method && (
+                      <div className="text-xs text-muted-foreground">
+                        {it.method} · {it.result} · {it.handler} · {it.handledAt}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="space-y-4">
           {rec.timeline.map((t, i) => (
             <div key={i} className="relative pl-6">
               <span className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-primary" />
@@ -344,6 +375,7 @@ export function TimelineSheet({
               </p>
             </div>
           ))}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
