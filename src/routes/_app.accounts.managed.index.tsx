@@ -347,7 +347,6 @@ function ManagedAccountsPage() {
   const healthStats = useMemo(() => {
     const list = rows.map((r) => healthMap.get(r.id)).filter(Boolean) as AccountHealthRecord[];
     return {
-      toConfirm: list.filter((h) => h.status === "pending").length,
       todo: list.filter((h) => h.needsManual && h.handleState === "todo").length,
       doing: list.filter((h) => h.needsManual && h.handleState === "doing").length,
       done: list.filter((h) => h.needsManual && h.handleState === "done").length,
@@ -633,8 +632,7 @@ function ManagedAccountsPage() {
               {(
                 [
                   ["all", "全部账号"],
-                  ["toConfirm", `待人工确认 ${healthStats.toConfirm}`],
-                  ["todo", `待处理 ${healthStats.todo}`],
+                  ["todo", `待确认/处理 ${healthStats.todo}`],
                   ["doing", `处理中 ${healthStats.doing}`],
                   ["done", `已处理 ${healthStats.done}`],
                 ] as const
@@ -657,7 +655,7 @@ function ManagedAccountsPage() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              功能受限 / 风控 / 登录失败账号需人工介入，可在此登记处理并查看状态记录
+              待确认 / 功能受限 / 风控 / 登录失败账号需人工介入，可在此确认状态、登记处理并查看状态记录
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 border-b p-4">
