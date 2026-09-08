@@ -24,6 +24,7 @@ import {
   MonitorSmartphone,
   UserPlus,
   ShieldCheck,
+  KeyRound,
   Clock,
   Sparkles,
   Server,
@@ -338,6 +339,7 @@ function ManagedAccountsPage() {
       pending: rows.filter((r) => r.accountStatus === "pending").length,
       risk: rows.filter((r) => r.accountStatus === "risk").length,
       disabled: rows.filter((r) => r.accountStatus === "disabled").length,
+      loginFail: rows.filter((r) => r.accountStatus === "loginFail").length,
       fail: rows.filter((r) => r.accountStatus === "fail").length,
     }),
     [rows],
@@ -448,12 +450,13 @@ function ManagedAccountsPage() {
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <StatCard title="账号总数" value={stats.total} icon={Users2} tone="primary" />
           <StatCard title="正常" value={stats.normal} icon={CheckCircle2} tone="success" />
           <StatCard title="待确认" value={stats.pending} icon={Clock} tone="warning" />
           <StatCard title="功能受限" value={stats.disabled} icon={Power} tone="warning" />
           <StatCard title="风控" value={stats.risk} icon={AlertTriangle} tone="warning" />
+          <StatCard title="登录失败" value={stats.loginFail} icon={KeyRound} tone="warning" />
           <StatCard title="账号被封" value={stats.fail} icon={XCircle} tone="destructive" />
         </div>
 
@@ -656,7 +659,7 @@ function ManagedAccountsPage() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              功能受限 / 风控账号需人工介入，可在此登记处理并查看状态记录
+              功能受限 / 风控 / 登录失败账号需人工介入，可在此登记处理并查看状态记录
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 border-b p-4">
@@ -2961,7 +2964,13 @@ const derivedCommentSentiment = (r: ManagedAccount) => COMMENT_SENTIMENT_POOL[ha
 const derivedCommentStyle = (r: ManagedAccount) => COMMENT_STYLE_POOL[(hashNum(r.id) + 3) % COMMENT_STYLE_POOL.length];
 
 const derivedCookieStatus = (r: ManagedAccount) =>
-  r.accountStatus === "fail" ? "已失效" : r.accountStatus === "risk" ? "风控待校验" : "有效";
+  r.accountStatus === "fail"
+    ? "已失效"
+    : r.accountStatus === "loginFail"
+      ? "登录失效"
+      : r.accountStatus === "risk"
+        ? "风控待校验"
+        : "有效";
 const derivedProxyIp = (r: ManagedAccount) => {
   const h = hashNum(r.id);
   return `${10 + (h % 240)}.${h % 256}.${(h >> 8) % 256}.${(h >> 16) % 256}`;
