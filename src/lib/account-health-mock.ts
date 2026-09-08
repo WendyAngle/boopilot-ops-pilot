@@ -434,7 +434,11 @@ export const healthActions = {
     );
     emit();
   },
-  /** 登记人工处理 */
+  /**
+   * 登记人工处理
+   * - 传 issueIds 时：只处置选中的事项，账号级状态由各事项汇总（rollup）
+   * - 不传时：视为处置该账号当前全部未闭环事项
+   */
   registerHandling(
     ids: string[],
     input: {
@@ -443,31 +447,54 @@ export const healthActions = {
       result: HandleResult;
       note: string;
       by: string;
+      issueIds?: string[];
     },
   ) {
     const set = new Set(ids);
-    state = state.map((r) =>
-      !set.has(r.accountId)
-        ? r
-        : {
-            ...r,
-            handleState: input.handleState,
-            handleMethod: input.method,
-            handleResult: input.result,
-            handleNote: input.note,
-            handler: input.by,
-            handledAt: nowStr(),
-            timeline: [
-              ...r.timeline,
-              {
-                at: nowStr(),
-                text: `${HANDLE_STATE_LABEL[input.handleState]} · ${input.method} · 结果：${input.result}${input.note ? ` · ${input.note}` : ""}`,
-                by: input.by,
-              },
-            ],
+    const at = nowStr();
+    state = state.map((r) => {
+      if (!set.has(r.accountId)) return r;
+      const pick = input.issueIds
+        ? new Set(input.issueIds)
+        : new Set(r.issues.filter((it) => it.state !== "done").map((it) => it.id));
+      const issues = r.issues.map((it) =>
+        !pick.has(it.id)
+          ? it
+          : {
+              ...it,
+              state: input.handleState,
+              method: input.method,
+              result: input.result,
+              note: input.note,
+              handler: input.by,
+              handledAt: at,
+            },
+      );
+      const touched = r.issues.filter((it) => pick.has(it.id));
+      const scopeText =
+        touched.length > 0 ? `【${touched.map((it) => it.scope).join("、")}】` : "";
+      const rolled = issues.length > 0 ? rollupHandleState(issues) : input.handleState;
+      return {
+        ...r,
+        issues,
+        handleState: rolled,
+        handleMethod: input.method,
+        handleResult: input.result,
+        handleNote: input.note,
+        handler: input.by,
+        handledAt: at,
+        timeline: [
+          ...r.timeline,
+          {
+            at,
+            text: `${scopeText}${HANDLE_STATE_LABEL[input.handleState]} · ${input.method} · 结果：${input.result}${input.note ? ` · ${input.note}` : ""}`,
+            by: input.by,
           },
-    );
+        ],
+      };
+    });
     emit();
+
   },
 };
 
