@@ -271,33 +271,102 @@ function nowStr() {
 function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
   const needsManual = isManualStatus(a.accountStatus);
   const pool = NOTE_POOL[a.platform];
-  const statusNote =
+  const markSource: MarkSource =
+    a.accountStatus === "pending" ? "system" : i % 3 === 0 ? "manual" : "system";
+  const markedAt = `${dayStr((i % 12) + 1)} ${pad(9 + (i % 9))}:${pad((i * 7) % 60)}`;
+  const handler = OPERATORS[i % OPERATORS.length];
+  const methods = recommendMethods(a.platform, a.accountStatus);
+
+  // —— 生成多个待处理事项：功能受限最多 3 条，风控/登录失败 1~2 条 ——
+  const issuePool = ISSUE_POOL[a.accountStatus];
+  const issueCount = !needsManual
+    ? 0
+    : a.accountStatus === "pending"
+      ? 1
+      : a.accountStatus === "disabled"
+        ? (i % 3) + 1
+        : (i % 2) + 1;
+  const issues: HealthIssue[] = Array.from({ length: issueCount }, (_, j) => {
+    const src = issuePool[(i + j * 2) % Math.max(1, issuePool.length)];
+    const st: HandleState =
+      a.accountStatus === "pending"
+        ? "todo"
+        : ((i + j) % 3 === 0 ? "done" : (i + j) % 3 === 1 ? "doing" : "todo");
+    const raisedAt = `${dayStr((i % 12) + 1)} ${pad(9 + ((i + j) % 9))}:${pad((i * 7 + j * 11) % 60)}`;
+    const method = methods[(i + j) % methods.length];
+    const who = OPERATORS[(i + j) % OPERATORS.length];
+    const issue: HealthIssue = {
+      id: `${a.id}-is-${j + 1}`,
+      scope: src?.scope ?? "账号状态",
+      desc: src?.desc ?? "需人工核实",
+      state: st,
+      raisedAt,
+    };
+    if (st !== "todo") {
+      issue.method = method;
+      issue.handler = who;
+      issue.handledAt = `${dayStr(i % 6)} ${pad(10 + ((i + j) % 8))}:${pad((i * 13 + j * 7) % 60)}`;
+      issue.result = st === "done" ? ((i + j) % 4 === 0 ? "仍受限" : "已恢复") : "待观察";
+      issue.note =
+        st === "done"
+          ? `${src?.scope ?? "该项"}已按「${method}」处置完成，平台侧已恢复校验`
+          : `已提交「${method}」，等待平台响应（预计 24~72 小时）`;
+    }
+    return issue;
+  });
+
+  const statusNote = needsManual
+    ? issues.length > 0
+      ? issues.map((it) => `${it.scope}：${it.desc}`).join("；")
+      : "需人工核实"
+    : a.accountStatus === "fail"
+      ? "永久封号，不可申诉"
+      : "可登录，功能操作不受限";
+  // 保留平台维度的原始说明，供导出/详情引用
+  const platformNote =
     a.accountStatus === "disabled"
       ? pool.disabled[i % pool.disabled.length]
-        : a.accountStatus === "risk"
+      : a.accountStatus === "risk"
         ? pool.risk[i % pool.risk.length]
         : a.accountStatus === "loginFail"
           ? LOGIN_FAIL_NOTES[i % LOGIN_FAIL_NOTES.length]
-          : a.accountStatus === "fail"
-          ? "永久封号，不可申诉"
-          : a.accountStatus === "pending"
-            ? "首次导入，待运营确认平台真实状态"
-            : "可登录，功能操作不受限";
-  const markSource: MarkSource =
-    a.accountStatus === "pending" ? "system" : i % 3 === 0 ? "manual" : "system";
-  // 待确认账号一律为「待确认/处理」，其余需人工介入的状态按 mock 分布
-  const handleState: HandleState = !needsManual
-    ? "done"
-    : a.accountStatus === "pending"
-      ? "todo"
-      : i % 3 === 0
-        ? "done"
-        : i % 3 === 1
-          ? "doing"
-          : "todo";
-  const methods = recommendMethods(a.platform, a.accountStatus);
-  const markedAt = `${dayStr((i % 12) + 1)} ${pad(9 + (i % 9))}:${pad((i * 7) % 60)}`;
-  const handler = OPERATORS[i % OPERATORS.length];
+          : statusNote;
+
+  const handleState: HandleState = needsManual ? rollupHandleState(issues) : "done";
+
+  const timeline: HealthTimelineItem[] = [
+    {
+      at: markedAt,
+      text: `${markSource === "system" ? "系统监测" : "人工确认"}标记为「${ACCOUNT_STATUS_TEXT[a.accountStatus]}」：${platformNote}`,
+      by: markSource === "system" ? "系统" : handler,
+    },
+  ];
+  if (needsManual && issues.length > 1) {
+    timeline.push({
+      at: markedAt,
+      text: `识别到 ${issues.length} 项待处理事项：${issues.map((it) => it.scope).join("、")}`,
+      by: "系统",
+    });
+  }
+  issues
+    .filter((it) => it.state !== "todo")
+    .sort((x, y) => (x.handledAt! < y.handledAt! ? -1 : 1))
+    .forEach((it) => {
+      timeline.push({
+        at: it.handledAt!,
+        text: `【${it.scope}】${HANDLE_STATE_LABEL[it.state]} · ${it.method} · 结果：${it.result}${it.note ? ` · ${it.note}` : ""}`,
+        by: it.handler!,
+      });
+    });
+  if (needsManual && handleState === "done" && issues.length > 0) {
+    const last = issues[issues.length - 1];
+    timeline.push({
+      at: last.handledAt ?? markedAt,
+      text: `全部 ${issues.length} 项事项已闭环，复核账号状态正常可用`,
+      by: handler,
+    });
+  }
+
   const rec: AccountHealthRecord = {
     accountId: a.id,
     platform: a.platform,
@@ -311,34 +380,24 @@ function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
     markSource,
     statusNote,
     needsManual,
-    handleState: needsManual ? handleState : "done",
+    handleState,
     markedAt,
-    timeline: [
-      {
-        at: markedAt,
-        text: `${markSource === "system" ? "系统监测" : "人工确认"}标记为「${statusNote}」`,
-        by: markSource === "system" ? "系统" : handler,
-      },
-    ],
+    issues,
+    timeline,
   };
-  if (needsManual && handleState !== "todo") {
-    rec.handleMethod = methods[i % methods.length];
-    rec.handler = handler;
-    rec.handledAt = `${dayStr(i % 6)} ${pad(10 + (i % 8))}:${pad((i * 13) % 60)}`;
-    rec.handleNote =
-      handleState === "done"
-        ? `已按「${rec.handleMethod}」处置完成`
-        : `已提交「${rec.handleMethod}」，等待平台响应`;
-    rec.handleResult =
-      handleState === "done" ? (i % 4 === 0 ? "仍受限" : "已恢复") : "待观察";
-    rec.timeline.push({
-      at: rec.handledAt,
-      text: `${HANDLE_STATE_LABEL[handleState]} · ${rec.handleMethod} · 结果：${rec.handleResult}`,
-      by: handler,
-    });
+
+  const handled = issues.filter((it) => it.state !== "todo");
+  const latest = handled[handled.length - 1];
+  if (latest) {
+    rec.handleMethod = latest.method;
+    rec.handleResult = latest.result;
+    rec.handleNote = latest.note;
+    rec.handler = latest.handler;
+    rec.handledAt = latest.handledAt;
   }
   return rec;
 }
+
 
 let state: AccountHealthRecord[] = seedManagedAccounts().map(buildRecord);
 const listeners = new Set<() => void>();
