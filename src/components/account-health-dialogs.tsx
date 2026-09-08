@@ -206,6 +206,7 @@ export function HandleDialog({
           <FormItem label="处理结果 *">
             <Select
               value={resultValue}
+              disabled={isConfirmOnly}
               onValueChange={(v) => setResult(v as HandleResult)}
             >
               <SelectTrigger>
@@ -219,7 +220,13 @@ export function HandleDialog({
                 ))}
               </SelectContent>
             </Select>
+            {isConfirmOnly && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                处理方式为「确认账号状态」时，结果固定为「状态已核实」，状态变更会自动写入时间线。
+              </p>
+            )}
           </FormItem>
+
           <FormItem label="处理说明">
             <Textarea
               rows={3}
