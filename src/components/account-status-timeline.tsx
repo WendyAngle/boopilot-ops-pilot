@@ -33,14 +33,14 @@ export function AccountStatusTimeline({ accountId }: { accountId: string }) {
         <div className="flex flex-wrap items-center gap-3">
           <div className="inline-flex items-center gap-2 text-sm font-semibold">
             <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-            当前状态
+            当前系统登记状态
           </div>
           <Badge variant="outline" className={cn("text-xs", statusMeta.cls)}>
             {statusMeta.label}
           </Badge>
 
           <span className="text-xs text-muted-foreground">
-            平台侧状态：{record.platformStatus}
+            平台账号状态：{record.platformStatus}
           </span>
           <Badge variant="outline" className="text-[11px]">
             {MARK_SOURCE_LABEL[record.markSource]}

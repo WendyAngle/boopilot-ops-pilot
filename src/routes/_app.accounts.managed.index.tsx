@@ -3099,7 +3099,7 @@ const EXPORT_FIELDS: ExportField[] = [
   { key: "egressIp", label: "出口IP", get: (r) => { const h = hashNum(r.id) + 1; return `${10 + (h % 240)}.${h % 256}.${(h >> 8) % 256}.${(h >> 16) % 256}`; } },
   { key: "port", label: "端口", get: (r) => 10000 + (hashNum(r.id) % 50000) },
   // 账号健康与处置
-  { key: "platformStatus", label: "平台侧状态", get: (r) => HEALTH_LOOKUP.get(r.id)?.platformStatus ?? "" },
+  { key: "platformStatus", label: "平台账号状态", get: (r) => HEALTH_LOOKUP.get(r.id)?.platformStatus ?? "" },
   { key: "markSource", label: "状态标记来源", get: (r) => { const h = HEALTH_LOOKUP.get(r.id); return h ? MARK_SOURCE_LABEL[h.markSource] : ""; } },
   { key: "markedAt", label: "状态标记时间", get: (r) => HEALTH_LOOKUP.get(r.id)?.markedAt ?? "" },
   { key: "needsManual", label: "需人工处理", get: (r) => { const h = HEALTH_LOOKUP.get(r.id); return h ? (h.needsManual ? "是" : "否") : ""; } },
