@@ -416,6 +416,7 @@ function ManagedAccountsPage() {
       const t = ACTIVE_TENANTS.find((x) => x.id === data.tenantId);
       const item: ManagedAccount = {
         id: `m-${Date.now()}`,
+        actions: defaultAccountActions(),
         platform: "Facebook",
         username: "",
         platformId: "",
