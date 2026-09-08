@@ -649,6 +649,55 @@ function ManagedAccountsPage() {
                   </SelectContent>
                 </Select>
               </FormItem>
+              <FormItem label="标签">
+                <TagMultiSelect
+                  value={tagFilter}
+                  onChange={(next) => {
+                    setTagFilter(next);
+                    setPage(1);
+                  }}
+                  allowCreate={false}
+                  placeholder="选择标签（可多选）"
+                />
+              </FormItem>
+              <FormItem label="动作">
+                <div className="flex gap-2">
+                  <Select
+                    value={actionFilter}
+                    onValueChange={(v) => {
+                      setActionFilter(v);
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部动作</SelectItem>
+                      {ACCOUNT_ACTIONS.map((a) => (
+                        <SelectItem key={a.key} value={a.key}>
+                          {a.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={actionStateFilter}
+                    onValueChange={(v) => {
+                      setActionStateFilter(v as "enabled" | "disabled");
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-[110px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="enabled">已启用</SelectItem>
+                      <SelectItem value="disabled">已禁用</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </FormItem>
             </div>
 
           )}
