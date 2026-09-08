@@ -204,16 +204,17 @@ const ISSUE_POOL: Record<AccountStatus, { scope: string; desc: string }[]> = {
   pending: [{ scope: "账号状态", desc: "首次导入，需核实平台真实状态" }],
   normal: [],
   disabled: [
-    { scope: "发帖", desc: "不可发布新帖（历史内容被判定违规）" },
-    { scope: "评论", desc: "评论受限，提交后对他人不可见" },
-    { scope: "私信", desc: "不可向新联系人发起私信" },
-    { scope: "加好友", desc: "好友 / 关注请求被限流" },
-    { scope: "广告", desc: "不可创建 Page 或投放广告" },
+    { scope: "私信", desc: "私信受限：不可向新联系人发起私信，群发被拦截" },
+    { scope: "评论", desc: "评论受限：评论提交后仅自己可见，他人不可见" },
+    { scope: "发帖", desc: "发帖受限：不可发布新帖（历史内容被判定违规）" },
+    { scope: "加好友", desc: "加好友受限：好友 / 关注请求被限流" },
+    { scope: "广告", desc: "广告受限：不可创建 Page 或投放广告" },
   ],
   risk: [
-    { scope: "登录", desc: "安全检查点，需完成身份验证后解锁" },
     { scope: "全功能", desc: "账号暂停，全部互动能力不可用" },
+    { scope: "登录", desc: "安全检查点，需完成身份验证后解锁" },
   ],
+
   loginFail: [
     { scope: "登录凭据", desc: "Cookie 凭据已失效，需重新登录" },
     { scope: "二次验证", desc: "触发短信 / 邮箱验证码校验" },
