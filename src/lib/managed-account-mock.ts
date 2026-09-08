@@ -73,6 +73,8 @@ export interface ManagedAccount {
   tenantName: string;
   createdAt: string;
   pending?: { msg: number; friend: number };
+  /** 可执行动作开关，默认全部开启 */
+  actions: AccountActions;
 }
 
 export const PLATFORMS: Platform[] = [
@@ -214,6 +216,13 @@ export function seedManagedAccounts(): ManagedAccount[] {
         20 - (i % 12),
       ).padStart(2, "0")}:${String((i * 7) % 60).padStart(2, "0")}`,
       pending,
+      // 默认全部开启；少量账号按运营风险关闭部分动作，便于演示筛选
+      actions: {
+        ...defaultAccountActions(),
+        ...(i % 6 === 0 ? { message: false } : {}),
+        ...(i % 8 === 0 ? { addFriend: false } : {}),
+        ...(i % 9 === 0 ? { comment: false } : {}),
+      },
     });
   }
   return rows;
