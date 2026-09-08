@@ -8,7 +8,7 @@ import {
   OPERATORS,
 } from "@/lib/managed-account-mock";
 
-/** 平台侧状态文案（附件表 1） */
+/** 平台账号状态文案：社媒平台侧展示的原始状态（附件表 1） */
 export const PLATFORM_STATUS_MAP: Record<
   AccountStatus,
   Record<Platform, string>
@@ -116,7 +116,7 @@ export const HANDLE_METHODS = [
 export type HandleMethod = (typeof HANDLE_METHODS)[number];
 
 export const HANDLE_RESULTS = [
-  "修改账号状态",
+  "状态已核实",
   "已恢复",
   "仍受限",
   "永久封禁",

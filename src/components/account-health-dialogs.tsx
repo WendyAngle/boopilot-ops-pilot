@@ -105,9 +105,9 @@ export function HandleDialog({
   const defaultMethod: HandleMethod =
     single && single.status === "pending" ? "确认账号状态" : "发起申诉";
   const methodValue = method ?? defaultMethod;
-  const defaultResult: HandleResult =
-    methodValue === "确认账号状态" ? "修改账号状态" : "已恢复";
-  const resultValue = result ?? defaultResult;
+  const isConfirmOnly = methodValue === "确认账号状态";
+  const defaultResult: HandleResult = isConfirmOnly ? "状态已核实" : "已恢复";
+  const resultValue = isConfirmOnly ? "状态已核实" : (result ?? defaultResult);
   const platformStatus = single
     ? PLATFORM_STATUS_MAP[confirmStatusValue][single.platform]
     : "";
@@ -127,15 +127,23 @@ export function HandleDialog({
         <div className="space-y-4">
           {single && (
             <>
-              <FormItem label="当前账号状态">
+              <FormItem label="当前系统登记状态">
                 <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
                   <span>{ACCOUNT_STATUS_META[curStatus].label}</span>
                   <span className="text-xs text-muted-foreground">
-                    平台侧：{single.platformStatus}
+                    运营系统内的统一状态口径
                   </span>
                 </div>
               </FormItem>
-              <FormItem label="人工确认账号状态 *">
+              <FormItem label={`平台账号状态（${single.platform}）`}>
+                <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                  <span>{single.platformStatus}</span>
+                  <span className="text-xs text-muted-foreground">
+                    平台侧巡检获取的原始状态文案
+                  </span>
+                </div>
+              </FormItem>
+              <FormItem label="人工确认后的系统状态 *">
                 <Select
                   value={confirmStatusValue}
                   onValueChange={(v) => setStatus(v as AccountStatus)}
@@ -153,12 +161,14 @@ export function HandleDialog({
                 </Select>
               </FormItem>
               <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
-                平台侧状态：<span className="text-foreground">{platformStatus}</span>
+                确认后对应平台状态：
+                <span className="text-foreground">{platformStatus}</span>
                 <br />
                 {STATUS_EXPLAIN[confirmStatusValue]}
               </div>
             </>
           )}
+
           {recommended.length > 0 && (
             <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
               建议处理方式：
@@ -196,6 +206,7 @@ export function HandleDialog({
           <FormItem label="处理结果 *">
             <Select
               value={resultValue}
+              disabled={isConfirmOnly}
               onValueChange={(v) => setResult(v as HandleResult)}
             >
               <SelectTrigger>
@@ -209,7 +220,13 @@ export function HandleDialog({
                 ))}
               </SelectContent>
             </Select>
+            {isConfirmOnly && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                处理方式为「确认账号状态」时，结果固定为「状态已核实」，状态变更会自动写入时间线。
+              </p>
+            )}
           </FormItem>
+
           <FormItem label="处理说明">
             <Textarea
               rows={3}
