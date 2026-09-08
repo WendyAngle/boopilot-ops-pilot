@@ -180,6 +180,55 @@ export interface HealthTimelineItem {
   by: string;
 }
 
+/**
+ * 待处理事项（issue）：同一账号状态下可能同时存在多个受限项，
+ * 例如「功能受限」可同时包含私信受限、评论受限，需要分别处置与追踪。
+ */
+export interface HealthIssue {
+  id: string;
+  /** 受影响能力，如 发帖 / 评论 / 私信 / 登录 */
+  scope: string;
+  desc: string;
+  state: HandleState;
+  method?: HandleMethod;
+  result?: HandleResult;
+  note?: string;
+  handler?: string;
+  raisedAt: string;
+  handledAt?: string;
+}
+
+/** 各状态下的典型待处理事项池（同一状态可命中多条） */
+const ISSUE_POOL: Record<AccountStatus, { scope: string; desc: string }[]> = {
+  pending: [{ scope: "账号状态", desc: "首次导入，需核实平台真实状态" }],
+  normal: [],
+  disabled: [
+    { scope: "发帖", desc: "不可发布新帖（历史内容被判定违规）" },
+    { scope: "评论", desc: "评论受限，提交后对他人不可见" },
+    { scope: "私信", desc: "不可向新联系人发起私信" },
+    { scope: "加好友", desc: "好友 / 关注请求被限流" },
+    { scope: "广告", desc: "不可创建 Page 或投放广告" },
+  ],
+  risk: [
+    { scope: "登录", desc: "安全检查点，需完成身份验证后解锁" },
+    { scope: "全功能", desc: "账号暂停，全部互动能力不可用" },
+  ],
+  loginFail: [
+    { scope: "登录凭据", desc: "Cookie 凭据已失效，需重新登录" },
+    { scope: "二次验证", desc: "触发短信 / 邮箱验证码校验" },
+    { scope: "设备/IP", desc: "设备或 IP 异常，被平台拒绝登录" },
+  ],
+  fail: [{ scope: "账号", desc: "永久封禁，不可申诉" }],
+};
+
+/** 由事项状态汇总账号级处理状态 */
+export function rollupHandleState(issues: HealthIssue[]): HandleState {
+  if (issues.length === 0) return "done";
+  if (issues.every((i) => i.state === "done")) return "done";
+  if (issues.some((i) => i.state === "doing")) return "doing";
+  return "todo";
+}
+
 export interface AccountHealthRecord {
   accountId: string;
   platform: Platform;
@@ -200,8 +249,11 @@ export interface AccountHealthRecord {
   handler?: string;
   markedAt: string;
   handledAt?: string;
+  /** 该账号当前状态下的多个待处理事项 */
+  issues: HealthIssue[];
   timeline: HealthTimelineItem[];
 }
+
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
