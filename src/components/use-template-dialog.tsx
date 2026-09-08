@@ -481,6 +481,44 @@ export function UseTemplateDialog({ template, task, open, onOpenChange, onViewDe
   const update = <K extends keyof DraftState>(key: K, value: DraftState[K]) =>
     setDraft((p) => (p ? { ...p, [key]: value } : p));
 
+  /** AI 生成搜索关键词：根据兴趣关键词 + 目标市场（所选账号国家）扩展 */
+  const handleAiGenerate = async (g: NurtureGroup) => {
+    const kw = g.nurtureInterestKeywords.trim();
+    if (!kw) {
+      toast.error("请先填写兴趣关键词，AI 将据此扩展生成搜索关键词");
+      return;
+    }
+    setAiGen((p) => ({ ...p, [g.id]: { loading: true, result: p[g.id]?.result ?? null } }));
+    try {
+      const markets = Array.from(
+        new Set(
+          seedManagedAccounts()
+            .filter((a) => draft.reachAccounts.includes(a.id))
+            .map((a) => a.country)
+            .filter(Boolean),
+        ),
+      );
+      const result = await generateNurtureKeywords({
+        data: { interestKeywords: kw, platform: draft.platforms[0], markets },
+      });
+      setDraft((d) =>
+        d
+          ? {
+              ...d,
+              nurtureGroups: d.nurtureGroups.map((x) =>
+                x.id === g.id ? { ...x, nurtureKeywords: result.searchQueries.join("；") } : x,
+              ),
+            }
+          : d,
+      );
+      setAiGen((p) => ({ ...p, [g.id]: { loading: false, result } }));
+      toast.success("AI 已根据兴趣关键词生成搜索关键词，可手动调整");
+    } catch (e) {
+      setAiGen((p) => ({ ...p, [g.id]: { loading: false, result: p[g.id]?.result ?? null } }));
+      toast.error(e instanceof Error ? e.message : "AI 生成失败，请稍后重试");
+    }
+  };
+
   const togglePlatform = (p: Platform) => {
     if (tpl.platforms.includes(p)) return; // locked by template
     update(
