@@ -69,7 +69,38 @@ export function AccountStatusTimeline({ accountId }: { accountId: string }) {
           <Field label="处理人" value={record.handler ?? "-"} />
           <Field label="处理时间" value={record.handledAt ?? "-"} />
         </dl>
+
+        {record.issues.length > 0 && (
+          <div className="mt-4 rounded-lg border p-3">
+            <div className="mb-2 text-xs font-semibold text-muted-foreground">
+              待处理事项（{record.issues.filter((i) => i.state !== "done").length}/
+              {record.issues.length} 未闭环）
+            </div>
+            <div className="space-y-2">
+              {record.issues.map((it) => (
+                <div key={it.id} className="text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{it.scope}</span>
+                    <Badge
+                      variant="outline"
+                      className={cn("text-[11px]", HANDLE_STATE_CLS[it.state])}
+                    >
+                      {HANDLE_STATE_LABEL[it.state]}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{it.desc}</span>
+                  </div>
+                  {it.method && (
+                    <div className="text-xs text-muted-foreground">
+                      {it.method} · {it.result} · {it.handler} · {it.handledAt}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
 
       <div className="rounded-xl border bg-card p-5 shadow-[var(--shadow-card)]">
         <div className="mb-4 inline-flex items-center gap-2 text-sm font-semibold">

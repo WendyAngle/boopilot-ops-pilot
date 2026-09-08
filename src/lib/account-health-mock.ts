@@ -1,6 +1,7 @@
 // 账号健康看板：状态映射、处置台账、趋势数据（前端 mock + 轻量 store）
 import { useSyncExternalStore } from "react";
 import {
+  ACCOUNT_STATUS_META,
   seedManagedAccounts,
   type AccountStatus,
   type ManagedAccount,
@@ -180,6 +181,55 @@ export interface HealthTimelineItem {
   by: string;
 }
 
+/**
+ * 待处理事项（issue）：同一账号状态下可能同时存在多个受限项，
+ * 例如「功能受限」可同时包含私信受限、评论受限，需要分别处置与追踪。
+ */
+export interface HealthIssue {
+  id: string;
+  /** 受影响能力，如 发帖 / 评论 / 私信 / 登录 */
+  scope: string;
+  desc: string;
+  state: HandleState;
+  method?: HandleMethod;
+  result?: HandleResult;
+  note?: string;
+  handler?: string;
+  raisedAt: string;
+  handledAt?: string;
+}
+
+/** 各状态下的典型待处理事项池（同一状态可命中多条） */
+const ISSUE_POOL: Record<AccountStatus, { scope: string; desc: string }[]> = {
+  pending: [{ scope: "账号状态", desc: "首次导入，需核实平台真实状态" }],
+  normal: [],
+  disabled: [
+    { scope: "发帖", desc: "不可发布新帖（历史内容被判定违规）" },
+    { scope: "评论", desc: "评论受限，提交后对他人不可见" },
+    { scope: "私信", desc: "不可向新联系人发起私信" },
+    { scope: "加好友", desc: "好友 / 关注请求被限流" },
+    { scope: "广告", desc: "不可创建 Page 或投放广告" },
+  ],
+  risk: [
+    { scope: "登录", desc: "安全检查点，需完成身份验证后解锁" },
+    { scope: "全功能", desc: "账号暂停，全部互动能力不可用" },
+  ],
+  loginFail: [
+    { scope: "登录凭据", desc: "Cookie 凭据已失效，需重新登录" },
+    { scope: "二次验证", desc: "触发短信 / 邮箱验证码校验" },
+    { scope: "设备/IP", desc: "设备或 IP 异常，被平台拒绝登录" },
+  ],
+  fail: [{ scope: "账号", desc: "永久封禁，不可申诉" }],
+};
+
+/** 由事项状态汇总账号级处理状态 */
+export function rollupHandleState(issues: HealthIssue[]): HandleState {
+  if (issues.length === 0) return "done";
+  if (issues.every((i) => i.state === "done")) return "done";
+  if (issues.some((i) => i.state === "doing")) return "doing";
+  return "todo";
+}
+
 export interface AccountHealthRecord {
   accountId: string;
   platform: Platform;
@@ -200,8 +250,11 @@ export interface AccountHealthRecord {
   handler?: string;
   markedAt: string;
   handledAt?: string;
+  /** 该账号当前状态下的多个待处理事项 */
+  issues: HealthIssue[];
   timeline: HealthTimelineItem[];
 }
+
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -219,33 +272,102 @@ function nowStr() {
 function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
   const needsManual = isManualStatus(a.accountStatus);
   const pool = NOTE_POOL[a.platform];
-  const statusNote =
+  const markSource: MarkSource =
+    a.accountStatus === "pending" ? "system" : i % 3 === 0 ? "manual" : "system";
+  const markedAt = `${dayStr((i % 12) + 1)} ${pad(9 + (i % 9))}:${pad((i * 7) % 60)}`;
+  const handler = OPERATORS[i % OPERATORS.length];
+  const methods = recommendMethods(a.platform, a.accountStatus);
+
+  // —— 生成多个待处理事项：功能受限最多 3 条，风控/登录失败 1~2 条 ——
+  const issuePool = ISSUE_POOL[a.accountStatus];
+  const issueCount = !needsManual
+    ? 0
+    : a.accountStatus === "pending"
+      ? 1
+      : a.accountStatus === "disabled"
+        ? (i % 3) + 1
+        : (i % 2) + 1;
+  const issues: HealthIssue[] = Array.from({ length: issueCount }, (_, j) => {
+    const src = issuePool[(i + j * 2) % Math.max(1, issuePool.length)];
+    const st: HandleState =
+      a.accountStatus === "pending"
+        ? "todo"
+        : ((i + j) % 3 === 0 ? "done" : (i + j) % 3 === 1 ? "doing" : "todo");
+    const raisedAt = `${dayStr((i % 12) + 1)} ${pad(9 + ((i + j) % 9))}:${pad((i * 7 + j * 11) % 60)}`;
+    const method = methods[(i + j) % methods.length];
+    const who = OPERATORS[(i + j) % OPERATORS.length];
+    const issue: HealthIssue = {
+      id: `${a.id}-is-${j + 1}`,
+      scope: src?.scope ?? "账号状态",
+      desc: src?.desc ?? "需人工核实",
+      state: st,
+      raisedAt,
+    };
+    if (st !== "todo") {
+      issue.method = method;
+      issue.handler = who;
+      issue.handledAt = `${dayStr(i % 6)} ${pad(10 + ((i + j) % 8))}:${pad((i * 13 + j * 7) % 60)}`;
+      issue.result = st === "done" ? ((i + j) % 4 === 0 ? "仍受限" : "已恢复") : "待观察";
+      issue.note =
+        st === "done"
+          ? `${src?.scope ?? "该项"}已按「${method}」处置完成，平台侧已恢复校验`
+          : `已提交「${method}」，等待平台响应（预计 24~72 小时）`;
+    }
+    return issue;
+  });
+
+  const statusNote = needsManual
+    ? issues.length > 0
+      ? issues.map((it) => `${it.scope}：${it.desc}`).join("；")
+      : "需人工核实"
+    : a.accountStatus === "fail"
+      ? "永久封号，不可申诉"
+      : "可登录，功能操作不受限";
+  // 保留平台维度的原始说明，供导出/详情引用
+  const platformNote =
     a.accountStatus === "disabled"
       ? pool.disabled[i % pool.disabled.length]
-        : a.accountStatus === "risk"
+      : a.accountStatus === "risk"
         ? pool.risk[i % pool.risk.length]
         : a.accountStatus === "loginFail"
           ? LOGIN_FAIL_NOTES[i % LOGIN_FAIL_NOTES.length]
-          : a.accountStatus === "fail"
-          ? "永久封号，不可申诉"
-          : a.accountStatus === "pending"
-            ? "首次导入，待运营确认平台真实状态"
-            : "可登录，功能操作不受限";
-  const markSource: MarkSource =
-    a.accountStatus === "pending" ? "system" : i % 3 === 0 ? "manual" : "system";
-  // 待确认账号一律为「待确认/处理」，其余需人工介入的状态按 mock 分布
-  const handleState: HandleState = !needsManual
-    ? "done"
-    : a.accountStatus === "pending"
-      ? "todo"
-      : i % 3 === 0
-        ? "done"
-        : i % 3 === 1
-          ? "doing"
-          : "todo";
-  const methods = recommendMethods(a.platform, a.accountStatus);
-  const markedAt = `${dayStr((i % 12) + 1)} ${pad(9 + (i % 9))}:${pad((i * 7) % 60)}`;
-  const handler = OPERATORS[i % OPERATORS.length];
+          : statusNote;
+
+  const handleState: HandleState = needsManual ? rollupHandleState(issues) : "done";
+
+  const timeline: HealthTimelineItem[] = [
+    {
+      at: markedAt,
+      text: `${markSource === "system" ? "系统监测" : "人工确认"}标记为「${ACCOUNT_STATUS_META[a.accountStatus].label}」：${platformNote}`,
+      by: markSource === "system" ? "系统" : handler,
+    },
+  ];
+  if (needsManual && issues.length > 1) {
+    timeline.push({
+      at: markedAt,
+      text: `识别到 ${issues.length} 项待处理事项：${issues.map((it) => it.scope).join("、")}`,
+      by: "系统",
+    });
+  }
+  issues
+    .filter((it) => it.state !== "todo")
+    .sort((x, y) => (x.handledAt! < y.handledAt! ? -1 : 1))
+    .forEach((it) => {
+      timeline.push({
+        at: it.handledAt!,
+        text: `【${it.scope}】${HANDLE_STATE_LABEL[it.state]} · ${it.method} · 结果：${it.result}${it.note ? ` · ${it.note}` : ""}`,
+        by: it.handler!,
+      });
+    });
+  if (needsManual && handleState === "done" && issues.length > 0) {
+    const last = issues[issues.length - 1];
+    timeline.push({
+      at: last.handledAt ?? markedAt,
+      text: `全部 ${issues.length} 项事项已闭环，复核账号状态正常可用`,
+      by: handler,
+    });
+  }
+
   const rec: AccountHealthRecord = {
     accountId: a.id,
     platform: a.platform,
@@ -259,34 +381,24 @@ function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
     markSource,
     statusNote,
     needsManual,
-    handleState: needsManual ? handleState : "done",
+    handleState,
     markedAt,
-    timeline: [
-      {
-        at: markedAt,
-        text: `${markSource === "system" ? "系统监测" : "人工确认"}标记为「${statusNote}」`,
-        by: markSource === "system" ? "系统" : handler,
-      },
-    ],
+    issues,
+    timeline,
   };
-  if (needsManual && handleState !== "todo") {
-    rec.handleMethod = methods[i % methods.length];
-    rec.handler = handler;
-    rec.handledAt = `${dayStr(i % 6)} ${pad(10 + (i % 8))}:${pad((i * 13) % 60)}`;
-    rec.handleNote =
-      handleState === "done"
-        ? `已按「${rec.handleMethod}」处置完成`
-        : `已提交「${rec.handleMethod}」，等待平台响应`;
-    rec.handleResult =
-      handleState === "done" ? (i % 4 === 0 ? "仍受限" : "已恢复") : "待观察";
-    rec.timeline.push({
-      at: rec.handledAt,
-      text: `${HANDLE_STATE_LABEL[handleState]} · ${rec.handleMethod} · 结果：${rec.handleResult}`,
-      by: handler,
-    });
+
+  const handled = issues.filter((it) => it.state !== "todo");
+  const latest = handled[handled.length - 1];
+  if (latest) {
+    rec.handleMethod = latest.method;
+    rec.handleResult = latest.result;
+    rec.handleNote = latest.note;
+    rec.handler = latest.handler;
+    rec.handledAt = latest.handledAt;
   }
   return rec;
 }
+
 
 let state: AccountHealthRecord[] = seedManagedAccounts().map(buildRecord);
 const listeners = new Set<() => void>();
@@ -298,31 +410,53 @@ export const healthActions = {
     id: string,
     input: { status: AccountStatus; platformStatus: string; note: string; by: string },
   ) {
-    state = state.map((r) =>
-      r.accountId !== id
-        ? r
-        : {
-            ...r,
-            status: input.status,
-            platformStatus: input.platformStatus,
-            statusNote: input.note,
-            markSource: "manual",
-            needsManual: isManualStatus(input.status),
-            handleState: isManualStatus(input.status) ? "todo" : "done",
-            markedAt: nowStr(),
-            timeline: [
-              ...r.timeline,
-              {
-                at: nowStr(),
-                text: `人工确认状态为「${input.platformStatus}」：${input.note}`,
-                by: input.by,
-              },
-            ],
+    const at = nowStr();
+    const manual = isManualStatus(input.status);
+    state = state.map((r) => {
+      if (r.accountId !== id) return r;
+      // 确认为非人工介入状态时，未闭环事项一并核销
+      const issues = manual
+        ? r.issues
+        : r.issues.map((it) =>
+            it.state === "done"
+              ? it
+              : {
+                  ...it,
+                  state: "done" as HandleState,
+                  result: "状态已核实" as HandleResult,
+                  handler: input.by,
+                  handledAt: at,
+                  note: "人工确认状态后核销",
+                },
+          );
+      return {
+        ...r,
+        status: input.status,
+        platformStatus: input.platformStatus,
+        statusNote: input.note,
+        markSource: "manual" as MarkSource,
+        needsManual: manual,
+        issues,
+        handleState: manual ? rollupHandleState(issues) : "done",
+        markedAt: at,
+        timeline: [
+          ...r.timeline,
+          {
+            at,
+            text: `人工确认状态为「${input.platformStatus}」：${input.note}`,
+            by: input.by,
           },
-    );
+        ],
+      };
+    });
     emit();
+
   },
-  /** 登记人工处理 */
+  /**
+   * 登记人工处理
+   * - 传 issueIds 时：只处置选中的事项，账号级状态由各事项汇总（rollup）
+   * - 不传时：视为处置该账号当前全部未闭环事项
+   */
   registerHandling(
     ids: string[],
     input: {
@@ -331,31 +465,54 @@ export const healthActions = {
       result: HandleResult;
       note: string;
       by: string;
+      issueIds?: string[];
     },
   ) {
     const set = new Set(ids);
-    state = state.map((r) =>
-      !set.has(r.accountId)
-        ? r
-        : {
-            ...r,
-            handleState: input.handleState,
-            handleMethod: input.method,
-            handleResult: input.result,
-            handleNote: input.note,
-            handler: input.by,
-            handledAt: nowStr(),
-            timeline: [
-              ...r.timeline,
-              {
-                at: nowStr(),
-                text: `${HANDLE_STATE_LABEL[input.handleState]} · ${input.method} · 结果：${input.result}${input.note ? ` · ${input.note}` : ""}`,
-                by: input.by,
-              },
-            ],
+    const at = nowStr();
+    state = state.map((r) => {
+      if (!set.has(r.accountId)) return r;
+      const pick = input.issueIds
+        ? new Set(input.issueIds)
+        : new Set(r.issues.filter((it) => it.state !== "done").map((it) => it.id));
+      const issues = r.issues.map((it) =>
+        !pick.has(it.id)
+          ? it
+          : {
+              ...it,
+              state: input.handleState,
+              method: input.method,
+              result: input.result,
+              note: input.note,
+              handler: input.by,
+              handledAt: at,
+            },
+      );
+      const touched = r.issues.filter((it) => pick.has(it.id));
+      const scopeText =
+        touched.length > 0 ? `【${touched.map((it) => it.scope).join("、")}】` : "";
+      const rolled = issues.length > 0 ? rollupHandleState(issues) : input.handleState;
+      return {
+        ...r,
+        issues,
+        handleState: rolled,
+        handleMethod: input.method,
+        handleResult: input.result,
+        handleNote: input.note,
+        handler: input.by,
+        handledAt: at,
+        timeline: [
+          ...r.timeline,
+          {
+            at,
+            text: `${scopeText}${HANDLE_STATE_LABEL[input.handleState]} · ${input.method} · 结果：${input.result}${input.note ? ` · ${input.note}` : ""}`,
+            by: input.by,
           },
-    );
+        ],
+      };
+    });
     emit();
+
   },
 };
 
