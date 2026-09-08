@@ -307,16 +307,8 @@ export const healthActions = {
             platformStatus: input.platformStatus,
             statusNote: input.note,
             markSource: "manual",
-            needsManual:
-              input.status === "disabled" ||
-              input.status === "risk" ||
-              input.status === "loginFail",
-            handleState:
-              input.status === "disabled" ||
-              input.status === "risk" ||
-              input.status === "loginFail"
-                ? "todo"
-                : "done",
+            needsManual: isManualStatus(input.status),
+            handleState: isManualStatus(input.status) ? "todo" : "done",
             markedAt: nowStr(),
             timeline: [
               ...r.timeline,
