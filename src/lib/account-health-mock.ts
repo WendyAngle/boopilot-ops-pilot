@@ -1,6 +1,7 @@
 // 账号健康看板：状态映射、处置台账、趋势数据（前端 mock + 轻量 store）
 import { useSyncExternalStore } from "react";
 import {
+  ACCOUNT_STATUS_META,
   seedManagedAccounts,
   type AccountStatus,
   type ManagedAccount,
@@ -337,7 +338,7 @@ function buildRecord(a: ManagedAccount, i: number): AccountHealthRecord {
   const timeline: HealthTimelineItem[] = [
     {
       at: markedAt,
-      text: `${markSource === "system" ? "系统监测" : "人工确认"}标记为「${ACCOUNT_STATUS_TEXT[a.accountStatus]}」：${platformNote}`,
+      text: `${markSource === "system" ? "系统监测" : "人工确认"}标记为「${ACCOUNT_STATUS_META[a.accountStatus].label}」：${platformNote}`,
       by: markSource === "system" ? "系统" : handler,
     },
   ];
