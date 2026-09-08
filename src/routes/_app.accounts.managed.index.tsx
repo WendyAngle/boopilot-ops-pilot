@@ -49,6 +49,8 @@ import {
   FileText,
   MapPin,
   Copy,
+  ThumbsUp,
+  Send,
   
 } from "lucide-react";
 import { toast } from "sonner";
@@ -129,6 +131,10 @@ import {
   PERSONAS,
   COUNTRIES,
   seedManagedAccounts,
+  ACCOUNT_ACTIONS,
+  defaultAccountActions,
+  type AccountActionKey,
+  type AccountActions,
 } from "@/lib/managed-account-mock";
 import {
   HandleDialog,
@@ -219,6 +225,12 @@ function ManagedAccountsPage() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [manualFilter, setManualFilter] = useState("all");
   const [resultFilter, setResultFilter] = useState("all");
+  // 标签 / 动作筛选
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [actionFilter, setActionFilter] = useState("all");
+  const [actionStateFilter, setActionStateFilter] = useState<"enabled" | "disabled">(
+    "enabled",
+  );
 
   const [expanded, setExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
@@ -266,6 +278,18 @@ function ManagedAccountsPage() {
         return false;
 
       if (
+        tagFilter.length > 0 &&
+        !tagFilter.every((t) => (r.tags ?? []).includes(t))
+      )
+        return false;
+
+      if (actionFilter !== "all") {
+        const enabled = r.actions?.[actionFilter as AccountActionKey] ?? true;
+        if (actionStateFilter === "enabled" && !enabled) return false;
+        if (actionStateFilter === "disabled" && enabled) return false;
+      }
+
+      if (
         keyword &&
         !r.username.toLowerCase().includes(keyword.toLowerCase()) &&
         !r.platformId.includes(keyword) &&
@@ -287,6 +311,9 @@ function ManagedAccountsPage() {
     sourceFilter,
     manualFilter,
     resultFilter,
+    tagFilter,
+    actionFilter,
+    actionStateFilter,
   ]);
 
 
@@ -362,6 +389,9 @@ function ManagedAccountsPage() {
     setSourceFilter("all");
     setManualFilter("all");
     setResultFilter("all");
+    setTagFilter([]);
+    setActionFilter("all");
+    setActionStateFilter("enabled");
     setHealthTab("all");
     setPage(1);
   };
@@ -386,6 +416,7 @@ function ManagedAccountsPage() {
       const t = ACTIVE_TENANTS.find((x) => x.id === data.tenantId);
       const item: ManagedAccount = {
         id: `m-${Date.now()}`,
+        actions: defaultAccountActions(),
         platform: "Facebook",
         username: "",
         platformId: "",
@@ -618,6 +649,55 @@ function ManagedAccountsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </FormItem>
+              <FormItem label="标签">
+                <TagMultiSelect
+                  value={tagFilter}
+                  onChange={(next) => {
+                    setTagFilter(next);
+                    setPage(1);
+                  }}
+                  allowCreate={false}
+                  placeholder="选择标签（可多选）"
+                />
+              </FormItem>
+              <FormItem label="动作">
+                <div className="flex gap-2">
+                  <Select
+                    value={actionFilter}
+                    onValueChange={(v) => {
+                      setActionFilter(v);
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部动作</SelectItem>
+                      {ACCOUNT_ACTIONS.map((a) => (
+                        <SelectItem key={a.key} value={a.key}>
+                          {a.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={actionStateFilter}
+                    onValueChange={(v) => {
+                      setActionStateFilter(v as "enabled" | "disabled");
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-[110px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="enabled">已启用</SelectItem>
+                      <SelectItem value="disabled">已禁用</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </FormItem>
             </div>
 
@@ -1329,6 +1409,13 @@ function ManagedAccountsPage() {
           open={actionToggleOpen}
           onOpenChange={setActionToggleOpen}
           count={selected.length}
+          onSave={(actions) =>
+            setRows((prev) =>
+              prev.map((r) =>
+                selected.includes(r.id) ? { ...r, actions: { ...actions } } : r,
+              ),
+            )
+          }
         />
 
 
@@ -2593,38 +2680,43 @@ function ActiveTimeDialog({
 /* 禁/启用动作设置 弹窗                                         */
 /* ============================================================ */
 
+const ACTION_ICONS: Record<
+  AccountActionKey,
+  { icon: typeof ThumbsUp; color: string; bg: string }
+> = {
+  like: { icon: ThumbsUp, color: "text-sky-500", bg: "bg-sky-500/10" },
+  follow: { icon: UserPlus, color: "text-violet-500", bg: "bg-violet-500/10" },
+  comment: { icon: MessageSquare, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  addFriend: { icon: Users2, color: "text-amber-500", bg: "bg-amber-500/10" },
+  message: { icon: Send, color: "text-rose-500", bg: "bg-rose-500/10" },
+};
+
 function ActionToggleDialog({
   open,
   onOpenChange,
   count,
+  onSave,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   count: number;
+  onSave?: (actions: AccountActions) => void;
 }) {
-  const ACTIONS = [
-    { key: "nurture", label: "培育任务", icon: Pencil, color: "text-sky-500", bg: "bg-sky-500/10", desc: "包含浏览、点赞、关注等模拟真人行为的养号动作" },
-    { key: "post", label: "发帖任务", icon: FileText, color: "text-emerald-500", bg: "bg-emerald-500/10", desc: "执行内容发布、定时发帖等对外输出动作" },
-  ] as const;
+  const ACTIONS = ACCOUNT_ACTIONS.map((a) => ({ ...a, ...ACTION_ICONS[a.key] }));
 
-
-  const [states, setStates] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(ACTIONS.map((a) => [a.key, true])),
-  );
+  const [states, setStates] = useState<AccountActions>(() => defaultAccountActions());
 
   useEffect(() => {
-    if (open) {
-      setStates(Object.fromEntries(ACTIONS.map((a) => [a.key, true])));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (open) setStates(defaultAccountActions());
   }, [open]);
 
   const handleConfirm = () => {
-    const disabled = Object.entries(states).filter(([, v]) => !v).length;
+    const disabled = Object.values(states).filter((v) => !v).length;
+    onSave?.(states);
     toast.success("动作设置已保存", {
       description:
         count > 0
-          ? `已为 ${count} 个账号更新动作设置${disabled ? `,共禁用 ${disabled} 项` : ""}。`
+          ? `已为 ${count} 个账号更新动作设置${disabled ? `，共禁用 ${disabled} 项` : ""}。`
           : undefined,
     });
     onOpenChange(false);

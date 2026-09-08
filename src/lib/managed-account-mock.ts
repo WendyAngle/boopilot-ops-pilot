@@ -19,6 +19,36 @@ export type AccountStatus =
   | "fail";
 export type DeviceType = "云机" | "Windows虚拟机";
 
+/** 账号可执行动作 */
+export type AccountActionKey =
+  | "like"
+  | "follow"
+  | "comment"
+  | "addFriend"
+  | "message";
+
+export const ACCOUNT_ACTIONS: { key: AccountActionKey; label: string; desc: string }[] = [
+  { key: "like", label: "点赞", desc: "对目标内容执行点赞互动" },
+  { key: "follow", label: "关注", desc: "关注目标账号，扩展社交关系" },
+  { key: "comment", label: "评论", desc: "在目标内容下发布评论" },
+  { key: "addFriend", label: "加好友", desc: "向目标账号发送好友申请" },
+  { key: "message", label: "私信", desc: "向目标账号发送私信触达" },
+];
+
+export const ACCOUNT_ACTION_KEYS = ACCOUNT_ACTIONS.map((a) => a.key);
+
+export type AccountActions = Record<AccountActionKey, boolean>;
+
+export function defaultAccountActions(): AccountActions {
+  return {
+    like: true,
+    follow: true,
+    comment: true,
+    addFriend: true,
+    message: true,
+  };
+}
+
 export interface ManagedAccount {
   id: string;
   platform: Platform;
@@ -43,6 +73,8 @@ export interface ManagedAccount {
   tenantName: string;
   createdAt: string;
   pending?: { msg: number; friend: number };
+  /** 可执行动作开关，默认全部开启 */
+  actions: AccountActions;
 }
 
 export const PLATFORMS: Platform[] = [
@@ -184,6 +216,13 @@ export function seedManagedAccounts(): ManagedAccount[] {
         20 - (i % 12),
       ).padStart(2, "0")}:${String((i * 7) % 60).padStart(2, "0")}`,
       pending,
+      // 默认全部开启；少量账号按运营风险关闭部分动作，便于演示筛选
+      actions: {
+        ...defaultAccountActions(),
+        ...(i % 6 === 0 ? { message: false } : {}),
+        ...(i % 8 === 0 ? { addFriend: false } : {}),
+        ...(i % 9 === 0 ? { comment: false } : {}),
+      },
     });
   }
   return rows;
