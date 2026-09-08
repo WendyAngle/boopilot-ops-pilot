@@ -49,6 +49,8 @@ import {
   FileText,
   MapPin,
   Copy,
+  ThumbsUp,
+  Send,
   
 } from "lucide-react";
 import { toast } from "sonner";
@@ -129,6 +131,10 @@ import {
   PERSONAS,
   COUNTRIES,
   seedManagedAccounts,
+  ACCOUNT_ACTIONS,
+  defaultAccountActions,
+  type AccountActionKey,
+  type AccountActions,
 } from "@/lib/managed-account-mock";
 import {
   HandleDialog,
