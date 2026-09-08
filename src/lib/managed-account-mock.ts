@@ -15,6 +15,7 @@ export type AccountStatus =
   | "pending"
   | "risk"
   | "disabled"
+  | "loginFail"
   | "fail";
 export type DeviceType = "云机" | "Windows虚拟机";
 
@@ -83,6 +84,10 @@ export const ACCOUNT_STATUS_META: Record<
     label: "风控",
     cls: "bg-warning/10 text-warning border-warning/30",
   },
+  loginFail: {
+    label: "登录失败",
+    cls: "bg-warning/10 text-warning border-warning/30",
+  },
   fail: {
     label: "账号被封",
     cls: "bg-destructive/10 text-destructive border-destructive/30",
@@ -130,6 +135,7 @@ export function seedManagedAccounts(): ManagedAccount[] {
       "pending",
       "risk",
       "disabled",
+      "loginFail",
       "fail",
     ];
     // 多数账号为「正常」，其余覆盖各种状态以便演示
