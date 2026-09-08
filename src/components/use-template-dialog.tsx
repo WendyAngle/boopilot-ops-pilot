@@ -1103,6 +1103,37 @@ export function UseTemplateDialog({ template, task, open, onOpenChange, onViewDe
                                 placeholder="点击AI生成或手动输入"
                                 className="min-h-[60px] text-xs"
                               />
+                              {aiGen[g.id]?.result && (
+                                <div className="space-y-1.5 rounded-md border border-primary/20 bg-primary/5 p-2 text-[11px]">
+                                  {aiGen[g.id]!.result!.persona && (
+                                    <div className="flex items-start gap-1.5">
+                                      <Target className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+                                      <p className="leading-relaxed text-muted-foreground">
+                                        <span className="font-medium text-foreground">目标客户画像：</span>
+                                        {aiGen[g.id]!.result!.persona}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {aiGen[g.id]!.result!.hashtags.length > 0 && (
+                                    <div className="flex items-start gap-1.5">
+                                      <Hash className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+                                      <p className="leading-relaxed text-muted-foreground">
+                                        <span className="font-medium text-foreground">话题标签：</span>
+                                        {aiGen[g.id]!.result!.hashtags.map((h) => `#${h}`).join(" ")}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {aiGen[g.id]!.result!.negativeKeywords.length > 0 && (
+                                    <div className="flex items-start gap-1.5">
+                                      <Ban className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />
+                                      <p className="leading-relaxed text-muted-foreground">
+                                        <span className="font-medium text-foreground">负向排除词：</span>
+                                        {aiGen[g.id]!.result!.negativeKeywords.join("、")}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
                           {/* 点赞 */}
