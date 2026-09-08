@@ -19,7 +19,7 @@ const SYSTEM_PROMPT = [
   "2. 输出必须是可直接用于社媒检索的语句，禁止营销文案。",
   "3. 不得编造用户未提供的产品信息，保持输出简洁。",
   "4. 固定输出以下四个模块：",
-  "   - persona: 目标客户画像（一句话，中文描述）",
+  "   - persona: 目标客户画像（必须是纯文本字符串，一句话中文概括，禁止输出对象或数组）",
   "   - searchQueries: 搜索语句数组（3-6 条，优先使用目标市场语言/英文）",
   "   - hashtags: 话题标签数组（3-6 个，不含 # 号）",
   "   - negativeKeywords: 负向排除词数组（2-5 个，用于排除无关/低质内容）",
@@ -85,8 +85,22 @@ export const generateNurtureKeywords = createServerFn({ method: "POST" })
     const asList = (v: unknown): string[] =>
       Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, 8) : [];
 
+    // 模型偶尔会把 persona 输出为对象/数组，这里兜底压缩为一句可读文本
+    const toText = (v: unknown, depth = 0): string => {
+      if (typeof v === "string") return v.trim();
+      if (typeof v === "number") return String(v);
+      if (Array.isArray(v)) return v.map((x) => toText(x, depth + 1)).filter(Boolean).slice(0, 6).join("、");
+      if (v && typeof v === "object" && depth < 2) {
+        return Object.entries(v as Record<string, unknown>)
+          .map(([k, val]) => `${k}: ${toText(val, depth + 1)}`)
+          .slice(0, 8)
+          .join("；");
+      }
+      return "";
+    };
+
     const result: NurtureKeywordResult = {
-      persona: typeof parsed.persona === "string" ? parsed.persona.trim() : "",
+      persona: toText(parsed.persona).slice(0, 300),
       searchQueries: asList(parsed.searchQueries),
       hashtags: asList(parsed.hashtags).map((h) => h.replace(/^#/, "")),
       negativeKeywords: asList(parsed.negativeKeywords),
