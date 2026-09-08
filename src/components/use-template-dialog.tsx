@@ -3,8 +3,9 @@ import { toast } from "sonner";
 import {
   BookmarkPlus, ExternalLink, Lock, Bot, MousePointerClick,
   Sparkles, Clock3, Target, Upload, Pencil, Search,
-  Eye, Heart, UserPlus, MessageSquare, Smile, Plus, Trash2, Copy,
+  Eye, Heart, UserPlus, MessageSquare, Smile, Plus, Trash2, Copy, Loader2, Ban, Hash,
 } from "lucide-react";
+import { generateNurtureKeywords, type NurtureKeywordResult } from "@/lib/nurture-keywords.functions";
 import { Switch } from "@/components/ui/switch";
 
 
@@ -355,6 +356,8 @@ export function UseTemplateDialog({ template, task, open, onOpenChange, onViewDe
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [accountSearch, setAccountSearch] = useState("");
   const [step, setStep] = useState(1);
+  /** 各养号策略组的 AI 生成状态（按组 id 记录） */
+  const [aiGen, setAiGen] = useState<Record<string, { loading: boolean; result: NurtureKeywordResult | null }>>({});
 
   useEffect(() => {
     if (!open) {
@@ -477,6 +480,44 @@ export function UseTemplateDialog({ template, task, open, onOpenChange, onViewDe
 
   const update = <K extends keyof DraftState>(key: K, value: DraftState[K]) =>
     setDraft((p) => (p ? { ...p, [key]: value } : p));
+
+  /** AI 生成搜索关键词：根据兴趣关键词 + 目标市场（所选账号国家）扩展 */
+  const handleAiGenerate = async (g: NurtureGroup) => {
+    const kw = g.nurtureInterestKeywords.trim();
+    if (!kw) {
+      toast.error("请先填写兴趣关键词，AI 将据此扩展生成搜索关键词");
+      return;
+    }
+    setAiGen((p) => ({ ...p, [g.id]: { loading: true, result: p[g.id]?.result ?? null } }));
+    try {
+      const markets = Array.from(
+        new Set(
+          seedManagedAccounts()
+            .filter((a) => draft.reachAccounts.includes(a.id))
+            .map((a) => a.country)
+            .filter(Boolean),
+        ),
+      );
+      const result = await generateNurtureKeywords({
+        data: { interestKeywords: kw, platform: draft.platforms[0], markets },
+      });
+      setDraft((d) =>
+        d
+          ? {
+              ...d,
+              nurtureGroups: d.nurtureGroups.map((x) =>
+                x.id === g.id ? { ...x, nurtureKeywords: result.searchQueries.join("；") } : x,
+              ),
+            }
+          : d,
+      );
+      setAiGen((p) => ({ ...p, [g.id]: { loading: false, result } }));
+      toast.success("AI 已根据兴趣关键词生成搜索关键词，可手动调整");
+    } catch (e) {
+      setAiGen((p) => ({ ...p, [g.id]: { loading: false, result: p[g.id]?.result ?? null } }));
+      toast.error(e instanceof Error ? e.message : "AI 生成失败，请稍后重试");
+    }
+  };
 
   const togglePlatform = (p: Platform) => {
     if (tpl.platforms.includes(p)) return; // locked by template
@@ -1042,10 +1083,15 @@ export function UseTemplateDialog({ template, task, open, onOpenChange, onViewDe
                                 <span className="text-[11px] text-muted-foreground">关键词</span>
                                 <button
                                   type="button"
-                                  className="inline-flex items-center gap-1 rounded-md border border-primary/30 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/5"
-                                  onClick={() => setGroup(idx, { nurtureKeywords: "travel" })}
+                                  disabled={aiGen[g.id]?.loading}
+                                  className="inline-flex items-center gap-1 rounded-md border border-primary/30 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                                  onClick={() => handleAiGenerate(g)}
                                 >
-                                  <Sparkles className="h-3 w-3" />AI 生成
+                                  {aiGen[g.id]?.loading ? (
+                                    <><Loader2 className="h-3 w-3 animate-spin" />生成中…</>
+                                  ) : (
+                                    <><Sparkles className="h-3 w-3" />AI 生成</>
+                                  )}
                                 </button>
                               </div>
                               <p className="text-[11px] leading-relaxed text-muted-foreground">
@@ -1057,6 +1103,37 @@ export function UseTemplateDialog({ template, task, open, onOpenChange, onViewDe
                                 placeholder="点击AI生成或手动输入"
                                 className="min-h-[60px] text-xs"
                               />
+                              {aiGen[g.id]?.result && (
+                                <div className="space-y-1.5 rounded-md border border-primary/20 bg-primary/5 p-2 text-[11px]">
+                                  {aiGen[g.id]!.result!.persona && (
+                                    <div className="flex items-start gap-1.5">
+                                      <Target className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+                                      <p className="leading-relaxed text-muted-foreground">
+                                        <span className="font-medium text-foreground">目标客户画像：</span>
+                                        {aiGen[g.id]!.result!.persona}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {aiGen[g.id]!.result!.hashtags.length > 0 && (
+                                    <div className="flex items-start gap-1.5">
+                                      <Hash className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+                                      <p className="leading-relaxed text-muted-foreground">
+                                        <span className="font-medium text-foreground">话题标签：</span>
+                                        {aiGen[g.id]!.result!.hashtags.map((h) => `#${h}`).join(" ")}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {aiGen[g.id]!.result!.negativeKeywords.length > 0 && (
+                                    <div className="flex items-start gap-1.5">
+                                      <Ban className="mt-0.5 h-3 w-3 shrink-0 text-destructive" />
+                                      <p className="leading-relaxed text-muted-foreground">
+                                        <span className="font-medium text-foreground">负向排除词：</span>
+                                        {aiGen[g.id]!.result!.negativeKeywords.join("、")}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
                           {/* 点赞 */}
