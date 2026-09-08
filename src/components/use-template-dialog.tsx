@@ -3,8 +3,9 @@ import { toast } from "sonner";
 import {
   BookmarkPlus, ExternalLink, Lock, Bot, MousePointerClick,
   Sparkles, Clock3, Target, Upload, Pencil, Search,
-  Eye, Heart, UserPlus, MessageSquare, Smile, Plus, Trash2, Copy,
+  Eye, Heart, UserPlus, MessageSquare, Smile, Plus, Trash2, Copy, Loader2, Ban, Hash,
 } from "lucide-react";
+import { generateNurtureKeywords, type NurtureKeywordResult } from "@/lib/nurture-keywords.functions";
 import { Switch } from "@/components/ui/switch";
 
 
@@ -355,6 +356,8 @@ export function UseTemplateDialog({ template, task, open, onOpenChange, onViewDe
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [accountSearch, setAccountSearch] = useState("");
   const [step, setStep] = useState(1);
+  /** 各养号策略组的 AI 生成状态（按组 id 记录） */
+  const [aiGen, setAiGen] = useState<Record<string, { loading: boolean; result: NurtureKeywordResult | null }>>({});
 
   useEffect(() => {
     if (!open) {
