@@ -38,7 +38,6 @@ import {
   STATUS_EXPLAIN,
   STATUS_ORDER,
   healthActions,
-  recommendMethods,
   type AccountHealthRecord,
   type HandleMethod,
   type HandleResult,
@@ -111,7 +110,7 @@ export function HandleDialog({
   const platformStatus = single
     ? PLATFORM_STATUS_MAP[confirmStatusValue][single.platform]
     : "";
-  const recommended = single ? recommendMethods(single.platform, single.status) : [];
+
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
@@ -127,23 +126,15 @@ export function HandleDialog({
         <div className="space-y-4">
           {single && (
             <>
-              <FormItem label="当前系统登记状态">
+              <FormItem label="当前账号状态">
                 <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
                   <span>{ACCOUNT_STATUS_META[curStatus].label}</span>
                   <span className="text-xs text-muted-foreground">
-                    运营系统内的统一状态口径
+                    {single.platform} 平台侧：{single.platformStatus}
                   </span>
                 </div>
               </FormItem>
-              <FormItem label={`平台账号状态（${single.platform}）`}>
-                <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
-                  <span>{single.platformStatus}</span>
-                  <span className="text-xs text-muted-foreground">
-                    平台侧巡检获取的原始状态文案
-                  </span>
-                </div>
-              </FormItem>
-              <FormItem label="人工确认后的系统状态 *">
+              <FormItem label="人工确认账号状态 *">
                 <Select
                   value={confirmStatusValue}
                   onValueChange={(v) => setStatus(v as AccountStatus)}
@@ -160,20 +151,7 @@ export function HandleDialog({
                   </SelectContent>
                 </Select>
               </FormItem>
-              <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
-                确认后对应平台状态：
-                <span className="text-foreground">{platformStatus}</span>
-                <br />
-                {STATUS_EXPLAIN[confirmStatusValue]}
-              </div>
             </>
-          )}
-
-          {recommended.length > 0 && (
-            <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
-              建议处理方式：
-              <span className="text-foreground">{recommended.join(" / ")}</span>
-            </div>
           )}
           <FormItem label="处理状态 *">
             <Select value={state} onValueChange={(v) => setState(v as HandleState)}>
