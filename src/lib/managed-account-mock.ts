@@ -59,6 +59,14 @@ export interface ManagedAccount {
   cookieValue?: string;
   /** Facebook 专用：6 位 PIN 码 */
   pinCode?: string;
+  /** 平台侧展示名（同屏回填） */
+  displayName?: string;
+  /** 平台侧语言设置（同屏回填） */
+  language?: string;
+  /** 平台侧地区设置（同屏回填） */
+  region?: string;
+  /** 平台侧兴趣偏好（同屏回填） */
+  interests?: string[];
   followers: number;
   following: number;
   likes: number;
