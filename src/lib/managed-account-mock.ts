@@ -175,6 +175,33 @@ export const INTEREST_PRESETS = [
   "beauty",
   "pet supplies",
 ];
+
+/**
+ * 同屏回填：兴趣偏好分组候选
+ * Facebook 侧对应「兴趣 / 关注的主页与话题」，TikTok 侧对应「内容偏好 / 兴趣分类」。
+ */
+export const INTEREST_GROUPS: { group: string; items: string[] }[] = [
+  {
+    group: "科技数码",
+    items: ["LED screen", "digital devices", "smart home", "game console"],
+  },
+  {
+    group: "时尚美妆",
+    items: ["knitwear", "beauty", "skincare", "streetwear"],
+  },
+  {
+    group: "家居生活",
+    items: ["home appliances", "kitchenware", "pet supplies", "gardening"],
+  },
+  {
+    group: "运动户外",
+    items: ["outdoor gear", "fitness", "cycling", "camping"],
+  },
+  {
+    group: "内容娱乐",
+    items: ["short drama", "music", "gaming live", "comedy"],
+  },
+];
 export const USERNAMES = [
   "TechFlow Global",
   "Boo Studio",
