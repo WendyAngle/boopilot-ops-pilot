@@ -42,6 +42,7 @@ import {
   Home,
   ArrowLeft,
   Monitor,
+  Maximize2,
   Triangle,
   Circle,
   Square as SquareIcon,
@@ -2287,7 +2288,6 @@ function RemoteControlDialog({
     <Dialog open={!!account} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-[1640px] gap-0 overflow-hidden border-slate-800 bg-[#0b111f] p-0 text-slate-100"
-        showCloseButton={false}
       >
         {account && (
           <div className="flex h-[86vh] items-stretch">
