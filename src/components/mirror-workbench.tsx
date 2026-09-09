@@ -27,7 +27,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   ACCOUNT_LANGUAGES,
   ACCOUNT_REGIONS,
-  INTEREST_PRESETS,
+  INTEREST_GROUPS,
   ACCOUNT_STATUS_META,
   type ManagedAccount,
 } from "@/lib/managed-account-mock";
@@ -108,6 +108,13 @@ export function MirrorWorkbench({
   const [draft, setDraft] = useState<Draft>(() => toDraft(account));
   const [pulledAt, setPulledAt] = useState<string | null>(null);
   const [interestInput, setInterestInput] = useState("");
+  const bioLimit = BIO_LIMIT[account.platform] ?? 150;
+  const interestLabel =
+    account.platform === "Facebook"
+      ? "兴趣偏好（兴趣 / 关注的主页与话题）"
+      : account.platform === "TikTok"
+        ? "兴趣偏好（内容偏好分类）"
+        : "兴趣偏好";
 
   useEffect(() => {
     setDraft(toDraft(account));
@@ -340,6 +347,7 @@ export function MirrorWorkbench({
                 onApply({
                   username: draft.username.trim(),
                   displayName: draft.displayName.trim(),
+                  bio: draft.bio.trim(),
                   language: draft.language,
                   region: draft.region,
                   interests: draft.interests,
