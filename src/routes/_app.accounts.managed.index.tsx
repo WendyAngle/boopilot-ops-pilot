@@ -2377,7 +2377,7 @@ function MirrorScreenPanel({
               账号同屏 - {account.platformId}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-400">
-              节点：{nodeIp}　设备：{deviceId}　IP：{ipInfo?.ip ?? "—"}　
+              节点：{nodeIp}　设备：{deviceId}　IP：{ipInfo?.ip ?? "—"}　模式：{"  "}
               {manual ? "manual-control mode" : "observe-act mode"}
             </DialogDescription>
             <div className="flex flex-wrap items-center gap-2 text-[11px]">
