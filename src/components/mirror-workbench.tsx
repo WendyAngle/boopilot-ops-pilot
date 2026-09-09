@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  DownloadCloud,
   Save,
   RotateCcw,
   CheckCircle2,
@@ -106,7 +105,7 @@ export function MirrorWorkbench({
 }) {
   const who = getCurrentUser()?.displayName ?? "当前用户";
   const [draft, setDraft] = useState<Draft>(() => toDraft(account));
-  const [pulledAt, setPulledAt] = useState<string | null>(null);
+  
   const [interestInput, setInterestInput] = useState("");
   const bioLimit = BIO_LIMIT[account.platform] ?? 150;
   const interestLabel =
@@ -118,7 +117,6 @@ export function MirrorWorkbench({
 
   useEffect(() => {
     setDraft(toDraft(account));
-    setPulledAt(null);
   }, [account.id]);
 
   const dirty = useMemo(() => {
@@ -139,12 +137,6 @@ export function MirrorWorkbench({
     setDraft((d) => ({ ...d, interests: [...d.interests, t] }));
   };
 
-  const pull = () => {
-    // 模拟从同屏会话所在平台读取当前资料
-    setDraft(toDraft(account));
-    setPulledAt(new Date().toLocaleTimeString("zh-CN", { hour12: false }));
-    toast.success("已读取平台当前资料");
-  };
 
   /* ---------- 事项登记 ---------- */
   const openIssues = health?.issues.filter((i) => i.state !== "done") ?? [];
@@ -183,17 +175,6 @@ export function MirrorWorkbench({
               在左侧同屏画面中于 {account.platform} 修改资料后，在此录入并一键回填，
               系统账号数据同步更新。
             </p>
-          </div>
-          <div className="mb-4 flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={pull}>
-              <DownloadCloud className="mr-1 h-3.5 w-3.5" />
-              读取平台当前资料
-            </Button>
-            {pulledAt && (
-              <span className="text-[11px] text-muted-foreground">
-                {pulledAt} 已读取
-              </span>
-            )}
           </div>
 
           <div className="space-y-3">

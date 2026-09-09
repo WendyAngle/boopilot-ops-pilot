@@ -2387,14 +2387,6 @@ function MirrorScreenPanel({
           </div>
 
           <div className="flex flex-col items-end gap-3">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">
-                {manual ? "手动控制" : "仅观看"}
-              </Badge>
-              <Badge className="border-success/40 bg-success/15 text-success">
-                <CheckCircle2 className="mr-1 h-3 w-3" /> 已连接
-              </Badge>
-            </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <ToolBtn onClick={() => toast.success("已重新建立同屏连接")}>
                 重新连接
@@ -2458,6 +2450,13 @@ function MirrorScreenPanel({
                 </span>
               </ToolBtn>
               <ToolBtn onClick={onClose}>关闭</ToolBtn>
+              <span className="mx-1 h-4 w-px bg-border" />
+              <Badge variant="outline">
+                {manual ? "手动控制" : "仅观看"}
+              </Badge>
+              <Badge className="border-success/40 bg-success/15 text-success">
+                <CheckCircle2 className="mr-1 h-3 w-3" /> 已连接
+              </Badge>
             </div>
           </div>
         </div>
