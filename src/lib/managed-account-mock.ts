@@ -142,6 +142,37 @@ export const OPERATOR_RECORDS: { name: string; phone: string }[] = OPERATORS.map
 );
 export const PERSONAS = ["个人主号", "工作IP号", "Boo小宇", "品牌主线", "客服主线"];
 export const COUNTRIES = ["美国", "日本", "新加坡", "印度尼西亚", "中国", "马来西亚"];
+
+/** 同屏回填：平台侧可设置的语言 */
+export const ACCOUNT_LANGUAGES = [
+  "English (US)",
+  "English (UK)",
+  "日本語",
+  "Bahasa Indonesia",
+  "简体中文",
+  "繁體中文",
+  "Bahasa Melayu",
+];
+/** 同屏回填：平台侧可设置的地区 */
+export const ACCOUNT_REGIONS = [
+  "United States",
+  "Japan",
+  "Singapore",
+  "Indonesia",
+  "China",
+  "Malaysia",
+];
+/** 同屏回填：常用兴趣偏好候选 */
+export const INTEREST_PRESETS = [
+  "LED screen",
+  "digital devices",
+  "knitwear",
+  "game console",
+  "home appliances",
+  "outdoor gear",
+  "beauty",
+  "pet supplies",
+];
 export const USERNAMES = [
   "TechFlow Global",
   "Boo Studio",
