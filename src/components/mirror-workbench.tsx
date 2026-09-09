@@ -243,22 +243,25 @@ export function MirrorWorkbench({
               </Field>
             </div>
             <Field
-              label="兴趣偏好"
-              hint="回车添加；点击标签可移除。建议与平台侧实际设置保持一致。"
+              label={`个人简介（${account.platform} Bio）`}
+              hint={`最多 ${bioLimit} 字符，与平台侧简介保持一致。`}
             >
-              <Input
-                value={interestInput}
-                onChange={(e) => setInterestInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addInterest(interestInput);
-                    setInterestInput("");
-                  }
-                }}
-                placeholder="输入兴趣词后回车，如 LED screen"
+              <Textarea
+                rows={3}
+                maxLength={bioLimit}
+                value={draft.bio}
+                onChange={(e) => setDraft({ ...draft, bio: e.target.value })}
+                placeholder="平台主页展示的简介，如 Daily picks for smart living · DM for wholesale"
               />
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-1 text-right text-[11px] text-muted-foreground">
+                {draft.bio.length}/{bioLimit}
+              </div>
+            </Field>
+            <Field
+              label={interestLabel}
+              hint="按分类勾选或输入自定义兴趣词；点击已选标签可移除。需与平台侧实际设置保持一致。"
+            >
+              <div className="mb-2 flex flex-wrap gap-1.5">
                 {draft.interests.map((t) => (
                   <Badge
                     key={t}
@@ -275,22 +278,56 @@ export function MirrorWorkbench({
                   </Badge>
                 ))}
                 {draft.interests.length === 0 && (
-                  <span className="text-[11px] text-muted-foreground">暂无</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    暂未选择兴趣分类
+                  </span>
                 )}
               </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {INTEREST_PRESETS.filter((p) => !draft.interests.includes(p))
-                  .slice(0, 5)
-                  .map((p) => (
-                    <Badge
-                      key={p}
-                      variant="outline"
-                      className="cursor-pointer text-[11px] text-muted-foreground"
-                      onClick={() => addInterest(p)}
-                    >
-                      + {p}
-                    </Badge>
-                  ))}
+              <Input
+                value={interestInput}
+                onChange={(e) => setInterestInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addInterest(interestInput);
+                    setInterestInput("");
+                  }
+                }}
+                placeholder="输入自定义兴趣词后回车，如 LED screen"
+              />
+              <div className="mt-2 space-y-2 rounded-md border p-2">
+                {INTEREST_GROUPS.map((g) => (
+                  <div key={g.group}>
+                    <p className="mb-1 text-[11px] font-medium text-muted-foreground">
+                      {g.group}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {g.items.map((p) => {
+                        const on = draft.interests.includes(p);
+                        return (
+                          <Badge
+                            key={p}
+                            variant={on ? "default" : "outline"}
+                            className="cursor-pointer text-[11px]"
+                            onClick={() =>
+                              on
+                                ? setDraft((d) => ({
+                                    ...d,
+                                    interests: d.interests.filter(
+                                      (x) => x !== p,
+                                    ),
+                                  }))
+                                : addInterest(p)
+                            }
+                          >
+                            {on ? "✓ " : "+ "}
+                            {p}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </Field>
           </div>
