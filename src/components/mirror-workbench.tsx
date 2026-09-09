@@ -84,9 +84,9 @@ function toDraft(a: ManagedAccount): Draft {
 /** 各平台个人简介长度上限（对齐平台侧限制） */
 const BIO_LIMIT: Record<string, number> = {
   Facebook: 101,
-  TikTok: 80,
+  Tiktok: 80,
   Instagram: 150,
-  Twitter: 160,
+  "Twitter/X": 160,
   WhatsApp: 139,
 };
 
@@ -112,7 +112,7 @@ export function MirrorWorkbench({
   const interestLabel =
     account.platform === "Facebook"
       ? "兴趣偏好（兴趣 / 关注的主页与话题）"
-      : account.platform === "TikTok"
+      : account.platform === "Tiktok"
         ? "兴趣偏好（内容偏好分类）"
         : "兴趣偏好";
 
