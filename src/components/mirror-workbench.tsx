@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  DownloadCloud,
   Save,
   RotateCcw,
   CheckCircle2,
@@ -106,7 +105,7 @@ export function MirrorWorkbench({
 }) {
   const who = getCurrentUser()?.displayName ?? "当前用户";
   const [draft, setDraft] = useState<Draft>(() => toDraft(account));
-  const [pulledAt, setPulledAt] = useState<string | null>(null);
+  
   const [interestInput, setInterestInput] = useState("");
   const bioLimit = BIO_LIMIT[account.platform] ?? 150;
   const interestLabel =
