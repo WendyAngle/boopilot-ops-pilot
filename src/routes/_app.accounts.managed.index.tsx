@@ -140,6 +140,7 @@ import {
   HandleDialog,
   TimelineSheet,
 } from "@/components/account-health-dialogs";
+import { MirrorWorkbench } from "@/components/mirror-workbench";
 import {
   HANDLE_RESULTS,
   HANDLE_STATE_CLS,
@@ -1424,6 +1425,13 @@ function ManagedAccountsPage() {
 
         <RemoteControlDialog
           account={remoteFor}
+          health={remoteFor ? (healthMap.get(remoteFor.id) ?? null) : null}
+          onApply={(patch) => {
+            setRows((prev) =>
+              prev.map((x) => (x.id === remoteFor?.id ? { ...x, ...patch } : x)),
+            );
+            setRemoteFor((cur) => (cur ? { ...cur, ...patch } : cur));
+          }}
           onOpenChange={(o) => !o && setRemoteFor(null)}
         />
 
