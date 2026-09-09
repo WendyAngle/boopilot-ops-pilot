@@ -184,17 +184,6 @@ export function MirrorWorkbench({
               系统账号数据同步更新。
             </p>
           </div>
-          <div className="mb-4 flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={pull}>
-              <DownloadCloud className="mr-1 h-3.5 w-3.5" />
-              读取平台当前资料
-            </Button>
-            {pulledAt && (
-              <span className="text-[11px] text-muted-foreground">
-                {pulledAt} 已读取
-              </span>
-            )}
-          </div>
 
           <div className="space-y-3">
             <Field label="账号昵称（平台用户名）">
