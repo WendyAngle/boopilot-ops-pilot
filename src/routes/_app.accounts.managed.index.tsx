@@ -1111,7 +1111,7 @@ function ManagedAccountsPage() {
                           <div className="flex flex-nowrap items-center justify-end gap-x-2 whitespace-nowrap">
                             <TextActionBtn
                               icon={MonitorSmartphone}
-                              label="远程控制"
+                              label="同屏"
                               onClick={() => setRemoteFor(r)}
                             />
                             <TextActionBtn
@@ -1619,7 +1619,7 @@ function AccountCard({
 
       {/* 操作 */}
       <div className="mt-auto flex items-center justify-end gap-2 border-t pt-3 -mb-1">
-        <TextActionBtn icon={MonitorSmartphone} label="远程控制" onClick={onRemote} />
+        <TextActionBtn icon={MonitorSmartphone} label="同屏" onClick={onRemote} />
         <TextActionBtn icon={Heart} label="设置兴趣偏好" onClick={onInterest} />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
