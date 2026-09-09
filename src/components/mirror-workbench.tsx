@@ -139,12 +139,6 @@ export function MirrorWorkbench({
     setDraft((d) => ({ ...d, interests: [...d.interests, t] }));
   };
 
-  const pull = () => {
-    // 模拟从同屏会话所在平台读取当前资料
-    setDraft(toDraft(account));
-    setPulledAt(new Date().toLocaleTimeString("zh-CN", { hour12: false }));
-    toast.success("已读取平台当前资料");
-  };
 
   /* ---------- 事项登记 ---------- */
   const openIssues = health?.issues.filter((i) => i.state !== "done") ?? [];
