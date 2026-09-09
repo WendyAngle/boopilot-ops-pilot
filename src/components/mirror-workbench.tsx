@@ -119,6 +119,7 @@ export function MirrorWorkbench({
     return (
       base.username !== draft.username ||
       base.displayName !== draft.displayName ||
+      base.bio !== draft.bio ||
       base.language !== draft.language ||
       base.region !== draft.region ||
       base.interests.join("|") !== draft.interests.join("|")
