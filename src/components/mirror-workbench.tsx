@@ -64,6 +64,7 @@ function Field({
 type Draft = {
   username: string;
   displayName: string;
+  bio: string;
   language: string;
   region: string;
   interests: string[];
@@ -73,11 +74,21 @@ function toDraft(a: ManagedAccount): Draft {
   return {
     username: a.username,
     displayName: a.displayName ?? a.username,
+    bio: a.bio ?? "",
     language: a.language ?? ACCOUNT_LANGUAGES[0],
     region: a.region ?? ACCOUNT_REGIONS[0],
     interests: a.interests ?? [],
   };
 }
+
+/** 各平台个人简介长度上限（对齐平台侧限制） */
+const BIO_LIMIT: Record<string, number> = {
+  Facebook: 101,
+  TikTok: 80,
+  Instagram: 150,
+  Twitter: 160,
+  WhatsApp: 139,
+};
 
 /**
  * 同屏工作台侧栏
