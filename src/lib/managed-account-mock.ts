@@ -275,6 +275,12 @@ export function seedManagedAccounts(): ManagedAccount[] {
         { length: (i % 3) + 1 },
         (_, k) => INTEREST_PRESETS[(i + k * 2) % INTEREST_PRESETS.length],
       ),
+      bio: [
+        "Daily picks for smart living · DM for wholesale",
+        "Sharing gadgets, deals & unboxing every week",
+        "Official store account · Ship worldwide 🌏",
+        "Lifestyle & home ideas | Collab: mail below",
+      ][i % 4],
       followers: 800 + ((i * 137) % 99000),
       following: 50 + ((i * 17) % 1200),
       likes: 1200 + ((i * 211) % 580000),
