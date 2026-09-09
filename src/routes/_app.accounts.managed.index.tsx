@@ -2264,9 +2264,13 @@ function ImageInstanceDialog({
 
 function RemoteControlDialog({
   account,
+  health,
+  onApply,
   onOpenChange,
 }: {
   account: ManagedAccount | null;
+  health: AccountHealthRecord | null;
+  onApply: (patch: Partial<ManagedAccount>) => void;
   onOpenChange: (open: boolean) => void;
 }) {
   const isWin = account?.deviceType === "Windows虚拟机";
@@ -2277,19 +2281,29 @@ function RemoteControlDialog({
       <DialogContent
         className={cn(
           "p-0 gap-0 overflow-hidden",
-          isWin ? "max-w-[1400px]" : "max-w-[640px]",
+          isWin ? "max-w-[1500px]" : "max-w-[1040px]",
         )}
       >
-        {account &&
-          (isWin ? (
-            <WindowsRemotePanel
+        {account && (
+          <div className="flex max-h-[85vh] items-stretch">
+            <div className="min-w-0 flex-1 overflow-y-auto">
+              {isWin ? (
+                <WindowsRemotePanel
+                  account={account}
+                  ipInfo={ipInfo}
+                  onClose={() => onOpenChange(false)}
+                />
+              ) : (
+                <CloudPhoneRemotePanel account={account} />
+              )}
+            </div>
+            <MirrorWorkbench
               account={account}
-              ipInfo={ipInfo}
-              onClose={() => onOpenChange(false)}
+              health={health}
+              onApply={onApply}
             />
-          ) : (
-            <CloudPhoneRemotePanel account={account} />
-          ))}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
