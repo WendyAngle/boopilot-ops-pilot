@@ -117,7 +117,6 @@ export function MirrorWorkbench({
 
   useEffect(() => {
     setDraft(toDraft(account));
-    setPulledAt(null);
   }, [account.id]);
 
   const dirty = useMemo(() => {
