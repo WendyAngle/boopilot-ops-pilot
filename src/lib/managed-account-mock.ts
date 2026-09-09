@@ -239,6 +239,13 @@ export function seedManagedAccounts(): ManagedAccount[] {
       platformId: `${1000123456 + i * 7919}`,
       avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=managed-${i}`,
       remark: i % 4 === 0 ? "重点托管账号" : i % 3 === 0 ? "矩阵号" : "--",
+      displayName: username,
+      language: ACCOUNT_LANGUAGES[i % ACCOUNT_LANGUAGES.length],
+      region: ACCOUNT_REGIONS[i % ACCOUNT_REGIONS.length],
+      interests: Array.from(
+        { length: (i % 3) + 1 },
+        (_, k) => INTEREST_PRESETS[(i + k * 2) % INTEREST_PRESETS.length],
+      ),
       followers: 800 + ((i * 137) % 99000),
       following: 50 + ((i * 17) % 1200),
       likes: 1200 + ((i * 211) % 580000),
