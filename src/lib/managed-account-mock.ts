@@ -67,6 +67,8 @@ export interface ManagedAccount {
   region?: string;
   /** 平台侧兴趣偏好（同屏回填） */
   interests?: string[];
+  /** 平台侧个人简介 / Bio（同屏回填） */
+  bio?: string;
   followers: number;
   following: number;
   likes: number;
