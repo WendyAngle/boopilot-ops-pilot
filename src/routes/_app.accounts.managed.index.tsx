@@ -2286,9 +2286,7 @@ function RemoteControlDialog({
 
   return (
     <Dialog open={!!account} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-w-[1640px] gap-0 overflow-hidden border-slate-800 bg-[#0b111f] p-0 text-slate-100"
-      >
+      <DialogContent className="max-w-[1640px] gap-0 overflow-hidden p-0">
         {account && (
           <div className="flex h-[86vh] items-stretch">
             <MirrorScreenPanel
@@ -2296,13 +2294,11 @@ function RemoteControlDialog({
               ipInfo={ipInfo}
               onClose={() => onOpenChange(false)}
             />
-            <div className="dark flex bg-[#0f172a]">
-              <MirrorWorkbench
-                account={account}
-                health={health}
-                onApply={onApply}
-              />
-            </div>
+            <MirrorWorkbench
+              account={account}
+              health={health}
+              onApply={onApply}
+            />
           </div>
         )}
       </DialogContent>
@@ -2358,10 +2354,10 @@ function MirrorScreenPanel({
       className={cn(
         "h-8 rounded-md border px-3 text-xs transition-colors",
         disabled
-          ? "cursor-not-allowed border-slate-800 bg-slate-900 text-slate-600"
+          ? "cursor-not-allowed border bg-muted text-muted-foreground"
           : active
-            ? "border-amber-400 bg-amber-500 font-medium text-slate-900"
-            : "border-slate-700 bg-slate-100 text-slate-900 hover:bg-white",
+            ? "border-primary bg-primary font-medium text-primary-foreground"
+            : "border bg-background text-foreground hover:bg-accent",
       )}
     >
       {children}
@@ -2369,22 +2365,22 @@ function MirrorScreenPanel({
   );
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col bg-[#0b111f]">
+    <div className="flex min-w-0 flex-1 flex-col bg-background">
       <DialogHeader className="space-y-0 px-6 pb-3 pt-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 space-y-2">
-            <DialogTitle className="text-base font-semibold text-slate-50">
+            <DialogTitle className="text-base font-semibold">
               账号同屏 - {account.platformId}
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
+            <DialogDescription className="text-xs text-muted-foreground">
               节点：{nodeIp}　设备：{deviceId}　IP：{ipInfo?.ip ?? "—"}　模式：{"  "}
               {manual ? "manual-control mode" : "observe-act mode"}
             </DialogDescription>
             <div className="flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="rounded bg-slate-800/80 px-2 py-1 font-mono text-slate-300">
+              <span className="rounded bg-muted px-2 py-1 font-mono text-muted-foreground">
                 设备ID {deviceId}
               </span>
-              <span className="max-w-[640px] truncate rounded bg-slate-800/80 px-2 py-1 font-mono text-slate-300">
+              <span className="max-w-[640px] truncate rounded bg-muted px-2 py-1 font-mono text-muted-foreground">
                 同屏地址 {wsUrl}
               </span>
             </div>
@@ -2392,10 +2388,10 @@ function MirrorScreenPanel({
 
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-2">
-              <Badge className="border-slate-700 bg-slate-800 text-slate-300">
+              <Badge variant="outline">
                 {manual ? "手动控制" : "仅观看"}
               </Badge>
-              <Badge className="border-teal-400/40 bg-teal-400/15 text-teal-300">
+              <Badge className="border-success/40 bg-success/15 text-success">
                 <CheckCircle2 className="mr-1 h-3 w-3" /> 已连接
               </Badge>
             </div>
@@ -2412,8 +2408,8 @@ function MirrorScreenPanel({
               >
                 Ctrl+Alt+Del
               </ToolBtn>
-              <span className="text-[11px] text-slate-400">质量</span>
-              <div className="flex overflow-hidden rounded-md border border-slate-700">
+              <span className="text-[11px] text-muted-foreground">质量</span>
+              <div className="flex overflow-hidden rounded-md border">
                 {(["流畅", "高清"] as const).map((q) => (
                   <button
                     key={q}
@@ -2422,16 +2418,16 @@ function MirrorScreenPanel({
                     className={cn(
                       "h-8 px-3 text-xs",
                       quality === q
-                        ? "bg-white font-medium text-slate-900"
-                        : "bg-slate-200/90 text-slate-600 hover:bg-white",
+                        ? "bg-primary font-medium text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-accent",
                     )}
                   >
                     {q}
                   </button>
                 ))}
               </div>
-              <span className="text-[11px] text-slate-400">缩放</span>
-              <div className="flex overflow-hidden rounded-md border border-slate-700">
+              <span className="text-[11px] text-muted-foreground">缩放</span>
+              <div className="flex overflow-hidden rounded-md border">
                 {(["A", "1:1"] as const).map((z) => (
                   <button
                     key={z}
@@ -2440,8 +2436,8 @@ function MirrorScreenPanel({
                     className={cn(
                       "h-8 px-3 text-xs",
                       zoom === z
-                        ? "bg-white font-medium text-slate-900"
-                        : "bg-slate-200/90 text-slate-600 hover:bg-white",
+                        ? "bg-primary font-medium text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-accent",
                     )}
                   >
                     {z}
@@ -2467,41 +2463,41 @@ function MirrorScreenPanel({
         </div>
       </DialogHeader>
 
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#050a14] px-6 pb-3">
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-muted/30 px-6 pb-3">
         <div
           className={cn(
             "relative flex h-full items-center justify-center bg-black",
             zoom === "A" ? "w-full" : "w-[70%]",
           )}
         >
-          <div className="flex flex-col items-center gap-2 text-center text-slate-500">
+          <div className="flex flex-col items-center gap-2 text-center text-slate-400">
             <Monitor className="h-10 w-10" />
             <p className="text-sm font-medium text-slate-200">
               {manual ? "手动控制中" : "仅观看"}
             </p>
-            <p className="text-xs">
+            <p className="text-xs text-slate-300">
               {manual
                 ? "可直接操作远端桌面，操作会记录在连接日志"
                 : "开启手动控制后可操作远端桌面"}
             </p>
-            <p className="font-mono text-[10px] opacity-70">
+            <p className="font-mono text-[10px] text-slate-500">
               {ipInfo ? `${ipInfo.country} · ${ipInfo.ip}` : ""} · {quality}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-slate-800 bg-[#0b111f] px-6 py-2">
+      <div className="border-t bg-background px-6 py-2">
         <button
           type="button"
           onClick={() => setLogOpen((v) => !v)}
-          className="flex w-full items-center justify-between text-xs text-slate-300"
+          className="flex w-full items-center justify-between text-xs text-foreground"
         >
           <span className="font-medium">连接日志</span>
-          <span className="text-slate-400">{logOpen ? "收起" : "展开"}</span>
+          <span className="text-muted-foreground">{logOpen ? "收起" : "展开"}</span>
         </button>
         {logOpen && (
-          <div className="mt-2 max-h-28 space-y-1 overflow-y-auto rounded bg-black/40 p-2 font-mono text-[11px] text-slate-400">
+          <div className="mt-2 max-h-28 space-y-1 overflow-y-auto rounded bg-muted/60 p-2 font-mono text-[11px] text-muted-foreground">
             {logs.map((l) => (
               <div key={l}>{l}</div>
             ))}
