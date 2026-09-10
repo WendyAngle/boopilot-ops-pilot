@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BookmarkPlus, Sparkles, Share2, Trash2, UserCog } from "lucide-react";
+import { BookmarkPlus, Sparkles, Share2, Trash2, UserCog, AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,9 +16,15 @@ import {
   fmtNow, genTaskId, pad, tasksActions, templatesActions, executeTask,
   type TaskRow, type TaskTemplate,
 } from "@/lib/operations-store";
+import {
+  seedManagedAccounts, ACCOUNT_LANGUAGES, ACCOUNT_REGIONS,
+  PLATFORM_META, type ManagedAccount,
+} from "@/lib/managed-account-mock";
 
 type ContentOpsAction = "sharePost" | "deletePost" | "editProfile";
 type ShareMode = "immediate" | "timeline" | "group";
+type DeleteMode = "specific" | "batch";
+type EditFieldKey = "nickname" | "displayName" | "bio" | "language" | "region";
 
 const CONTENT_OPS_ACTIONS: Array<{
   value: ContentOpsAction;
@@ -56,6 +62,30 @@ const SHARE_MODE_LABELS: Record<ShareMode, string> = {
   group: "分享到小组",
 };
 
+const DELETE_MODE_LABELS: Record<DeleteMode, string> = {
+  specific: "指定贴文",
+  batch: "按条件批量",
+};
+
+/** 修改账号基础信息：可共用字段（一次填写，批量应用） */
+const EDIT_COMMON_FIELDS: { key: EditFieldKey; label: string }[] = [
+  { key: "language", label: "语言" },
+  { key: "region", label: "地区" },
+  { key: "bio", label: "个人简介" },
+];
+/** 修改账号基础信息：账号独有字段（需逐账号填写） */
+const EDIT_UNIQUE_FIELDS: { key: EditFieldKey; label: string }[] = [
+  { key: "nickname", label: "昵称" },
+  { key: "displayName", label: "显示名" },
+];
+const EDIT_FIELD_LABELS: Record<EditFieldKey, string> = {
+  nickname: "昵称",
+  displayName: "显示名",
+  bio: "个人简介",
+  language: "语言",
+  region: "地区",
+};
+
 interface Props {
   template: TaskTemplate | null;
   open: boolean;
@@ -90,6 +120,32 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const [scheduledDate, setScheduledDate] = useState(todayStr());
   const [scheduledTime, setScheduledTime] = useState(nowTimeStr());
 
+  // 删除贴文
+  const [deleteMode, setDeleteMode] = useState<DeleteMode>("specific");
+  const [deleteAccountId, setDeleteAccountId] = useState<string>("");
+  const [deletePostLinks, setDeletePostLinks] = useState("");
+  const [deleteStartDate, setDeleteStartDate] = useState("");
+  const [deleteEndDate, setDeleteEndDate] = useState("");
+  const [deleteKeyword, setDeleteKeyword] = useState("");
+  const [deletePostType, setDeletePostType] = useState<"all" | "original" | "repost">("all");
+  const [deleteMaxCount, setDeleteMaxCount] = useState("50");
+  const [deleteAccountIds, setDeleteAccountIds] = useState<string[]>([]);
+
+  // 修改账号基础信息
+  const [editFields, setEditFields] = useState<EditFieldKey[]>(["language"]);
+  const [editAccountIds, setEditAccountIds] = useState<string[]>([]);
+  const [editLanguage, setEditLanguage] = useState("");
+  const [editRegion, setEditRegion] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editUnique, setEditUnique] = useState<Record<string, { nickname: string; displayName: string }>>({});
+
+  // 仅展示当前模版平台下的账号（Facebook）
+  const platformAccounts = useMemo<ManagedAccount[]>(() => {
+    if (!template) return [];
+    const all = seedManagedAccounts();
+    return all.filter((a) => template.platforms.includes(a.platform));
+  }, [template]);
+
   useEffect(() => {
     if (!open || !template) return;
     setStep(1);
@@ -102,6 +158,23 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     setScheduledMode("datetime");
     setScheduledDate(todayStr());
     setScheduledTime(nowTimeStr());
+    // 重置删除贴文
+    setDeleteMode("specific");
+    setDeleteAccountId("");
+    setDeletePostLinks("");
+    setDeleteStartDate("");
+    setDeleteEndDate("");
+    setDeleteKeyword("");
+    setDeletePostType("all");
+    setDeleteMaxCount("50");
+    setDeleteAccountIds([]);
+    // 重置修改账号基础信息
+    setEditFields(["language"]);
+    setEditAccountIds([]);
+    setEditLanguage("");
+    setEditRegion("");
+    setEditBio("");
+    setEditUnique({});
   }, [open, template]);
 
   if (!template) {
@@ -113,6 +186,20 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   }
   const tpl = template;
 
+  const toggleEditField = (f: EditFieldKey) =>
+    setEditFields((p) => (p.includes(f) ? p.filter((x) => x !== f) : [...p, f]));
+  const toggleDeleteAccount = (id: string) =>
+    setDeleteAccountIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const toggleEditAccount = (id: string) =>
+    setEditAccountIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const setUniqueField = (id: string, key: "nickname" | "displayName", value: string) =>
+    setEditUnique((p) => ({
+      ...p,
+      [id]: { nickname: "", displayName: "", ...p[id], [key]: value },
+    }));
+
+  const hasUniqueField = editFields.some((f) => f === "nickname" || f === "displayName");
+  const hasCommonField = editFields.some((f) => f === "bio" || f === "language" || f === "region");
 
   const composeDescription = () => {
     const actionLabel = CONTENT_OPS_ACTIONS.find((a) => a.value === action)?.label ?? "未指定";
@@ -130,6 +217,25 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
         lines.push(`指定小组链接：${groupLinks.trim()}`);
       }
     }
+    if (action === "deletePost") {
+      lines.push(`目标模式：${DELETE_MODE_LABELS[deleteMode]}`);
+      if (deleteMode === "specific") {
+        const acc = platformAccounts.find((a) => a.id === deleteAccountId);
+        lines.push(`指定账号：${acc ? acc.username : "未选择"}`);
+        const links = deletePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
+        lines.push(`待删除贴文：${links.length} 条`);
+      } else {
+        lines.push(`删除范围：${deleteStartDate || "?"} 至 ${deleteEndDate || "?"}`);
+        if (deleteKeyword.trim()) lines.push(`关键词：${deleteKeyword.trim()}`);
+        lines.push(`贴文类型：${deletePostType === "all" ? "全部" : deletePostType === "original" ? "原创" : "转发"}`);
+        lines.push(`条数上限：${deleteMaxCount}`);
+        lines.push(`指定账号：${deleteAccountIds.length} 个`);
+      }
+    }
+    if (action === "editProfile") {
+      lines.push(`修改字段：${editFields.map((f) => EDIT_FIELD_LABELS[f]).join("、") || "未选择"}`);
+      lines.push(`指定账号：${editAccountIds.length} 个`);
+    }
     lines.push(
       execMode === "now"
         ? "执行方式：立即执行"
@@ -145,6 +251,30 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     if (!action) return toast.error("请选择动作类型");
     if (action === "sharePost" && !shareMode) {
       return toast.error("请选择转发方式");
+    }
+    if (action === "deletePost") {
+      if (deleteMode === "specific") {
+        if (!deleteAccountId) return toast.error("请选择指定账号");
+        const links = deletePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
+        if (links.length === 0) return toast.error("请至少填写 1 条待删除贴文链接");
+      } else {
+        if (!deleteStartDate || !deleteEndDate) return toast.error("请填写完整的删除时间范围");
+        if (deleteStartDate > deleteEndDate) return toast.error("开始时间不能晚于结束时间");
+        if (deleteAccountIds.length === 0) return toast.error("请至少选择 1 个账号");
+        const max = parseInt(deleteMaxCount, 10);
+        if (!max || max < 1 || max > 200) return toast.error("条数上限需在 1-200 之间");
+      }
+    }
+    if (action === "editProfile") {
+      if (editFields.length === 0) return toast.error("请至少勾选 1 个修改字段");
+      if (editAccountIds.length === 0) return toast.error("请至少选择 1 个账号");
+      if (hasUniqueField) {
+        const anyChange = editAccountIds.some((id) => {
+          const u = editUnique[id];
+          return u && (u.nickname.trim() || u.displayName.trim());
+        });
+        if (!anyChange) return toast.error("明细表至少需 1 行有实际变更");
+      }
     }
 
     const task: TaskRow = {
