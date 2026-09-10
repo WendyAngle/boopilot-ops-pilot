@@ -143,7 +143,9 @@ export function AccountScopePicker({
       {/* 标签筛选（横跨左右两栏） */}
       <div className="mb-2.5 space-y-1.5">
         <p className="text-[11px] text-muted-foreground">
-          按标签筛选账号（可多选，仅用于过滤候选列表；也可直接搜索并勾选特定账号）
+          {single
+            ? "按标签筛选账号（可多选，仅用于缩小候选范围）；也可直接搜索，点击选中 1 个账号"
+            : "按标签筛选账号（可多选，仅用于过滤候选列表；也可直接搜索并勾选特定账号）"}
         </p>
         <TagMultiSelect
           value={value.tags}
