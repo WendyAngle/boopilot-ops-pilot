@@ -128,9 +128,6 @@ function TaskTemplatesPage() {
   const toggleAction = (a: TemplateAction) => {
     setForm((f) => ({ ...f, actions: f.actions.includes(a) ? f.actions.filter((x) => x !== a) : [...f.actions, a] }));
   };
-  const toggleEditTag = (name: string) => {
-    setForm((f) => ({ ...f, tags: f.tags.includes(name) ? f.tags.filter((x) => x !== name) : [...f.tags, name] }));
-  };
 
   // 使用模版弹窗
   const [useDlgTpl, setUseDlgTpl] = useState<TaskTemplate | null>(null);
