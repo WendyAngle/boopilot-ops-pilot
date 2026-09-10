@@ -159,15 +159,21 @@ export function AccountScopePicker({
         {/* 左栏：候选账号 */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              className="text-[11px] text-primary hover:underline"
-              onClick={toggleAll}
-            >
-              {allFilteredSelected
-                ? "取消全选当前结果"
-                : `全选当前结果（${filtered.length}）`}
-            </button>
+            {single ? (
+              <span className="text-[11px] text-muted-foreground">
+                当前结果 {filtered.length} 个（单选）
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="text-[11px] text-primary hover:underline"
+                onClick={toggleAll}
+              >
+                {allFilteredSelected
+                  ? "取消全选当前结果"
+                  : `全选当前结果（${filtered.length}）`}
+              </button>
+            )}
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
               <Input
