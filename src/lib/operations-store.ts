@@ -626,7 +626,17 @@ function applyTemplates(u: Updater<TaskTemplate[]>) {
 
 export const tasksActions = {
   set: applyTasks,
-  add: (t: TaskRow) => applyTasks((prev) => [t, ...prev]),
+  add: (t: TaskRow) =>
+    applyTasks((prev) => {
+      if (t.tenantId) return [t, ...prev];
+      const scope = getTenantScope();
+      const tenant =
+        TASK_TENANTS.find((x) => x.id === scope) ?? TASK_TENANTS[0];
+      return [
+        tenant ? { ...t, tenantId: tenant.id, tenantName: tenant.name } : t,
+        ...prev,
+      ];
+    }),
   remove: (id: string) => applyTasks((prev) => prev.filter((t) => t.id !== id)),
   update: (id: string, patch: Partial<TaskRow>) =>
     applyTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t))),
