@@ -314,11 +314,22 @@ export function AccountScopePicker({
 
       {/* 底部汇总 */}
       <p className="mt-2 text-center text-[11px] text-muted-foreground">
-        本次将对{" "}
-        <span className="font-semibold text-foreground">
-          {selected.length}
-        </span>{" "}
-        个账号执行
+        {single ? (
+          <>
+            已选账号：
+            <span className="font-semibold text-foreground">
+              {selected[0]?.username ?? "未选择"}
+            </span>
+          </>
+        ) : (
+          <>
+            本次将对{" "}
+            <span className="font-semibold text-foreground">
+              {selected.length}
+            </span>{" "}
+            个账号执行
+          </>
+        )}
       </p>
     </div>
   );
