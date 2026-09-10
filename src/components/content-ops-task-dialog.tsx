@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BookmarkPlus, Sparkles, Share2, Trash2, UserCog, AlertTriangle } from "lucide-react";
+import { BookmarkPlus, Sparkles, Share2, Trash2, EyeOff, UserCog, AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ import {
   type AccountScopeValue,
 } from "@/components/account-scope-picker";
 
-type ContentOpsAction = "sharePost" | "deletePost" | "editProfile";
+type ContentOpsAction = "sharePost" | "hidePost" | "deletePost" | "editProfile";
 type ShareMode = "immediate" | "timeline" | "group";
 type DeleteMode = "specific" | "batch";
 type EditFieldKey = "nickname" | "displayName" | "bio" | "language" | "region";
@@ -45,6 +45,13 @@ const CONTENT_OPS_ACTIONS: Array<{
     icon: Share2,
     desc: "将指定贴文转发到账号主页",
     targetHint: "指定目标：待转发的贴文（贴文来源与筛选规则稍后补充）",
+  },
+  {
+    value: "hidePost",
+    label: "隐藏贴文",
+    icon: EyeOff,
+    desc: "将账号主页上的贴文设为隐藏，对外不可见，可随时恢复",
+    targetHint: "指定目标：待隐藏的贴文（贴文范围与筛选规则稍后补充）",
   },
   {
     value: "deletePost",
