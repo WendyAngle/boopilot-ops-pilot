@@ -386,11 +386,12 @@ function TaskTemplatesPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>任务类型</Label>
-                <Select value={form.subtype} onValueChange={(v) => setForm((f) => ({ ...f, subtype: v as TaskSubType }))}>
+                <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v as TaskCategory }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="action">单次触达</SelectItem>
-                    <SelectItem value="nurture">周期性</SelectItem>
+                    {TASK_CATEGORY_ORDER.map((c) => (
+                      <SelectItem key={c} value={c}>{TASK_CATEGORY_LABEL[c]}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
