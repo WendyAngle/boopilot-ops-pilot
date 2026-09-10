@@ -99,7 +99,6 @@ function TaskListPage() {
   }), [tasks]);
 
   const [tKeyword, setTKeyword] = useState("");
-  const [tSubtype, setTSubtype] = useState<"all" | "action" | "nurture">("all");
   const [tCategory, setTCategory] = useState<"all" | TaskCategory>("all");
   const [tPlatform, setTPlatform] = useState<"all" | Platform>("all");
   const [tResult, setTResult] = useState<"all" | "success" | "failed" | "partial" | "none">("all");
@@ -109,7 +108,6 @@ function TaskListPage() {
     const kw = tKeyword.trim().toLowerCase();
     return tasks.filter((t) => {
       if (kw && !t.name.toLowerCase().includes(kw) && !t.id.toLowerCase().includes(kw)) return false;
-      if (tSubtype !== "all" && t.subtype !== tSubtype) return false;
       if (tCategory !== "all" && getTaskCategory(t) !== tCategory) return false;
       if (tPlatform !== "all" && !t.platforms.includes(tPlatform)) return false;
       if (tResult !== "all") {
