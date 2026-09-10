@@ -409,6 +409,22 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                 )}
               </div>
 
+              {/* 转发贴文：指定贴文链接 */}
+              {action === "sharePost" && (
+                <div className="space-y-1.5">
+                  <FieldLabel required>指定贴文链接</FieldLabel>
+                  <Textarea
+                    value={sharePostLinks}
+                    onChange={(e) => setSharePostLinks(e.target.value)}
+                    placeholder="每行一条贴文链接，可输入多个"
+                    className="min-h-[80px] text-xs"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    每行输入一条待转发的贴文链接，支持多条
+                  </p>
+                </div>
+              )}
+
               {/* 转发贴文：转发方式配置 */}
               {action === "sharePost" && (
                 <div className="space-y-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
@@ -425,20 +441,6 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
-
-                  {/* 指定贴文链接 */}
-                  <div className="space-y-1.5">
-                    <FieldLabel required>指定贴文链接</FieldLabel>
-                    <Textarea
-                      value={sharePostLinks}
-                      onChange={(e) => setSharePostLinks(e.target.value)}
-                      placeholder="每行一条贴文链接，可输入多个"
-                      className="min-h-[80px] text-xs"
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      每行输入一条待转发的贴文链接，支持多条
-                    </p>
-                  </div>
 
                   {/* 分享到动态：转发说明 */}
                   {shareMode === "timeline" && (
