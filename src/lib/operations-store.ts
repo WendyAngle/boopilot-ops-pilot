@@ -66,7 +66,8 @@ export function getExecState(t: Pick<TaskRow, "status" | "aborted">): ExecState 
 
 export type TemplateStatus = "enabled" | "draft";
 export type TemplateAction =
-  | "like" | "comment" | "follow" | "post" | "addFriend" | "dm" | "share" | "view";
+  | "like" | "comment" | "follow" | "post" | "addFriend" | "dm" | "share" | "view"
+  | "sharePost" | "deletePost" | "editProfile";
 
 export const TEMPLATE_ACTION_LABEL: Record<TemplateAction, string> = {
   like: "点赞",
@@ -77,10 +78,14 @@ export const TEMPLATE_ACTION_LABEL: Record<TemplateAction, string> = {
   dm: "发私信",
   share: "转发/分享",
   view: "浏览/观看",
+  sharePost: "转发贴文",
+  deletePost: "删除贴文",
+  editProfile: "修改账号基础信息",
 };
 
 export const TEMPLATE_ACTIONS: TemplateAction[] = [
   "like", "comment", "follow", "post", "addFriend", "dm", "share", "view",
+  "sharePost", "deletePost", "editProfile",
 ];
 
 export interface TaskTemplate {
@@ -97,6 +102,8 @@ export interface TaskTemplate {
   actions?: TemplateAction[];
   tags?: string[];
   monthlyUses?: number;
+  /** 是否禁用「使用」功能（功能未实现时为 true） */
+  useDisabled?: boolean;
 }
 
 export const PLATFORMS: Platform[] = ["Facebook", "Tiktok", "WhatsApp", "Instagram", "Twitter/X"];
@@ -589,6 +596,22 @@ const initialTemplates: TaskTemplate[] = [
     actions: ["like", "follow", "comment"],
     tags: ["主账号", "高活跃", "出海"],
     monthlyUses: 6,
+  },
+  {
+    id: uid("tpl"),
+    name: "Facebook 账号内容运营",
+    subtype: "action",
+    platforms: ["Facebook"],
+    total: 10,
+    description: "对Facebook账号执行日常内容运营和维护。",
+    createdAt: "2026-06-15 09:00:00",
+    uses: 9,
+    status: "enabled",
+    agentName: "系统内置",
+    actions: ["sharePost", "deletePost", "editProfile"],
+    tags: ["内容运营", "Facebook"],
+    monthlyUses: 3,
+    useDisabled: true,
   },
 ];
 
