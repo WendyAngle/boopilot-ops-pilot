@@ -82,7 +82,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [action, setAction] = useState<ContentOpsAction>("sharePost");
-  const [shareModes, setShareModes] = useState<ShareMode[]>(["immediate"]);
+  const [shareMode, setShareMode] = useState<ShareMode>("immediate");
   const [shareNote, setShareNote] = useState("");
   const [groupLinks, setGroupLinks] = useState("");
   const [execMode, setExecMode] = useState<"now" | "scheduled">("now");
