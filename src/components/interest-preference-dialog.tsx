@@ -77,6 +77,37 @@ export function InterestPreferenceDialog({
   });
 
   const [groups, setGroups] = useState<PrefGroup[]>([makeGroup(true)]);
+  /** 各组的 AI 生成加载状态（按组 id 记录） */
+  const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
+
+  /** AI 生成搜索关键词：根据兴趣关键词 + 账号所属国家/平台扩展（与任务模板一致） */
+  const handleAiGenerate = async (g: PrefGroup) => {
+    const kw = g.interestKeywords.trim();
+    if (!kw) {
+      toast.error("请先填写兴趣关键词，AI 将据此扩展生成搜索关键词");
+      return;
+    }
+    setAiLoading((p) => ({ ...p, [g.id]: true }));
+    try {
+      const result = await generateNurtureKeywords({
+        data: {
+          interestKeywords: kw,
+          platform: account?.platform,
+          markets: account?.country ? [account.country] : undefined,
+        },
+      });
+      setGroups((gs) =>
+        gs.map((x) =>
+          x.id === g.id ? { ...x, keywords: result.searchQueries.join("；") } : x,
+        ),
+      );
+      toast.success("AI 已根据兴趣关键词生成搜索关键词，可手动调整");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "AI 生成失败，请稍后重试");
+    } finally {
+      setAiLoading((p) => ({ ...p, [g.id]: false }));
+    }
+  };
 
   useEffect(() => {
     if (account) setGroups([makeGroup(true)]);
