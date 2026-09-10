@@ -1,4 +1,8 @@
 import { useSyncExternalStore } from "react";
+import { TENANTS_SEED } from "@/lib/tenants";
+import { getTenantScope } from "@/lib/tenant-scope";
+
+const TASK_TENANTS = TENANTS_SEED.filter((t) => t.status === "active");
 
 /* ============================================================ */
 /* 类型与常量                                                   */
@@ -32,6 +36,9 @@ export interface TaskRow {
   sourceAccountId?: string;
   /** 显式指定任务分类（未指定时按 source 推导，默认养号任务） */
   category?: TaskCategory;
+  /** 所属租户 */
+  tenantId?: string;
+  tenantName?: string;
 }
 
 export type ExecState = "completed" | "running" | "pending" | "aborted";
@@ -234,7 +241,7 @@ export function parseUserMessage(text: string, templates: TaskTemplate[], lastTa
 /* 初始数据                                                     */
 /* ============================================================ */
 
-const initialTasks: TaskRow[] = [
+const initialTasks: TaskRow[] = ([
   {
     id: "204683410000001",
     name: "Facebook 周末互动养号",
@@ -557,7 +564,10 @@ const initialTasks: TaskRow[] = [
       execMode: "now",
     },
   },
-];
+] as TaskRow[]).map((t, i) => {
+  const tenant = TASK_TENANTS[i % Math.max(1, TASK_TENANTS.length)];
+  return tenant ? { ...t, tenantId: tenant.id, tenantName: tenant.name } : t;
+});
 
 export function isForeverTask(t: Pick<TaskRow, "draft">): boolean {
   const d = (t.draft ?? {}) as Record<string, unknown>;
@@ -616,7 +626,17 @@ function applyTemplates(u: Updater<TaskTemplate[]>) {
 
 export const tasksActions = {
   set: applyTasks,
-  add: (t: TaskRow) => applyTasks((prev) => [t, ...prev]),
+  add: (t: TaskRow) =>
+    applyTasks((prev) => {
+      if (t.tenantId) return [t, ...prev];
+      const scope = getTenantScope();
+      const tenant =
+        TASK_TENANTS.find((x) => x.id === scope) ?? TASK_TENANTS[0];
+      return [
+        tenant ? { ...t, tenantId: tenant.id, tenantName: tenant.name } : t,
+        ...prev,
+      ];
+    }),
   remove: (id: string) => applyTasks((prev) => prev.filter((t) => t.id !== id)),
   update: (id: string, patch: Partial<TaskRow>) =>
     applyTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t))),

@@ -14,6 +14,7 @@ import { ReachTaskDialog } from "@/components/reach-task-dialog";
 
 import { ensureActivityTasksSeeded, useActivitySubtasks, ACTIVITY_SOURCE_LABEL } from "@/lib/activity-tasks";
 import { PLATFORM_META } from "@/lib/managed-account-mock";
+import { useTenantScope } from "@/lib/tenant-scope";
 import { User2, AtSign, ArrowRight } from "lucide-react";
 
 ensureActivityTasksSeeded();
@@ -66,7 +67,15 @@ const STATUS_ICON: Record<TaskStatus, LucideIcon> = {
 };
 
 function TaskListPage() {
-  const tasks = useTasks();
+  const allTasks = useTasks();
+  const [tenantScope] = useTenantScope();
+  const tasks = useMemo(
+    () =>
+      tenantScope === "all"
+        ? allTasks
+        : allTasks.filter((t) => t.tenantId === tenantScope),
+    [allTasks, tenantScope],
+  );
   const templates = useTemplates();
   const navigate = useNavigate();
 
@@ -99,7 +108,6 @@ function TaskListPage() {
   }), [tasks]);
 
   const [tKeyword, setTKeyword] = useState("");
-  const [tSubtype, setTSubtype] = useState<"all" | "action" | "nurture">("all");
   const [tCategory, setTCategory] = useState<"all" | TaskCategory>("all");
   const [tPlatform, setTPlatform] = useState<"all" | Platform>("all");
   const [tResult, setTResult] = useState<"all" | "success" | "failed" | "partial" | "none">("all");
@@ -109,7 +117,6 @@ function TaskListPage() {
     const kw = tKeyword.trim().toLowerCase();
     return tasks.filter((t) => {
       if (kw && !t.name.toLowerCase().includes(kw) && !t.id.toLowerCase().includes(kw)) return false;
-      if (tSubtype !== "all" && t.subtype !== tSubtype) return false;
       if (tCategory !== "all" && getTaskCategory(t) !== tCategory) return false;
       if (tPlatform !== "all" && !t.platforms.includes(tPlatform)) return false;
       if (tResult !== "all") {
@@ -123,13 +130,7 @@ function TaskListPage() {
       if (tExec !== "all" && getExecState(t) !== tExec) return false;
       return true;
     });
-  }, [tasks, tKeyword, tSubtype, tCategory, tPlatform, tResult, tExec]);
-
-  const subtypeCounts = useMemo(() => ({
-    all: tasks.length,
-    action: tasks.filter((t) => t.subtype === "action").length,
-    nurture: tasks.filter((t) => t.subtype === "nurture").length,
-  }), [tasks]);
+  }, [tasks, tKeyword, tCategory, tPlatform, tResult, tExec]);
 
   const pageSize = 10;
   const [taskPage, setTaskPage] = useState(1);
@@ -139,10 +140,10 @@ function TaskListPage() {
     return filteredTasks.slice(start, start + pageSize);
   }, [filteredTasks, taskPage]);
 
-  const tasksFiltersActive = tKeyword.trim() !== "" || tSubtype !== "all" || tCategory !== "all" || tPlatform !== "all" || tResult !== "all" || tExec !== "all";
+  const tasksFiltersActive = tKeyword.trim() !== "" || tCategory !== "all" || tPlatform !== "all" || tResult !== "all" || tExec !== "all";
 
   const resetTaskFilters = () => {
-    setTKeyword(""); setTSubtype("all"); setTCategory("all"); setTPlatform("all"); setTResult("all"); setTExec("all"); setTaskPage(1);
+    setTKeyword(""); setTCategory("all"); setTPlatform("all"); setTResult("all"); setTExec("all"); setTaskPage(1);
   };
 
 
@@ -187,29 +188,6 @@ function TaskListPage() {
         </div>
 
         <div className="rounded-xl border bg-card shadow-[var(--shadow-card)]">
-          <div className="flex flex-wrap items-center gap-1 border-b px-4 pt-3">
-            {([
-              { key: "all", label: "全部任务" },
-              { key: "action", label: "单次任务" },
-              { key: "nurture", label: "周期养号" },
-            ] as const).map((it) => (
-              <button
-                key={it.key}
-                onClick={() => { setTSubtype(it.key); setTaskPage(1); }}
-                className={cn(
-                  "-mb-px border-b-2 px-3 pb-2 text-sm font-medium transition-colors",
-                  tSubtype === it.key
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {it.label}
-                <span className="ml-1.5 text-[11px] tabular-nums opacity-70">
-                  {subtypeCounts[it.key]}
-                </span>
-              </button>
-            ))}
-          </div>
           <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-3">
 
             <div className="relative w-[220px]">
