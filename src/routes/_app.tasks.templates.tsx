@@ -30,7 +30,8 @@ import { cn } from "@/lib/utils";
 import {
   PLATFORMS, PLATFORM_CHIP, SUBTYPE_LABEL, SUBTYPE_CLS,
   TEMPLATE_ACTION_LABEL, TEMPLATE_ACTIONS,
-  type Platform, type TaskSubType, type TaskTemplate, type TemplateAction, type TemplateStatus,
+  TASK_CATEGORY_ORDER, TASK_CATEGORY_LABEL,
+  type Platform, type TaskSubType, type TaskTemplate, type TemplateAction, type TemplateStatus, type TaskCategory,
   useTasks, useTemplates, templatesActions,
   fmtNow, uid,
 } from "@/lib/operations-store";
