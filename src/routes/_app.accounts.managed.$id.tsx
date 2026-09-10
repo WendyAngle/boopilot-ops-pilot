@@ -81,6 +81,7 @@ import {
   COUNTRIES,
   OPERATORS,
   ACTIVE_TENANTS,
+  ACCOUNT_LANGUAGES,
 } from "@/lib/managed-account-mock";
 import { InterestPreferenceDialog } from "@/components/interest-preference-dialog";
 import { AccountStatusTimeline } from "@/components/account-status-timeline";
@@ -337,6 +338,7 @@ function BasicInfoCard({ account, derived }: { account: ManagedAccount; derived:
     tenantId: account.tenantId,
     ownerName: account.ownerName ?? "",
     deviceType: account.deviceType ?? "",
+    language: account.language ?? "",
     remark: account.remark === "--" ? "" : account.remark,
     bio: account.bio ?? "",
     accountStatus: account.accountStatus,
@@ -483,6 +485,25 @@ function BasicInfoCard({ account, derived }: { account: ManagedAccount; derived:
       ),
     },
     { label: "最近绑定设备", value: <Mono>{derived.deviceId}</Mono> },
+    {
+      label: "语言",
+      value: editable(
+        "language",
+        <Select
+          value={form.language || "__none__"}
+          onValueChange={(v) => setForm({ ...form, language: v === "__none__" ? "" : v })}
+        >
+          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">—</SelectItem>
+            {ACCOUNT_LANGUAGES.map((lang) => (
+              <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>,
+        account.language ?? "—",
+      ),
+    },
     {
       label: "个人简介",
       value: editable(
