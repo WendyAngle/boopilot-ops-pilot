@@ -241,7 +241,6 @@ export function MirrorWorkbench({
                   bio: draft.bio.trim(),
                   language: draft.language,
                   region: draft.region,
-                  interests: draft.interests,
                 });
                 toast.success("已回填并同步到账号列表", {
                   description: draft.username.trim(),
