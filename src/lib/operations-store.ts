@@ -598,6 +598,7 @@ const initialTemplates: TaskTemplate[] = [
     actions: ["like", "follow", "comment"],
     tags: ["主账号", "高活跃", "出海"],
     monthlyUses: 6,
+    category: "nurture",
   },
   {
     id: uid("tpl"),
@@ -614,6 +615,7 @@ const initialTemplates: TaskTemplate[] = [
     tags: ["内容运营", "Facebook"],
     monthlyUses: 3,
     useDisabled: true,
+    category: "account-ops",
   },
 ];
 
