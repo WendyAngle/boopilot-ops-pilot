@@ -20,6 +20,12 @@ import {
   seedManagedAccounts, ACCOUNT_LANGUAGES, ACCOUNT_REGIONS,
   PLATFORM_META, type ManagedAccount,
 } from "@/lib/managed-account-mock";
+import {
+  AccountScopePicker,
+  resolveScopeAccounts,
+  EMPTY_ACCOUNT_SCOPE,
+  type AccountScopeValue,
+} from "@/components/account-scope-picker";
 
 type ContentOpsAction = "sharePost" | "deletePost" | "editProfile";
 type ShareMode = "immediate" | "timeline" | "group";
@@ -59,7 +65,13 @@ const CONTENT_OPS_ACTIONS: Array<{
 const SHARE_MODE_LABELS: Record<ShareMode, string> = {
   immediate: "立即分享",
   timeline: "分享到动态",
-  group: "分享到小组",
+  group: "分享到群组",
+};
+
+const SHARE_MODE_DESC: Record<ShareMode, string> = {
+  immediate: "一键转发，不编辑直接发布",
+  timeline: "转发到自己的时间线，可附加自己的文字（即转发说明）",
+  group: "转发到公开 / 自己所属的群组",
 };
 
 const DELETE_MODE_LABELS: Record<DeleteMode, string> = {
@@ -130,11 +142,11 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const [deleteKeyword, setDeleteKeyword] = useState("");
   const [deletePostType, setDeletePostType] = useState<"all" | "original" | "repost">("all");
   const [deleteMaxCount, setDeleteMaxCount] = useState("50");
-  const [deleteAccountIds, setDeleteAccountIds] = useState<string[]>([]);
+  const [deleteScope, setDeleteScope] = useState<AccountScopeValue>(EMPTY_ACCOUNT_SCOPE);
 
   // 修改账号基础信息
   const [editFields, setEditFields] = useState<EditFieldKey[]>(["language"]);
-  const [editAccountIds, setEditAccountIds] = useState<string[]>([]);
+  const [editScope, setEditScope] = useState<AccountScopeValue>(EMPTY_ACCOUNT_SCOPE);
   const [editLanguage, setEditLanguage] = useState("");
   const [editRegion, setEditRegion] = useState("");
   const [editBio, setEditBio] = useState("");
@@ -169,10 +181,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     setDeleteKeyword("");
     setDeletePostType("all");
     setDeleteMaxCount("50");
-    setDeleteAccountIds([]);
+    setDeleteScope(EMPTY_ACCOUNT_SCOPE);
     // 重置修改账号基础信息
     setEditFields(["language"]);
-    setEditAccountIds([]);
+    setEditScope(EMPTY_ACCOUNT_SCOPE);
     setEditLanguage("");
     setEditRegion("");
     setEditBio("");
@@ -188,12 +200,11 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   }
   const tpl = template;
 
+  const deleteAccountIds = resolveScopeAccounts(deleteScope, platformAccounts).map((a) => a.id);
+  const editAccountIds = resolveScopeAccounts(editScope, platformAccounts).map((a) => a.id);
+
   const toggleEditField = (f: EditFieldKey) =>
     setEditFields((p) => (p.includes(f) ? p.filter((x) => x !== f) : [...p, f]));
-  const toggleDeleteAccount = (id: string) =>
-    setDeleteAccountIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-  const toggleEditAccount = (id: string) =>
-    setEditAccountIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const setUniqueField = (id: string, key: "nickname" | "displayName", value: string) =>
     setEditUnique((p) => ({
       ...p,
@@ -220,7 +231,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
         lines.push(`转发说明：${shareNote.trim()}`);
       }
       if (shareMode === "group" && groupLinks.trim()) {
-        lines.push(`指定小组链接：${groupLinks.trim()}`);
+        lines.push(`指定群组链接：${groupLinks.trim()}`);
       }
     }
     if (action === "deletePost") {
@@ -433,12 +444,24 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     <RadioGroup
                       value={shareMode}
                       onValueChange={(v) => setShareMode(v as ShareMode)}
-                      className="flex gap-4"
+                      className="grid gap-2 sm:grid-cols-3"
                     >
                       {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => (
-                        <label key={m} className="flex items-center gap-1.5 text-xs">
-                          <RadioGroupItem value={m} id={`sm-${m}`} />
-                          {SHARE_MODE_LABELS[m]}
+                        <label
+                          key={m}
+                          htmlFor={`sm-${m}`}
+                          className={cn(
+                            "flex cursor-pointer items-start gap-2 rounded-md border bg-background p-2.5 transition-colors",
+                            shareMode === m ? "border-primary bg-primary/5" : "hover:border-primary/40",
+                          )}
+                        >
+                          <RadioGroupItem value={m} id={`sm-${m}`} className="mt-0.5" />
+                          <span className="min-w-0">
+                            <span className="block text-xs font-medium">{SHARE_MODE_LABELS[m]}</span>
+                            <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
+                              {SHARE_MODE_DESC[m]}
+                            </span>
+                          </span>
                         </label>
                       ))}
                     </RadioGroup>
@@ -457,17 +480,17 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     </div>
                   )}
 
-                  {/* 分享到小组：指定小组链接 */}
+                  {/* 分享到群组：指定群组链接 */}
                   {shareMode === "group" && (
                     <div className="space-y-1.5">
-                      <FieldLabel>指定小组链接</FieldLabel>
+                      <FieldLabel>指定群组链接</FieldLabel>
                       <Textarea
                         value={groupLinks}
                         onChange={(e) => setGroupLinks(e.target.value)}
-                        placeholder="输入小组链接，每行一个，可输入多个"
+                        placeholder="输入群组链接，每行一个，可输入多个"
                         className="min-h-[80px] text-xs"
                       />
-                      <p className="text-[11px] text-muted-foreground">每行输入一个小组链接，支持多个小组</p>
+                      <p className="text-[11px] text-muted-foreground">每行输入一个群组链接，支持多个群组</p>
                     </div>
                   )}
                 </div>
@@ -589,26 +612,12 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <FieldLabel required>指定账号（可多选）</FieldLabel>
-                        <ScrollArea className="h-[132px] rounded-md border bg-background p-2">
-                          <div className="space-y-1">
-                            {platformAccounts.map((a) => (
-                              <label
-                                key={a.id}
-                                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"
-                              >
-                                <Checkbox
-                                  checked={deleteAccountIds.includes(a.id)}
-                                  onCheckedChange={() => toggleDeleteAccount(a.id)}
-                                />
-                                <span>{a.username}</span>
-                                {a.displayName && (
-                                  <span className="text-muted-foreground">{a.displayName}</span>
-                                )}
-                              </label>
-                            ))}
-                          </div>
-                        </ScrollArea>
+                        <FieldLabel required>指定账号</FieldLabel>
+                        <AccountScopePicker
+                          accounts={platformAccounts}
+                          value={deleteScope}
+                          onChange={setDeleteScope}
+                        />
                       </div>
                       <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -644,26 +653,12 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <FieldLabel required>指定账号（可多选）</FieldLabel>
-                    <ScrollArea className="h-[132px] rounded-md border bg-background p-2">
-                      <div className="space-y-1">
-                        {platformAccounts.map((a) => (
-                          <label
-                            key={a.id}
-                            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"
-                          >
-                            <Checkbox
-                              checked={editAccountIds.includes(a.id)}
-                              onCheckedChange={() => toggleEditAccount(a.id)}
-                            />
-                            <span>{a.username}</span>
-                            {a.displayName && (
-                              <span className="text-muted-foreground">{a.displayName}</span>
-                            )}
-                          </label>
-                        ))}
-                      </div>
-                    </ScrollArea>
+                    <FieldLabel required>指定账号</FieldLabel>
+                    <AccountScopePicker
+                      accounts={platformAccounts}
+                      value={editScope}
+                      onChange={setEditScope}
+                    />
                   </div>
 
                   {hasCommonField && (
