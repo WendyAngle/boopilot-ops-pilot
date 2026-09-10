@@ -155,6 +155,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     setShareMode("immediate");
     setShareNote("");
     setGroupLinks("");
+    setSharePostLinks("");
     setExecMode("now");
     setScheduledMode("datetime");
     setScheduledDate(todayStr());
