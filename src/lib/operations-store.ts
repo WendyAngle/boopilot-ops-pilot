@@ -149,7 +149,7 @@ export const TASK_CATEGORY_ACTIONS: Record<TaskCategory, string[]> = {
   nurture: ["点赞", "关注", "评论"],
   coview: ["同屏人工操作", "账号资料回填", "待办事项处置"],
   "social-reach": ["加好友", "关注", "私信"],
-  "account-ops": ["转发帖", "删帖", "修改账号信息", "发帖"],
+  "account-ops": ["转发帖", "隐藏帖", "删帖", "修改账号信息", "发帖"],
 };
 
 export const TASK_CATEGORY_CLS: Record<TaskCategory, string> = {
