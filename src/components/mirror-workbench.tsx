@@ -116,16 +116,9 @@ export function MirrorWorkbench({
       base.displayName !== draft.displayName ||
       base.bio !== draft.bio ||
       base.language !== draft.language ||
-      base.region !== draft.region ||
-      base.interests.join("|") !== draft.interests.join("|")
+      base.region !== draft.region
     );
   }, [account, draft]);
-
-  const addInterest = (v: string) => {
-    const t = v.trim();
-    if (!t || draft.interests.includes(t)) return;
-    setDraft((d) => ({ ...d, interests: [...d.interests, t] }));
-  };
 
 
   /* ---------- 事项登记 ---------- */
