@@ -275,26 +275,21 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
               {action === "sharePost" && (
                 <div className="space-y-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
                   <FieldLabel required>转发方式</FieldLabel>
-                  <div className="space-y-2">
-                    {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => {
-                      const checked = shareModes.includes(m);
-                      return (
-                        <label
-                          key={m}
-                          className={cn(
-                            "flex items-center gap-2 rounded-md border px-3 py-2 transition-colors cursor-pointer",
-                            checked ? "border-primary/60 bg-primary/5" : "hover:border-primary/30",
-                          )}
-                        >
-                          <Checkbox checked={checked} onCheckedChange={() => toggleShareMode(m)} />
-                          <span className="text-xs font-medium">{SHARE_MODE_LABELS[m]}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  <Select value={shareMode} onValueChange={(v) => setShareMode(v as ShareMode)}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="请选择转发方式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {SHARE_MODE_LABELS[m]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
                   {/* 分享到动态：转发说明 */}
-                  {shareModes.includes("timeline") && (
+                  {shareMode === "timeline" && (
                     <div className="space-y-1.5">
                       <FieldLabel>转发说明</FieldLabel>
                       <Textarea
@@ -307,7 +302,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                   )}
 
                   {/* 分享到小组：指定小组链接 */}
-                  {shareModes.includes("group") && (
+                  {shareMode === "group" && (
                     <div className="space-y-1.5">
                       <FieldLabel>指定小组链接</FieldLabel>
                       <Textarea
