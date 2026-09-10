@@ -102,6 +102,8 @@ export interface TaskTemplate {
   actions?: TemplateAction[];
   tags?: string[];
   monthlyUses?: number;
+  /** 是否禁用「使用」功能（功能未实现时为 true） */
+  useDisabled?: boolean;
 }
 
 export const PLATFORMS: Platform[] = ["Facebook", "Tiktok", "WhatsApp", "Instagram", "Twitter/X"];
