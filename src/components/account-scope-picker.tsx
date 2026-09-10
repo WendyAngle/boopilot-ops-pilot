@@ -207,18 +207,8 @@ export function AccountScopePicker({
                       <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                         {a.username}
                       </span>
-                      {(a.tags ?? []).slice(0, 2).map((t) => (
-                        <span
-                          key={t}
-                          className="hidden rounded bg-muted px-1.5 py-px text-[10px] text-muted-foreground sm:inline"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                      <span className="rounded border border-border/60 px-1.5 py-px text-[10px] text-muted-foreground">
-                        {a.platform}
-                      </span>
-                      <span className="hidden text-[10px] text-muted-foreground md:inline">
+                      <TagOverflow tags={a.tags ?? []} max={1} />
+                      <span className="hidden shrink-0 text-[10px] text-muted-foreground md:inline">
                         {a.country}
                       </span>
                     </label>
