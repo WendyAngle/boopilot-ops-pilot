@@ -121,13 +121,12 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       tpl.description,
       `指定动作：${actionLabel}`,
     ];
-    if (action === "sharePost" && shareModes.length > 0) {
-      const modeLabels = shareModes.map((m) => SHARE_MODE_LABELS[m]).join("、");
-      lines.push(`转发方式：${modeLabels}`);
-      if (shareModes.includes("timeline") && shareNote.trim()) {
+    if (action === "sharePost" && shareMode) {
+      lines.push(`转发方式：${SHARE_MODE_LABELS[shareMode]}`);
+      if (shareMode === "timeline" && shareNote.trim()) {
         lines.push(`转发说明：${shareNote.trim()}`);
       }
-      if (shareModes.includes("group") && groupLinks.trim()) {
+      if (shareMode === "group" && groupLinks.trim()) {
         lines.push(`指定小组链接：${groupLinks.trim()}`);
       }
     }
