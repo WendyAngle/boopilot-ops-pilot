@@ -255,8 +255,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const handleSubmit = () => {
     if (!name.trim()) return toast.error("请输入任务名称");
     if (!action) return toast.error("请选择动作类型");
-    if (action === "sharePost" && !shareMode) {
-      return toast.error("请选择转发方式");
+    if (action === "sharePost") {
+      if (!shareMode) return toast.error("请选择转发方式");
+      const postLinks = sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
+      if (postLinks.length === 0) return toast.error("请至少填写 1 条指定贴文链接");
     }
     if (action === "deletePost") {
       if (deleteMode === "specific") {
