@@ -241,7 +241,7 @@ export function parseUserMessage(text: string, templates: TaskTemplate[], lastTa
 /* 初始数据                                                     */
 /* ============================================================ */
 
-const initialTasks: TaskRow[] = [
+const initialTasks: TaskRow[] = ([
   {
     id: "204683410000001",
     name: "Facebook 周末互动养号",
