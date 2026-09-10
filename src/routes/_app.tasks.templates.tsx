@@ -502,6 +502,12 @@ function TaskTemplatesPage() {
         onOpenChange={(o) => { setUseDlgOpen(o); if (!o) setUseDlgTpl(null); }}
         onViewDetail={(tpl) => { setUseDlgOpen(false); openEdit(tpl); }}
       />
+
+      <ContentOpsTaskDialog
+        template={opsDlgTpl}
+        open={opsDlgOpen}
+        onOpenChange={(o) => { setOpsDlgOpen(o); if (!o) setOpsDlgTpl(null); }}
+      />
     </TooltipProvider>
   );
 }
