@@ -6,6 +6,7 @@ import {
   Eye,
   Search,
   Sparkles,
+  Loader2,
   Heart,
   UserPlus,
   MessageSquare,
@@ -26,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import type { ManagedAccount } from "@/lib/managed-account-mock";
+import { generateNurtureKeywords } from "@/lib/nurture-keywords.functions";
 
 /* ============================================================ */
 /* 设置兴趣偏好 弹窗（列表页 / 详情页共用）                       */
