@@ -187,29 +187,6 @@ function TaskListPage() {
         </div>
 
         <div className="rounded-xl border bg-card shadow-[var(--shadow-card)]">
-          <div className="flex flex-wrap items-center gap-1 border-b px-4 pt-3">
-            {([
-              { key: "all", label: "全部任务" },
-              { key: "action", label: "单次任务" },
-              { key: "nurture", label: "周期养号" },
-            ] as const).map((it) => (
-              <button
-                key={it.key}
-                onClick={() => { setTSubtype(it.key); setTaskPage(1); }}
-                className={cn(
-                  "-mb-px border-b-2 px-3 pb-2 text-sm font-medium transition-colors",
-                  tSubtype === it.key
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {it.label}
-                <span className="ml-1.5 text-[11px] tabular-nums opacity-70">
-                  {subtypeCounts[it.key]}
-                </span>
-              </button>
-            ))}
-          </div>
           <div className="flex flex-wrap items-center gap-2 border-b bg-muted/30 px-4 py-3">
 
             <div className="relative w-[220px]">
