@@ -862,6 +862,24 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     if (step === 2 && action === "sharePost" && !shareMode) {
                       toast.error("请选择转发方式"); return;
                     }
+                    if (step === 2 && action === "deletePost") {
+                      if (deleteMode === "specific") {
+                        if (!deleteAccountId) { toast.error("请选择指定账号"); return; }
+                        if (!deletePostLinks.split("\n").some((s) => s.trim())) {
+                          toast.error("请至少填写 1 条待删除贴文链接"); return;
+                        }
+                      } else {
+                        if (!deleteStartDate || !deleteEndDate) { toast.error("请填写完整的删除时间范围"); return; }
+                        if (deleteStartDate > deleteEndDate) { toast.error("开始时间不能晚于结束时间"); return; }
+                        if (deleteAccountIds.length === 0) { toast.error("请至少选择 1 个账号"); return; }
+                        const max = parseInt(deleteMaxCount, 10);
+                        if (!max || max < 1 || max > 200) { toast.error("条数上限需在 1-200 之间"); return; }
+                      }
+                    }
+                    if (step === 2 && action === "editProfile") {
+                      if (editFields.length === 0) { toast.error("请至少勾选 1 个修改字段"); return; }
+                      if (editAccountIds.length === 0) { toast.error("请至少选择 1 个账号"); return; }
+                    }
                     setStep((s) => Math.min(3, s + 1));
                   }}
                 >
