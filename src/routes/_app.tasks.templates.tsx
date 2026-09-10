@@ -97,10 +97,10 @@ function TaskTemplatesPage() {
   const [editing, setEditing] = useState<TaskTemplate | null>(null);
   const [form, setForm] = useState<{
     name: string; subtype: TaskSubType; category: TaskCategory; platforms: Platform[]; total: number;
-    description: string; agentName: string; actions: TemplateAction[]; tags: string[];
+    description: string; agentName: string; actions: TemplateAction[];
   }>({
     name: "", subtype: "action", category: "nurture", platforms: ["Facebook"], total: 10,
-    description: "", agentName: "", actions: [], tags: [],
+    description: "", agentName: "", actions: [],
   });
   const openEdit = (tpl: TaskTemplate) => {
     setEditing(tpl);
