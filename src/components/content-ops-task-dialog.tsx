@@ -113,8 +113,6 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   }
   const tpl = template;
 
-  const toggleShareMode = (m: ShareMode) =>
-    setShareModes((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]));
 
   const composeDescription = () => {
     const actionLabel = CONTENT_OPS_ACTIONS.find((a) => a.value === action)?.label ?? "未指定";
