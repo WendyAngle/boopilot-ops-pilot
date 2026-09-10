@@ -409,38 +409,38 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                 )}
               </div>
 
-              {/* 转发贴文：指定贴文链接 */}
-              {action === "sharePost" && (
-                <div className="space-y-1.5">
-                  <FieldLabel required>指定贴文链接</FieldLabel>
-                  <Textarea
-                    value={sharePostLinks}
-                    onChange={(e) => setSharePostLinks(e.target.value)}
-                    placeholder="每行一条贴文链接，可输入多个"
-                    className="min-h-[80px] text-xs"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    每行输入一条待转发的贴文链接，支持多条
-                  </p>
-                </div>
-              )}
-
               {/* 转发贴文：转发方式配置 */}
               {action === "sharePost" && (
                 <div className="space-y-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
-                  <FieldLabel required>转发方式</FieldLabel>
-                  <Select value={shareMode} onValueChange={(v) => setShareMode(v as ShareMode)}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="请选择转发方式" />
-                    </SelectTrigger>
-                    <SelectContent>
+                  <div className="space-y-1.5">
+                    <FieldLabel required>转发方式</FieldLabel>
+                    <RadioGroup
+                      value={shareMode}
+                      onValueChange={(v) => setShareMode(v as ShareMode)}
+                      className="flex gap-4"
+                    >
                       {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => (
-                        <SelectItem key={m} value={m}>
+                        <label key={m} className="flex items-center gap-1.5 text-xs">
+                          <RadioGroupItem value={m} id={`sm-${m}`} />
                           {SHARE_MODE_LABELS[m]}
-                        </SelectItem>
+                        </label>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </RadioGroup>
+                  </div>
+
+                  {/* 转发贴文链接 */}
+                  <div className="space-y-1.5">
+                    <FieldLabel required>转发贴文链接</FieldLabel>
+                    <Textarea
+                      value={sharePostLinks}
+                      onChange={(e) => setSharePostLinks(e.target.value)}
+                      placeholder="每行一条贴文链接，可输入多个"
+                      className="min-h-[80px] text-xs"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      每行输入一条待转发的贴文链接，支持多条
+                    </p>
+                  </div>
 
                   {/* 分享到动态：转发说明 */}
                   {shareMode === "timeline" && (
