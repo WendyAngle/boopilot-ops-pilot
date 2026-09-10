@@ -379,7 +379,7 @@ function TaskDiagnosticsPage() {
 
   const exportReport = () => {
     const head = [
-      "子任务ID", "明细类型", "任务名称", "业务类型", "平台", "账号", "动作", "执行步骤",
+      "子任务ID", "明细类型", "任务名称", "任务类型", "平台", "账号", "动作", "执行步骤",
       "日志来源", "失败原因分类", "失败摘要", "日志级别", "耗时(秒)", "重试次数",
       "代理IP", "执行机", "失败时间",
     ];
@@ -428,7 +428,7 @@ function TaskDiagnosticsPage() {
         return [g.taskName, g.goalType, TASK_CATEGORY_LABEL[g.category]]
           .some((v) => String(v).toLowerCase().includes(q));
       });
-      const head = ["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "过程异常但成功", "执行中", "完成率", "任务结果"];
+      const head = ["任务名称", "任务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "过程异常但成功", "执行中", "完成率", "任务结果"];
       const lines = rows.map((g) =>
         [g.taskName, TASK_CATEGORY_LABEL[g.category], g.platform, g.goalType, g.goalTotal, g.done, g.failed, g.recovered, g.running, `${g.rate.toFixed(0)}%`, GOAL_RESULT_LABEL[g.result]]
 
@@ -521,7 +521,7 @@ function TaskDiagnosticsPage() {
             </div>
 
             <div className="w-40 space-y-1.5">
-              <Label className="text-xs text-muted-foreground">业务类型</Label>
+              <Label className="text-xs text-muted-foreground">任务类型</Label>
               <Select
                 value={filter.category}
                 onValueChange={(v) => patch({ category: v as TaskCategory | "all" })}
@@ -996,7 +996,7 @@ function TaskDiagnosticsPage() {
                 <table className="w-full min-w-[900px] text-sm">
                   <thead>
                     <tr className="border-b text-xs text-muted-foreground">
-                      {["任务名称", "业务类型", "平台", "子任务数", "过程异常子任务", "过程失败动作数", "隐性异常率", "主要过程异常原因", "最近发生"].map((t) => (
+                      {["任务名称", "任务类型", "平台", "子任务数", "过程异常子任务", "过程失败动作数", "隐性异常率", "主要过程异常原因", "最近发生"].map((t) => (
                         <th key={t} className="px-3 py-2 text-left font-medium">{t}</th>
                       ))}
                     </tr>
@@ -1170,7 +1170,7 @@ function TaskDiagnosticsPage() {
             <table className="w-full min-w-[1180px] text-sm">
               <thead>
                 <tr className="border-b text-xs text-muted-foreground">
-                  {["子任务ID", "明细类型", "任务名称", "业务类型", "平台", "账号", "执行步骤", "失败原因", "级别 / 耗时", "失败时间", "操作"].map((t) => (
+                  {["子任务ID", "明细类型", "任务名称", "任务类型", "平台", "账号", "执行步骤", "失败原因", "级别 / 耗时", "失败时间", "操作"].map((t) => (
                     <th key={t} className="px-3 py-2 text-left font-medium">{t}</th>
                   ))}
                 </tr>
@@ -1349,7 +1349,7 @@ function GoalTable({ rows }: { rows: ReturnType<typeof buildGoalRows> }) {
       <table className="w-full min-w-[900px] text-sm">
         <thead>
           <tr className="border-b text-xs text-muted-foreground">
-            {["任务名称", "业务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "过程异常但成功", "执行中", "完成率", "任务结果"].map((t) => (
+            {["任务名称", "任务类型", "平台", "目标类型", "目标总量", "已完成", "失败", "过程异常但成功", "执行中", "完成率", "任务结果"].map((t) => (
               <th key={t} className="px-3 py-2 text-left font-medium">{t}</th>
             ))}
           </tr>

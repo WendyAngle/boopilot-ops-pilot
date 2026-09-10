@@ -7,7 +7,7 @@ import {
   Bot, Sparkles, ListChecks, CheckCircle2, XCircle, Clock3,
   PlayCircle, PauseCircle, Trash2, BookmarkPlus, StopCircle,
   Search, RotateCcw, Filter, Eye, ScrollText, BarChart3, Pencil, MoreHorizontal, Info, Plus,
-  MessageCircle, UserCheck, UserX, MonitorPlay, Send, type LucideIcon,
+  UserCheck, MonitorPlay, Send, type LucideIcon,
 } from "lucide-react";
 import { UseTemplateDialog } from "@/components/use-template-dialog";
 import { ReachTaskDialog } from "@/components/reach-task-dialog";
@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 import {
   PLATFORMS, PLATFORM_CHIP, STATUS_LABEL, STATUS_CLS,
   EXEC_STATE_LABEL, EXEC_STATE_CLS, getExecState, isForeverTask,
-  TASK_CATEGORY_LABEL, TASK_CATEGORY_CLS, getTaskCategory,
+  TASK_CATEGORY_LABEL, TASK_CATEGORY_CLS, TASK_CATEGORY_ORDER, getTaskCategory,
   type Platform, type TaskStatus, type ExecState, type TaskRow, type TaskTemplate, type TaskCategory,
   useTasks, useTemplates, tasksActions, templatesActions,
   executeTask, abortTask, fmtNow, uid,
@@ -57,11 +57,9 @@ export const Route = createFileRoute("/_app/tasks/list")({
 
 const CATEGORY_ICON: Record<TaskCategory, LucideIcon> = {
   nurture: Bot,
-  "friend-approve": UserCheck,
-  "friend-reject": UserX,
-  dm: MessageCircle,
   coview: MonitorPlay,
   "social-reach": Send,
+  "account-ops": UserCheck,
 };
 const STATUS_ICON: Record<TaskStatus, LucideIcon> = {
   pending: Clock3, running: PlayCircle, success: CheckCircle2, failed: XCircle, partial: PauseCircle,
@@ -221,8 +219,8 @@ function TaskListPage() {
             <Select value={tCategory} onValueChange={(v) => setTCategory(v as typeof tCategory)}>
               <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="任务类型" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部任务类型</SelectItem>
-                {(Object.keys(TASK_CATEGORY_LABEL) as TaskCategory[]).map((c) => (
+                <SelectItem value="all">全部类型</SelectItem>
+                {TASK_CATEGORY_ORDER.map((c) => (
                   <SelectItem key={c} value={c}>{TASK_CATEGORY_LABEL[c]}</SelectItem>
                 ))}
               </SelectContent>
@@ -560,15 +558,15 @@ function TaskListPage() {
 
 
       <UseTemplateDialog
-        task={editingTask && getTaskCategory(editingTask) !== "social-reach" ? editingTask : null}
-        open={!!editingTask && getTaskCategory(editingTask) !== "social-reach"}
+        task={editingTask && (!!editingTask?.source || getTaskCategory(editingTask!) !== "social-reach") ? editingTask : null}
+        open={!!editingTask && (!!editingTask?.source || getTaskCategory(editingTask!) !== "social-reach")}
         onOpenChange={(o) => { if (!o) setEditingTask(null); }}
       />
 
 
       <ReachTaskDialog
-        task={editingTask && getTaskCategory(editingTask) === "social-reach" ? editingTask : null}
-        open={!!editingTask && getTaskCategory(editingTask) === "social-reach"}
+        task={editingTask && (!editingTask?.source && getTaskCategory(editingTask!) === "social-reach") ? editingTask : null}
+        open={!!editingTask && (!editingTask?.source && getTaskCategory(editingTask!) === "social-reach")}
         onOpenChange={(o) => { if (!o) setEditingTask(null); }}
       />
 

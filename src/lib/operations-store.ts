@@ -112,35 +112,45 @@ export const SUBTYPE_CLS: Record<TaskSubType, string> = {
   action: "bg-amber-500/10 text-amber-600 border-amber-300/40",
 };
 
-/** 任务分类（面向用户展示的任务类型） */
-export type TaskCategory =
-  | "nurture" | "friend-approve" | "friend-reject" | "dm" | "coview" | "social-reach";
+/** 任务类型（全系统统一口径：任务列表 / 任务诊断中心共用） */
+export type TaskCategory = "nurture" | "coview" | "social-reach" | "account-ops";
+
+/** 下拉与筛选的固定顺序 */
+export const TASK_CATEGORY_ORDER: TaskCategory[] = [
+  "nurture", "coview", "social-reach", "account-ops",
+];
 
 export const TASK_CATEGORY_LABEL: Record<TaskCategory, string> = {
   nurture: "养号任务",
-  dm: "私信任务",
-  coview: "账号同屏任务",
-  "social-reach": "社媒触达",
-  "friend-approve": "通过好友申请",
-  "friend-reject": "拒绝好友申请",
+  coview: "同屏任务",
+  "social-reach": "社媒触达任务",
+  "account-ops": "账号运营任务",
+};
+
+/** 每种任务类型包含的动作（用于任务说明、mock 数据与诊断维度） */
+export const TASK_CATEGORY_ACTIONS: Record<TaskCategory, string[]> = {
+  nurture: ["点赞", "关注", "评论"],
+  coview: ["同屏人工操作", "账号资料回填", "待办事项处置"],
+  "social-reach": ["加好友", "关注", "私信"],
+  "account-ops": ["转发帖", "删帖", "修改账号信息", "发帖"],
 };
 
 export const TASK_CATEGORY_CLS: Record<TaskCategory, string> = {
   nurture: "bg-violet-500/10 text-violet-600 border-violet-300/40",
-  "friend-approve": "bg-emerald-500/10 text-emerald-600 border-emerald-300/40",
-  "friend-reject": "bg-rose-500/10 text-rose-600 border-rose-300/40",
-  dm: "bg-sky-500/10 text-sky-600 border-sky-300/40",
   coview: "bg-amber-500/10 text-amber-600 border-amber-300/40",
   "social-reach": "bg-teal-500/10 text-teal-600 border-teal-300/40",
+  "account-ops": "bg-sky-500/10 text-sky-600 border-sky-300/40",
 };
 
 export function getTaskCategory(t: Pick<TaskRow, "source" | "category">): TaskCategory {
   if (t.category) return t.category;
-  if (t.source === "dm") return "dm";
-  if (t.source === "friend-approve") return "friend-approve";
-  if (t.source === "friend-reject") return "friend-reject";
+  // 私信 / 通过好友申请 / 拒绝好友申请 台账统一归入「社媒触达任务」
+  if (t.source === "dm" || t.source === "friend-approve" || t.source === "friend-reject") {
+    return "social-reach";
+  }
   return "nurture";
 }
+
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
   pending: "待执行",
@@ -267,6 +277,7 @@ const initialTasks: TaskRow[] = [
     total: 20, done: 14, failed: 2,
     status: "partial",
     description: "围绕新品上线，对 20 个目标账号一次性发布带话题视频。",
+    category: "account-ops",
     createdBy: "陈晓明",
     createdAt: "2026-05-25 09:45:13",
     endTime: "2026-05-25 10:20:00",
@@ -288,6 +299,7 @@ const initialTasks: TaskRow[] = [
     platforms: ["Facebook", "Instagram", "Twitter/X"],
     total: 30, done: 6, failed: 0,
     status: "running",
+    category: "account-ops",
     description: "节日活动多平台同步触达，覆盖 Facebook / Instagram / Twitter/X。",
     createdBy: "李雨欣",
     createdAt: "2026-05-26 09:10:00",
@@ -311,6 +323,7 @@ const initialTasks: TaskRow[] = [
     platforms: ["Instagram"],
     total: 25, done: 0, failed: 0,
     status: "pending",
+    category: "social-reach",
     description: "对近 7 天新增的 25 个 Instagram 粉丝发送一次性问候私信，附品牌主页链接。",
     createdBy: "黄雪",
     createdAt: "2026-05-27 14:20:33",
@@ -318,6 +331,10 @@ const initialTasks: TaskRow[] = [
     draft: {
       name: "Instagram 新粉丝问候私信",
       platforms: ["Instagram"],
+      reachAction: "私信",
+      targetMode: "list",
+      targetSource: "新增粉丝",
+      replies: 0,
       reachTags: ["新粉丝", "加微信"],
       reachAccounts: ["acc-501", "acc-502", "acc-503", "acc-504"],
       postTags: ["品牌"],
@@ -332,6 +349,7 @@ const initialTasks: TaskRow[] = [
     platforms: ["WhatsApp"],
     total: 18, done: 0, failed: 0,
     status: "pending",
+    category: "social-reach",
     description: "对标记为高意向但 14 天未跟进的 18 位客户进行一次性复触达，发送促销链接。",
     createdBy: "陈晓明",
     createdAt: "2026-05-27 16:05:12",
@@ -339,6 +357,10 @@ const initialTasks: TaskRow[] = [
     draft: {
       name: "WhatsApp 高意向客户复触达",
       platforms: ["WhatsApp"],
+      reachAction: "私信",
+      targetMode: "list",
+      targetSource: "客户名录",
+      replies: 0,
       reachTags: ["高意向"],
       reachAccounts: ["acc-701", "acc-702", "acc-703"],
       postTags: ["新品促销"],
@@ -490,6 +512,49 @@ const initialTasks: TaskRow[] = [
       execMode: "scheduled",
       scheduledDate: "2026-06-03",
       scheduledTime: "09:30",
+    },
+  },
+  {
+    id: "204683410000011",
+    name: "Facebook 异常账号同屏巡检",
+    subtype: "action",
+    platforms: ["Facebook"],
+    total: 8, done: 6, failed: 1,
+    status: "running",
+    category: "coview",
+    description: "对 8 个处于「待确认/处理」的 Facebook 托管账号发起同屏巡检，人工核实账号状态并回填资料、登记处置结果。",
+    createdBy: "李雨欣",
+    createdAt: "2026-06-03 09:30:00",
+    draft: {
+      name: "Facebook 异常账号同屏巡检",
+      platforms: ["Facebook"],
+      reachTags: ["待确认/处理"],
+      reachAccounts: ["acc-c01", "acc-c02", "acc-c03"],
+      postTags: [],
+      postIds: [],
+      execMode: "now",
+    },
+  },
+  {
+    id: "204683410000012",
+    name: "Instagram 违规帖清理与资料更新",
+    subtype: "action",
+    platforms: ["Instagram"],
+    total: 16, done: 16, failed: 0,
+    status: "success",
+    category: "account-ops",
+    description: "对 16 个 Instagram 托管账号执行账号运营动作：删除 3 天前的违规帖、转发品牌主帖并统一修改账号简介与头像。",
+    createdBy: "陈晓明",
+    createdAt: "2026-06-02 14:10:00",
+    endTime: "2026-06-02 15:26:11",
+    draft: {
+      name: "Instagram 违规帖清理与资料更新",
+      platforms: ["Instagram"],
+      reachTags: ["品牌", "主账号"],
+      reachAccounts: ["acc-o01", "acc-o02", "acc-o03", "acc-o04"],
+      postTags: ["品牌"],
+      postIds: ["post-1001"],
+      execMode: "now",
     },
   },
 ];
