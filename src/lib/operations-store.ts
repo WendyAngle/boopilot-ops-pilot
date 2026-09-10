@@ -67,7 +67,7 @@ export function getExecState(t: Pick<TaskRow, "status" | "aborted">): ExecState 
 export type TemplateStatus = "enabled" | "draft";
 export type TemplateAction =
   | "like" | "comment" | "follow" | "post" | "addFriend" | "dm" | "share" | "view"
-  | "sharePost" | "deletePost" | "editProfile";
+  | "sharePost" | "hidePost" | "deletePost" | "editProfile";
 
 export const TEMPLATE_ACTION_LABEL: Record<TemplateAction, string> = {
   like: "点赞",
@@ -79,13 +79,14 @@ export const TEMPLATE_ACTION_LABEL: Record<TemplateAction, string> = {
   share: "转发/分享",
   view: "浏览/观看",
   sharePost: "转发贴文",
+  hidePost: "隐藏贴文",
   deletePost: "删除贴文",
   editProfile: "修改账号基础信息",
 };
 
 export const TEMPLATE_ACTIONS: TemplateAction[] = [
   "like", "comment", "follow", "post", "addFriend", "dm", "share", "view",
-  "sharePost", "deletePost", "editProfile",
+  "sharePost", "hidePost", "deletePost", "editProfile",
 ];
 
 export interface TaskTemplate {
@@ -148,7 +149,7 @@ export const TASK_CATEGORY_ACTIONS: Record<TaskCategory, string[]> = {
   nurture: ["点赞", "关注", "评论"],
   coview: ["同屏人工操作", "账号资料回填", "待办事项处置"],
   "social-reach": ["加好友", "关注", "私信"],
-  "account-ops": ["转发帖", "删帖", "修改账号信息", "发帖"],
+  "account-ops": ["转发帖", "隐藏帖", "删帖", "修改账号信息", "发帖"],
 };
 
 export const TASK_CATEGORY_CLS: Record<TaskCategory, string> = {
@@ -573,6 +574,28 @@ const initialTasks: TaskRow[] = ([
       execMode: "now",
     },
   },
+  {
+    id: "204683410000013",
+    name: "Facebook 历史违规帖批量隐藏",
+    subtype: "action",
+    platforms: ["Facebook"],
+    total: 12, done: 9, failed: 1,
+    status: "running",
+    category: "account-ops",
+    description: "来源模版：Facebook 账号内容运营任务\n对Facebook账号执行日常内容运营和维护。\n指定动作：隐藏贴文\n目标模式：按条件批量\n隐藏范围：2026-03-01 至 2026-05-31\n贴文类型：全部\n条数上限：50\n指定账号：12 个\n执行方式：立即执行",
+    createdBy: "黄雪",
+    createdAt: "2026-06-05 10:15:00",
+    fromTemplate: "Facebook 账号内容运营",
+    draft: {
+      name: "Facebook 历史违规帖批量隐藏",
+      platforms: ["Facebook"],
+      reachTags: ["主账号"],
+      reachAccounts: ["acc-f01", "acc-f02", "acc-f03", "acc-f04"],
+      postTags: [],
+      postIds: [],
+      execMode: "now",
+    },
+  },
 ] as TaskRow[]).map((t, i) => {
   const tenant = TASK_TENANTS[i % Math.max(1, TASK_TENANTS.length)];
   return tenant ? { ...t, tenantId: tenant.id, tenantName: tenant.name } : t;
@@ -611,7 +634,7 @@ const initialTemplates: TaskTemplate[] = [
     uses: 9,
     status: "enabled",
     agentName: "系统内置",
-    actions: ["sharePost", "deletePost", "editProfile"],
+    actions: ["sharePost", "hidePost", "deletePost", "editProfile"],
     tags: ["内容运营", "Facebook"],
     monthlyUses: 3,
     useDisabled: true,

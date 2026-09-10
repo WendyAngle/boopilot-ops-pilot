@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BookmarkPlus, Sparkles, Share2, Trash2, UserCog, AlertTriangle } from "lucide-react";
+import { BookmarkPlus, Sparkles, Share2, Trash2, EyeOff, UserCog, AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ import {
   type AccountScopeValue,
 } from "@/components/account-scope-picker";
 
-type ContentOpsAction = "sharePost" | "deletePost" | "editProfile";
+type ContentOpsAction = "sharePost" | "hidePost" | "deletePost" | "editProfile";
 type ShareMode = "immediate" | "timeline" | "group";
 type DeleteMode = "specific" | "batch";
 type EditFieldKey = "nickname" | "displayName" | "bio" | "language" | "region";
@@ -45,6 +45,13 @@ const CONTENT_OPS_ACTIONS: Array<{
     icon: Share2,
     desc: "将指定贴文转发到账号主页",
     targetHint: "指定目标：待转发的贴文（贴文来源与筛选规则稍后补充）",
+  },
+  {
+    value: "hidePost",
+    label: "隐藏贴文",
+    icon: EyeOff,
+    desc: "将账号主页上的贴文设为隐藏，对外不可见，可随时恢复",
+    targetHint: "指定目标：待隐藏的贴文（贴文范围与筛选规则稍后补充）",
   },
   {
     value: "deletePost",
@@ -204,6 +211,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const deleteAccountIds = resolveScopeAccounts(deleteScope, platformAccounts).map((a) => a.id);
   const editAccountIds = resolveScopeAccounts(editScope, platformAccounts).map((a) => a.id);
 
+  // 隐藏贴文与删除贴文共用同一套目标配置（指定贴文 / 按条件批量）
+  const isPostManage = action === "hidePost" || action === "deletePost";
+  const postVerb = action === "hidePost" ? "隐藏" : "删除";
+
   const toggleEditField = (f: EditFieldKey) =>
     setEditFields((p) => (p.includes(f) ? p.filter((x) => x !== f) : [...p, f]));
   const setUniqueField = (id: string, key: "nickname" | "displayName", value: string) =>
@@ -235,15 +246,15 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
         lines.push(`指定群组链接：${groupLinks.trim()}`);
       }
     }
-    if (action === "deletePost") {
+    if (isPostManage) {
       lines.push(`目标模式：${DELETE_MODE_LABELS[deleteMode]}`);
       if (deleteMode === "specific") {
         const acc = platformAccounts.find((a) => a.id === deleteAccountId);
         lines.push(`指定账号：${acc ? acc.username : "未选择"}`);
         const links = deletePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
-        lines.push(`待删除贴文：${links.length} 条`);
+        lines.push(`待${postVerb}贴文：${links.length} 条`);
       } else {
-        lines.push(`删除范围：${deleteStartDate || "?"} 至 ${deleteEndDate || "?"}`);
+        lines.push(`${postVerb}范围：${deleteStartDate || "?"} 至 ${deleteEndDate || "?"}`);
         if (deleteKeyword.trim()) lines.push(`关键词：${deleteKeyword.trim()}`);
         lines.push(`贴文类型：${deletePostType === "all" ? "全部" : deletePostType === "original" ? "原创" : "转发"}`);
         lines.push(`条数上限：${deleteMaxCount}`);
@@ -272,13 +283,13 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       const postLinks = sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
       if (postLinks.length === 0) return toast.error("请至少填写 1 条指定贴文链接");
     }
-    if (action === "deletePost") {
+    if (isPostManage) {
       if (deleteMode === "specific") {
         if (!deleteAccountId) return toast.error("请选择指定账号");
         const links = deletePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
-        if (links.length === 0) return toast.error("请至少填写 1 条待删除贴文链接");
+        if (links.length === 0) return toast.error(`请至少填写 1 条待${postVerb}贴文链接`);
       } else {
-        if (!deleteStartDate || !deleteEndDate) return toast.error("请填写完整的删除时间范围");
+        if (!deleteStartDate || !deleteEndDate) return toast.error(`请填写完整的${postVerb}时间范围`);
         if (deleteStartDate > deleteEndDate) return toast.error("开始时间不能晚于结束时间");
         if (deleteAccountIds.length === 0) return toast.error("请至少选择 1 个账号");
         const max = parseInt(deleteMaxCount, 10);
@@ -497,8 +508,8 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                 </div>
               )}
 
-              {/* 删除贴文 */}
-              {action === "deletePost" && (
+              {/* 隐藏贴文 / 删除贴文（共用目标配置） */}
+              {isPostManage && (
                 <div className="space-y-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
                   <div className="space-y-1.5">
                     <FieldLabel required>目标模式</FieldLabel>
@@ -516,8 +527,8 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     </RadioGroup>
                     <p className="text-[11px] text-muted-foreground">
                       {deleteMode === "specific"
-                        ? "精确删除指定贴文，仅支持单个账号"
-                        : "按时间等条件批量删除，可同时指定多个账号"}
+                        ? `精确${postVerb}指定贴文，仅支持单个账号`
+                        : `按时间等条件批量${postVerb}，可同时指定多个账号`}
                     </p>
                   </div>
 
@@ -616,8 +627,9 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                       <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span>
-                          预估影响范围：{deleteAccountIds.length} 个账号，最多删除{" "}
-                          {deleteAccountIds.length * (parseInt(deleteMaxCount, 10) || 0)} 条贴文。删除后不可恢复，请确认条件无误。
+                          预估影响范围：{deleteAccountIds.length} 个账号，最多{postVerb}{" "}
+                          {deleteAccountIds.length * (parseInt(deleteMaxCount, 10) || 0)} 条贴文。
+                          {action === "hidePost" ? "隐藏后贴文对外不可见，可随时恢复。" : "删除后不可恢复，请确认条件无误。"}
                         </span>
                       </div>
                     </>
@@ -880,14 +892,14 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                         toast.error("请至少填写 1 条指定贴文链接"); return;
                       }
                     }
-                    if (step === 2 && action === "deletePost") {
+                    if (step === 2 && isPostManage) {
                       if (deleteMode === "specific") {
                         if (!deleteAccountId) { toast.error("请选择指定账号"); return; }
                         if (!deletePostLinks.split("\n").some((s) => s.trim())) {
-                          toast.error("请至少填写 1 条待删除贴文链接"); return;
+                          toast.error(`请至少填写 1 条待${postVerb}贴文链接`); return;
                         }
                       } else {
-                        if (!deleteStartDate || !deleteEndDate) { toast.error("请填写完整的删除时间范围"); return; }
+                        if (!deleteStartDate || !deleteEndDate) { toast.error(`请填写完整的${postVerb}时间范围`); return; }
                         if (deleteStartDate > deleteEndDate) { toast.error("开始时间不能晚于结束时间"); return; }
                         if (deleteAccountIds.length === 0) { toast.error("请至少选择 1 个账号"); return; }
                         const max = parseInt(deleteMaxCount, 10);
