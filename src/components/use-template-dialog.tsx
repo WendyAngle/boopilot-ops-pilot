@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   BookmarkPlus, ExternalLink, Lock, Bot, MousePointerClick,
-  Sparkles, Clock3, Target, Upload, Pencil, Search,
-  Eye, Heart, UserPlus, MessageSquare, Smile, Plus, Trash2, Copy, Loader2, Ban, Hash,
+  Sparkles, Clock3, Upload, Pencil, Search,
+  Eye, Heart, UserPlus, MessageSquare, Smile, Plus, Trash2, Copy, Loader2,
 } from "lucide-react";
 import { generateNurtureKeywords, type NurtureKeywordResult } from "@/lib/nurture-keywords.functions";
 import { Switch } from "@/components/ui/switch";
