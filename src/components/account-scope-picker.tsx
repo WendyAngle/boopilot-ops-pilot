@@ -262,13 +262,10 @@ export function AccountScopePicker({
                     <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                       {a.username}
                     </span>
-                    <span className="rounded border border-border/60 px-1.5 py-px text-[10px] text-muted-foreground">
-                      {a.platform}
-                    </span>
                     <button
                       type="button"
                       onClick={() => remove(a.id)}
-                      className="text-muted-foreground transition-colors hover:text-foreground"
+                      className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
                     >
                       <X className="h-3 w-3" />
                     </button>
