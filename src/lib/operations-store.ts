@@ -277,6 +277,7 @@ const initialTasks: TaskRow[] = [
     total: 20, done: 14, failed: 2,
     status: "partial",
     description: "围绕新品上线，对 20 个目标账号一次性发布带话题视频。",
+    category: "account-ops",
     createdBy: "陈晓明",
     createdAt: "2026-05-25 09:45:13",
     endTime: "2026-05-25 10:20:00",
