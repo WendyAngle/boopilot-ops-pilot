@@ -32,6 +32,9 @@ export interface TaskRow {
   sourceAccountId?: string;
   /** 显式指定任务分类（未指定时按 source 推导，默认养号任务） */
   category?: TaskCategory;
+  /** 所属租户 */
+  tenantId?: string;
+  tenantName?: string;
 }
 
 export type ExecState = "completed" | "running" | "pending" | "aborted";
