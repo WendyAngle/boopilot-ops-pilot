@@ -419,7 +419,7 @@ function TaskTemplatesPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>操作类型</Label>
+              <Label>动作类型</Label>
               <div className="flex flex-wrap gap-1.5">
                 {TEMPLATE_ACTIONS.map((a) => {
                   const active = form.actions.includes(a);
@@ -436,14 +436,6 @@ function TaskTemplatesPage() {
                   );
                 })}
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>标签</Label>
-              <TagMultiSelect
-                value={form.tags}
-                onChange={(tags) => setForm((f) => ({ ...f, tags }))}
-                placeholder="选择或新增标签"
-              />
             </div>
             <div className="space-y-1.5">
               <Label>模版描述</Label>
