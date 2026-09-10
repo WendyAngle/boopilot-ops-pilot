@@ -527,8 +527,8 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     </RadioGroup>
                     <p className="text-[11px] text-muted-foreground">
                       {deleteMode === "specific"
-                        ? "精确删除指定贴文，仅支持单个账号"
-                        : "按时间等条件批量删除，可同时指定多个账号"}
+                        ? `精确${postVerb}指定贴文，仅支持单个账号`
+                        : `按时间等条件批量${postVerb}，可同时指定多个账号`}
                     </p>
                   </div>
 
@@ -627,8 +627,9 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                       <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span>
-                          预估影响范围：{deleteAccountIds.length} 个账号，最多删除{" "}
-                          {deleteAccountIds.length * (parseInt(deleteMaxCount, 10) || 0)} 条贴文。删除后不可恢复，请确认条件无误。
+                          预估影响范围：{deleteAccountIds.length} 个账号，最多{postVerb}{" "}
+                          {deleteAccountIds.length * (parseInt(deleteMaxCount, 10) || 0)} 条贴文。
+                          {action === "hidePost" ? "隐藏后贴文对外不可见，可随时恢复。" : "删除后不可恢复，请确认条件无误。"}
                         </span>
                       </div>
                     </>
