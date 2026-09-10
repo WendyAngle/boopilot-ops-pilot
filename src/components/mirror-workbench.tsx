@@ -66,7 +66,6 @@ type Draft = {
   bio: string;
   language: string;
   region: string;
-  interests: string[];
 };
 
 function toDraft(a: ManagedAccount): Draft {
@@ -76,7 +75,6 @@ function toDraft(a: ManagedAccount): Draft {
     bio: a.bio ?? "",
     language: a.language ?? ACCOUNT_LANGUAGES[0],
     region: a.region ?? ACCOUNT_REGIONS[0],
-    interests: a.interests ?? [],
   };
 }
 
