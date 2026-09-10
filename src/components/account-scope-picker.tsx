@@ -252,11 +252,17 @@ export function AccountScopePicker({
         <div className="flex flex-col rounded-md border bg-muted/30">
           <div className="flex items-center justify-between border-b px-2.5 py-1.5 text-[11px]">
             <span className="text-muted-foreground">
-              已选{" "}
-              <span className="font-semibold text-foreground">
-                {selected.length}
-              </span>{" "}
-              个账号
+              {single ? (
+                <>已选账号（单选）</>
+              ) : (
+                <>
+                  已选{" "}
+                  <span className="font-semibold text-foreground">
+                    {selected.length}
+                  </span>{" "}
+                  个账号
+                </>
+              )}
             </span>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-muted-foreground">
@@ -268,7 +274,7 @@ export function AccountScopePicker({
                   className="text-primary hover:underline"
                   onClick={() => onChange({ ...value, accountIds: [] })}
                 >
-                  清空已选
+                  {single ? "清除选择" : "清空已选"}
                 </button>
               )}
             </div>
