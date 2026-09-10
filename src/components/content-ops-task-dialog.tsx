@@ -95,7 +95,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     setStep(1);
     setName(autoName(template));
     setAction("sharePost");
-    setShareModes(["immediate"]);
+    setShareMode("immediate");
     setShareNote("");
     setGroupLinks("");
     setExecMode("now");
