@@ -66,7 +66,15 @@ const STATUS_ICON: Record<TaskStatus, LucideIcon> = {
 };
 
 function TaskListPage() {
-  const tasks = useTasks();
+  const allTasks = useTasks();
+  const [tenantScope] = useTenantScope();
+  const tasks = useMemo(
+    () =>
+      tenantScope === "all"
+        ? allTasks
+        : allTasks.filter((t) => t.tenantId === tenantScope),
+    [allTasks, tenantScope],
+  );
   const templates = useTemplates();
   const navigate = useNavigate();
 
