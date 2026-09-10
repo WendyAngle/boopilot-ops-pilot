@@ -96,16 +96,18 @@ function TaskTemplatesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TaskTemplate | null>(null);
   const [form, setForm] = useState<{
-    name: string; subtype: TaskSubType; platforms: Platform[]; total: number;
+    name: string; subtype: TaskSubType; category: TaskCategory; platforms: Platform[]; total: number;
     description: string; agentName: string; actions: TemplateAction[]; tags: string[];
   }>({
-    name: "", subtype: "action", platforms: ["Facebook"], total: 10,
+    name: "", subtype: "action", category: "nurture", platforms: ["Facebook"], total: 10,
     description: "", agentName: "", actions: [], tags: [],
   });
   const openEdit = (tpl: TaskTemplate) => {
     setEditing(tpl);
     setForm({
-      name: tpl.name, subtype: tpl.subtype, platforms: tpl.platforms, total: tpl.total,
+      name: tpl.name, subtype: tpl.subtype,
+      category: tpl.category ?? "nurture",
+      platforms: tpl.platforms, total: tpl.total,
       description: tpl.description, agentName: tpl.agentName ?? "",
       actions: tpl.actions ?? [], tags: tpl.tags ?? [],
     });
