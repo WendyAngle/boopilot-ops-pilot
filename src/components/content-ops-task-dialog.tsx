@@ -135,7 +135,8 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
 
   // 删除贴文
   const [deleteMode, setDeleteMode] = useState<DeleteMode>("specific");
-  const [deleteAccountId, setDeleteAccountId] = useState<string>("");
+  const [deleteExactScope, setDeleteExactScope] = useState<AccountScopeValue>(EMPTY_ACCOUNT_SCOPE);
+  const deleteAccountId = deleteExactScope.accountIds[0] ?? "";
   const [deletePostLinks, setDeletePostLinks] = useState("");
   const [deleteStartDate, setDeleteStartDate] = useState("");
   const [deleteEndDate, setDeleteEndDate] = useState("");
