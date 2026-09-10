@@ -622,7 +622,6 @@ function TaskDiagnosticsPage() {
             title="失败子任务数"
             value={kpi.failed.toLocaleString()}
             delta={pctDelta(kpi.failed, kpiPrev.failed)}
-            accent
           />
           <KpiCard
             title="失败率（失败/已终态）"
