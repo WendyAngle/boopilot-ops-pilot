@@ -211,6 +211,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const deleteAccountIds = resolveScopeAccounts(deleteScope, platformAccounts).map((a) => a.id);
   const editAccountIds = resolveScopeAccounts(editScope, platformAccounts).map((a) => a.id);
 
+  // 隐藏贴文与删除贴文共用同一套目标配置（指定贴文 / 按条件批量）
+  const isPostManage = action === "hidePost" || action === "deletePost";
+  const postVerb = action === "hidePost" ? "隐藏" : "删除";
+
   const toggleEditField = (f: EditFieldKey) =>
     setEditFields((p) => (p.includes(f) ? p.filter((x) => x !== f) : [...p, f]));
   const setUniqueField = (id: string, key: "nickname" | "displayName", value: string) =>
@@ -504,8 +508,8 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                 </div>
               )}
 
-              {/* 删除贴文 */}
-              {action === "deletePost" && (
+              {/* 隐藏贴文 / 删除贴文（共用目标配置） */}
+              {isPostManage && (
                 <div className="space-y-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
                   <div className="space-y-1.5">
                     <FieldLabel required>目标模式</FieldLabel>
