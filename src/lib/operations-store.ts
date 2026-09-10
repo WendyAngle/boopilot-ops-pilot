@@ -67,7 +67,7 @@ export function getExecState(t: Pick<TaskRow, "status" | "aborted">): ExecState 
 export type TemplateStatus = "enabled" | "draft";
 export type TemplateAction =
   | "like" | "comment" | "follow" | "post" | "addFriend" | "dm" | "share" | "view"
-  | "sharePost" | "deletePost" | "editProfile";
+  | "sharePost" | "hidePost" | "deletePost" | "editProfile";
 
 export const TEMPLATE_ACTION_LABEL: Record<TemplateAction, string> = {
   like: "点赞",
@@ -79,13 +79,14 @@ export const TEMPLATE_ACTION_LABEL: Record<TemplateAction, string> = {
   share: "转发/分享",
   view: "浏览/观看",
   sharePost: "转发贴文",
+  hidePost: "隐藏贴文",
   deletePost: "删除贴文",
   editProfile: "修改账号基础信息",
 };
 
 export const TEMPLATE_ACTIONS: TemplateAction[] = [
   "like", "comment", "follow", "post", "addFriend", "dm", "share", "view",
-  "sharePost", "deletePost", "editProfile",
+  "sharePost", "hidePost", "deletePost", "editProfile",
 ];
 
 export interface TaskTemplate {
@@ -611,7 +612,7 @@ const initialTemplates: TaskTemplate[] = [
     uses: 9,
     status: "enabled",
     agentName: "系统内置",
-    actions: ["sharePost", "deletePost", "editProfile"],
+    actions: ["sharePost", "hidePost", "deletePost", "editProfile"],
     tags: ["内容运营", "Facebook"],
     monthlyUses: 3,
     useDisabled: true,
