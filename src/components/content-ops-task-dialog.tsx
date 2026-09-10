@@ -65,7 +65,13 @@ const CONTENT_OPS_ACTIONS: Array<{
 const SHARE_MODE_LABELS: Record<ShareMode, string> = {
   immediate: "立即分享",
   timeline: "分享到动态",
-  group: "分享到小组",
+  group: "分享到群组",
+};
+
+const SHARE_MODE_DESC: Record<ShareMode, string> = {
+  immediate: "一键转发，不编辑直接发布",
+  timeline: "转发到自己的时间线，可附加自己的文字（即转发说明）",
+  group: "转发到公开 / 自己所属的群组",
 };
 
 const DELETE_MODE_LABELS: Record<DeleteMode, string> = {
@@ -225,7 +231,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
         lines.push(`转发说明：${shareNote.trim()}`);
       }
       if (shareMode === "group" && groupLinks.trim()) {
-        lines.push(`指定小组链接：${groupLinks.trim()}`);
+        lines.push(`指定群组链接：${groupLinks.trim()}`);
       }
     }
     if (action === "deletePost") {
@@ -438,12 +444,24 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     <RadioGroup
                       value={shareMode}
                       onValueChange={(v) => setShareMode(v as ShareMode)}
-                      className="flex gap-4"
+                      className="grid gap-2 sm:grid-cols-3"
                     >
                       {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => (
-                        <label key={m} className="flex items-center gap-1.5 text-xs">
-                          <RadioGroupItem value={m} id={`sm-${m}`} />
-                          {SHARE_MODE_LABELS[m]}
+                        <label
+                          key={m}
+                          htmlFor={`sm-${m}`}
+                          className={cn(
+                            "flex cursor-pointer items-start gap-2 rounded-md border bg-background p-2.5 transition-colors",
+                            shareMode === m ? "border-primary bg-primary/5" : "hover:border-primary/40",
+                          )}
+                        >
+                          <RadioGroupItem value={m} id={`sm-${m}`} className="mt-0.5" />
+                          <span className="min-w-0">
+                            <span className="block text-xs font-medium">{SHARE_MODE_LABELS[m]}</span>
+                            <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
+                              {SHARE_MODE_DESC[m]}
+                            </span>
+                          </span>
                         </label>
                       ))}
                     </RadioGroup>
@@ -462,17 +480,17 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     </div>
                   )}
 
-                  {/* 分享到小组：指定小组链接 */}
+                  {/* 分享到群组：指定群组链接 */}
                   {shareMode === "group" && (
                     <div className="space-y-1.5">
-                      <FieldLabel>指定小组链接</FieldLabel>
+                      <FieldLabel>指定群组链接</FieldLabel>
                       <Textarea
                         value={groupLinks}
                         onChange={(e) => setGroupLinks(e.target.value)}
-                        placeholder="输入小组链接，每行一个，可输入多个"
+                        placeholder="输入群组链接，每行一个，可输入多个"
                         className="min-h-[80px] text-xs"
                       />
-                      <p className="text-[11px] text-muted-foreground">每行输入一个小组链接，支持多个小组</p>
+                      <p className="text-[11px] text-muted-foreground">每行输入一个群组链接，支持多个群组</p>
                     </div>
                   )}
                 </div>
