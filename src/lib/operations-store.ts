@@ -112,35 +112,45 @@ export const SUBTYPE_CLS: Record<TaskSubType, string> = {
   action: "bg-amber-500/10 text-amber-600 border-amber-300/40",
 };
 
-/** 任务分类（面向用户展示的任务类型） */
-export type TaskCategory =
-  | "nurture" | "friend-approve" | "friend-reject" | "dm" | "coview" | "social-reach";
+/** 任务类型（全系统统一口径：任务列表 / 任务诊断中心共用） */
+export type TaskCategory = "nurture" | "coview" | "social-reach" | "account-ops";
+
+/** 下拉与筛选的固定顺序 */
+export const TASK_CATEGORY_ORDER: TaskCategory[] = [
+  "nurture", "coview", "social-reach", "account-ops",
+];
 
 export const TASK_CATEGORY_LABEL: Record<TaskCategory, string> = {
   nurture: "养号任务",
-  dm: "私信任务",
-  coview: "账号同屏任务",
-  "social-reach": "社媒触达",
-  "friend-approve": "通过好友申请",
-  "friend-reject": "拒绝好友申请",
+  coview: "同屏任务",
+  "social-reach": "社媒触达任务",
+  "account-ops": "账号运营任务",
+};
+
+/** 每种任务类型包含的动作（用于任务说明、mock 数据与诊断维度） */
+export const TASK_CATEGORY_ACTIONS: Record<TaskCategory, string[]> = {
+  nurture: ["点赞", "关注", "评论"],
+  coview: ["同屏人工操作", "账号资料回填", "待办事项处置"],
+  "social-reach": ["加好友", "关注", "私信"],
+  "account-ops": ["转发帖", "删帖", "修改账号信息", "发帖"],
 };
 
 export const TASK_CATEGORY_CLS: Record<TaskCategory, string> = {
   nurture: "bg-violet-500/10 text-violet-600 border-violet-300/40",
-  "friend-approve": "bg-emerald-500/10 text-emerald-600 border-emerald-300/40",
-  "friend-reject": "bg-rose-500/10 text-rose-600 border-rose-300/40",
-  dm: "bg-sky-500/10 text-sky-600 border-sky-300/40",
   coview: "bg-amber-500/10 text-amber-600 border-amber-300/40",
   "social-reach": "bg-teal-500/10 text-teal-600 border-teal-300/40",
+  "account-ops": "bg-sky-500/10 text-sky-600 border-sky-300/40",
 };
 
 export function getTaskCategory(t: Pick<TaskRow, "source" | "category">): TaskCategory {
   if (t.category) return t.category;
-  if (t.source === "dm") return "dm";
-  if (t.source === "friend-approve") return "friend-approve";
-  if (t.source === "friend-reject") return "friend-reject";
+  // 私信 / 通过好友申请 / 拒绝好友申请 台账统一归入「社媒触达任务」
+  if (t.source === "dm" || t.source === "friend-approve" || t.source === "friend-reject") {
+    return "social-reach";
+  }
   return "nurture";
 }
+
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
   pending: "待执行",
