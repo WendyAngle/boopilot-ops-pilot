@@ -892,14 +892,14 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                         toast.error("请至少填写 1 条指定贴文链接"); return;
                       }
                     }
-                    if (step === 2 && action === "deletePost") {
+                    if (step === 2 && isPostManage) {
                       if (deleteMode === "specific") {
                         if (!deleteAccountId) { toast.error("请选择指定账号"); return; }
                         if (!deletePostLinks.split("\n").some((s) => s.trim())) {
-                          toast.error("请至少填写 1 条待删除贴文链接"); return;
+                          toast.error(`请至少填写 1 条待${postVerb}贴文链接`); return;
                         }
                       } else {
-                        if (!deleteStartDate || !deleteEndDate) { toast.error("请填写完整的删除时间范围"); return; }
+                        if (!deleteStartDate || !deleteEndDate) { toast.error(`请填写完整的${postVerb}时间范围`); return; }
                         if (deleteStartDate > deleteEndDate) { toast.error("开始时间不能晚于结束时间"); return; }
                         if (deleteAccountIds.length === 0) { toast.error("请至少选择 1 个账号"); return; }
                         const max = parseInt(deleteMaxCount, 10);
