@@ -115,6 +115,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const [shareMode, setShareMode] = useState<ShareMode>("immediate");
   const [shareNote, setShareNote] = useState("");
   const [groupLinks, setGroupLinks] = useState("");
+  const [sharePostLinks, setSharePostLinks] = useState("");
   const [execMode, setExecMode] = useState<"now" | "scheduled">("now");
   const [scheduledMode, setScheduledMode] = useState<"datetime" | "active">("datetime");
   const [scheduledDate, setScheduledDate] = useState(todayStr());
@@ -154,6 +155,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     setShareMode("immediate");
     setShareNote("");
     setGroupLinks("");
+    setSharePostLinks("");
     setExecMode("now");
     setScheduledMode("datetime");
     setScheduledDate(todayStr());
@@ -210,6 +212,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     ];
     if (action === "sharePost" && shareMode) {
       lines.push(`转发方式：${SHARE_MODE_LABELS[shareMode]}`);
+      const postLinks = sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
+      if (postLinks.length > 0) {
+        lines.push(`指定贴文：${postLinks.length} 条`);
+      }
       if (shareMode === "timeline" && shareNote.trim()) {
         lines.push(`转发说明：${shareNote.trim()}`);
       }
@@ -249,8 +255,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const handleSubmit = () => {
     if (!name.trim()) return toast.error("请输入任务名称");
     if (!action) return toast.error("请选择动作类型");
-    if (action === "sharePost" && !shareMode) {
-      return toast.error("请选择转发方式");
+    if (action === "sharePost") {
+      if (!shareMode) return toast.error("请选择转发方式");
+      const postLinks = sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
+      if (postLinks.length === 0) return toast.error("请至少填写 1 条指定贴文链接");
     }
     if (action === "deletePost") {
       if (deleteMode === "specific") {
@@ -417,6 +425,20 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {/* 指定贴文链接 */}
+                  <div className="space-y-1.5">
+                    <FieldLabel required>指定贴文链接</FieldLabel>
+                    <Textarea
+                      value={sharePostLinks}
+                      onChange={(e) => setSharePostLinks(e.target.value)}
+                      placeholder="每行一条贴文链接，可输入多个"
+                      className="min-h-[80px] text-xs"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      每行输入一条待转发的贴文链接，支持多条
+                    </p>
+                  </div>
 
                   {/* 分享到动态：转发说明 */}
                   {shareMode === "timeline" && (
@@ -859,8 +881,11 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                   onClick={() => {
                     if (step === 1 && !name.trim()) { toast.error("请填写任务名称"); return; }
                     if (step === 2 && !action) { toast.error("请选择动作类型"); return; }
-                    if (step === 2 && action === "sharePost" && !shareMode) {
-                      toast.error("请选择转发方式"); return;
+                    if (step === 2 && action === "sharePost") {
+                      if (!shareMode) { toast.error("请选择转发方式"); return; }
+                      if (!sharePostLinks.split("\n").some((s) => s.trim())) {
+                        toast.error("请至少填写 1 条指定贴文链接"); return;
+                      }
                     }
                     if (step === 2 && action === "deletePost") {
                       if (deleteMode === "specific") {
