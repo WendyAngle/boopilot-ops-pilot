@@ -1,4 +1,8 @@
 import { useSyncExternalStore } from "react";
+import { TENANTS_SEED } from "@/lib/tenants";
+import { getTenantScope } from "@/lib/tenant-scope";
+
+const TASK_TENANTS = TENANTS_SEED.filter((t) => t.status === "active");
 
 /* ============================================================ */
 /* 类型与常量                                                   */
