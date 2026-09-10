@@ -6,6 +6,7 @@ import {
   Eye,
   Search,
   Sparkles,
+  Loader2,
   Heart,
   UserPlus,
   MessageSquare,
@@ -26,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import type { ManagedAccount } from "@/lib/managed-account-mock";
+import { generateNurtureKeywords } from "@/lib/nurture-keywords.functions";
 
 /* ============================================================ */
 /* 设置兴趣偏好 弹窗（列表页 / 详情页共用）                       */
@@ -58,9 +60,9 @@ export function InterestPreferenceDialog({
 
   const makeGroup = (seed = false): PrefGroup => ({
     id: `pg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    interestKeywords: seed ? "travel；food；parenting" : "",
+    interestKeywords: seed ? "LED screen；digital devices；knitwear" : "",
     search: seed,
-    keywords: seed ? "travel" : "",
+    keywords: seed ? "LED screen" : "",
     like: seed,
     likeMin: 0,
     likeMax: 15,
@@ -75,6 +77,37 @@ export function InterestPreferenceDialog({
   });
 
   const [groups, setGroups] = useState<PrefGroup[]>([makeGroup(true)]);
+  /** 各组的 AI 生成加载状态（按组 id 记录） */
+  const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
+
+  /** AI 生成搜索关键词：根据兴趣关键词 + 账号所属国家/平台扩展（与任务模板一致） */
+  const handleAiGenerate = async (g: PrefGroup) => {
+    const kw = g.interestKeywords.trim();
+    if (!kw) {
+      toast.error("请先填写兴趣关键词，AI 将据此扩展生成搜索关键词");
+      return;
+    }
+    setAiLoading((p) => ({ ...p, [g.id]: true }));
+    try {
+      const result = await generateNurtureKeywords({
+        data: {
+          interestKeywords: kw,
+          platform: account?.platform,
+          markets: account?.country ? [account.country] : undefined,
+        },
+      });
+      setGroups((gs) =>
+        gs.map((x) =>
+          x.id === g.id ? { ...x, keywords: result.searchQueries.join("；") } : x,
+        ),
+      );
+      toast.success("AI 已根据兴趣关键词生成搜索关键词，可手动调整");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "AI 生成失败，请稍后重试");
+    } finally {
+      setAiLoading((p) => ({ ...p, [g.id]: false }));
+    }
+  };
 
   useEffect(() => {
     if (account) setGroups([makeGroup(true)]);
@@ -259,7 +292,7 @@ export function InterestPreferenceDialog({
                       comment: hasValue,
                     });
                   }}
-                  placeholder="推荐 3-5 个，以「；」分隔，推荐英文，如：travel；food；parenting"
+                  placeholder="推荐 3-5 个，以「；」分隔，推荐英文，如：LED screen；digital devices；knitwear；game console"
                   className="ml-9 h-8 w-[calc(100%-2.25rem)] text-xs"
                 />
               </div>
@@ -278,11 +311,21 @@ export function InterestPreferenceDialog({
                     <span className="text-[11px] text-muted-foreground">关键词</span>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 rounded-md border border-primary/30 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/5"
-                      onClick={() => setGroup(idx, { keywords: "travel" })}
+                      disabled={aiLoading[g.id]}
+                      className="inline-flex items-center gap-1 rounded-md border border-primary/30 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => void handleAiGenerate(g)}
                     >
-                      <Sparkles className="h-3 w-3" />
-                      AI 生成
+                      {aiLoading[g.id] ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          生成中…
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3" />
+                          AI 生成
+                        </>
+                      )}
                     </button>
                   </div>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
