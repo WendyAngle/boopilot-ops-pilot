@@ -338,6 +338,7 @@ function BasicInfoCard({ account, derived }: { account: ManagedAccount; derived:
     ownerName: account.ownerName ?? "",
     deviceType: account.deviceType ?? "",
     remark: account.remark === "--" ? "" : account.remark,
+    bio: account.bio ?? "",
     accountStatus: account.accountStatus,
   };
   const [editing, setEditing] = useState(false);
