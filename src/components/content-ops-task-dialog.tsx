@@ -212,6 +212,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     ];
     if (action === "sharePost" && shareMode) {
       lines.push(`转发方式：${SHARE_MODE_LABELS[shareMode]}`);
+      const postLinks = sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
+      if (postLinks.length > 0) {
+        lines.push(`指定贴文：${postLinks.length} 条`);
+      }
       if (shareMode === "timeline" && shareNote.trim()) {
         lines.push(`转发说明：${shareNote.trim()}`);
       }
