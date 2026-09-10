@@ -195,7 +195,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const setUniqueField = (id: string, key: "nickname" | "displayName", value: string) =>
     setEditUnique((p) => ({
       ...p,
-      [id]: { nickname: "", displayName: "", ...p[id], [key]: value },
+      [id]: { ...{ nickname: "", displayName: "" }, ...p[id], [key]: value },
     }));
 
   const hasUniqueField = editFields.some((f) => f === "nickname" || f === "displayName");
