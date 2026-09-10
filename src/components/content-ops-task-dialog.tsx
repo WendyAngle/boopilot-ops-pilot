@@ -20,6 +20,12 @@ import {
   seedManagedAccounts, ACCOUNT_LANGUAGES, ACCOUNT_REGIONS,
   PLATFORM_META, type ManagedAccount,
 } from "@/lib/managed-account-mock";
+import {
+  AccountScopePicker,
+  resolveScopeAccounts,
+  EMPTY_ACCOUNT_SCOPE,
+  type AccountScopeValue,
+} from "@/components/account-scope-picker";
 
 type ContentOpsAction = "sharePost" | "deletePost" | "editProfile";
 type ShareMode = "immediate" | "timeline" | "group";
@@ -130,11 +136,11 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const [deleteKeyword, setDeleteKeyword] = useState("");
   const [deletePostType, setDeletePostType] = useState<"all" | "original" | "repost">("all");
   const [deleteMaxCount, setDeleteMaxCount] = useState("50");
-  const [deleteAccountIds, setDeleteAccountIds] = useState<string[]>([]);
+  const [deleteScope, setDeleteScope] = useState<AccountScopeValue>(EMPTY_ACCOUNT_SCOPE);
 
   // 修改账号基础信息
   const [editFields, setEditFields] = useState<EditFieldKey[]>(["language"]);
-  const [editAccountIds, setEditAccountIds] = useState<string[]>([]);
+  const [editScope, setEditScope] = useState<AccountScopeValue>(EMPTY_ACCOUNT_SCOPE);
   const [editLanguage, setEditLanguage] = useState("");
   const [editRegion, setEditRegion] = useState("");
   const [editBio, setEditBio] = useState("");
@@ -169,10 +175,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     setDeleteKeyword("");
     setDeletePostType("all");
     setDeleteMaxCount("50");
-    setDeleteAccountIds([]);
+    setDeleteScope(EMPTY_ACCOUNT_SCOPE);
     // 重置修改账号基础信息
     setEditFields(["language"]);
-    setEditAccountIds([]);
+    setEditScope(EMPTY_ACCOUNT_SCOPE);
     setEditLanguage("");
     setEditRegion("");
     setEditBio("");
@@ -188,12 +194,11 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   }
   const tpl = template;
 
+  const deleteAccountIds = resolveScopeAccounts(deleteScope, platformAccounts).map((a) => a.id);
+  const editAccountIds = resolveScopeAccounts(editScope, platformAccounts).map((a) => a.id);
+
   const toggleEditField = (f: EditFieldKey) =>
     setEditFields((p) => (p.includes(f) ? p.filter((x) => x !== f) : [...p, f]));
-  const toggleDeleteAccount = (id: string) =>
-    setDeleteAccountIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-  const toggleEditAccount = (id: string) =>
-    setEditAccountIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const setUniqueField = (id: string, key: "nickname" | "displayName", value: string) =>
     setEditUnique((p) => ({
       ...p,
@@ -589,26 +594,12 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <FieldLabel required>指定账号（可多选）</FieldLabel>
-                        <ScrollArea className="h-[132px] rounded-md border bg-background p-2">
-                          <div className="space-y-1">
-                            {platformAccounts.map((a) => (
-                              <label
-                                key={a.id}
-                                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"
-                              >
-                                <Checkbox
-                                  checked={deleteAccountIds.includes(a.id)}
-                                  onCheckedChange={() => toggleDeleteAccount(a.id)}
-                                />
-                                <span>{a.username}</span>
-                                {a.displayName && (
-                                  <span className="text-muted-foreground">{a.displayName}</span>
-                                )}
-                              </label>
-                            ))}
-                          </div>
-                        </ScrollArea>
+                        <FieldLabel required>指定账号</FieldLabel>
+                        <AccountScopePicker
+                          accounts={platformAccounts}
+                          value={deleteScope}
+                          onChange={setDeleteScope}
+                        />
                       </div>
                       <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -644,26 +635,12 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <FieldLabel required>指定账号（可多选）</FieldLabel>
-                    <ScrollArea className="h-[132px] rounded-md border bg-background p-2">
-                      <div className="space-y-1">
-                        {platformAccounts.map((a) => (
-                          <label
-                            key={a.id}
-                            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"
-                          >
-                            <Checkbox
-                              checked={editAccountIds.includes(a.id)}
-                              onCheckedChange={() => toggleEditAccount(a.id)}
-                            />
-                            <span>{a.username}</span>
-                            {a.displayName && (
-                              <span className="text-muted-foreground">{a.displayName}</span>
-                            )}
-                          </label>
-                        ))}
-                      </div>
-                    </ScrollArea>
+                    <FieldLabel required>指定账号</FieldLabel>
+                    <AccountScopePicker
+                      accounts={platformAccounts}
+                      value={editScope}
+                      onChange={setEditScope}
+                    />
                   </div>
 
                   {hasCommonField && (
