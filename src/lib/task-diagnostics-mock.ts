@@ -5,7 +5,10 @@
 // 都从同一份「子任务执行记录」派生，保证任意筛选下各卡片数字互相自洽，
 // 不会出现原型稿里「失败子任务 127 / 2.9%」与「失败率 28.6%」口径冲突的问题。
 
-import { PLATFORMS, type Platform, type TaskCategory } from "./operations-store";
+import {
+  PLATFORMS, TASK_CATEGORY_ACTIONS, TASK_CATEGORY_ORDER,
+  type Platform, type TaskCategory,
+} from "./operations-store";
 import { ACTIVE_TENANTS } from "./managed-account-mock";
 
 /* ---------------- 常量字典 ---------------- */
@@ -84,9 +87,7 @@ const CAUSE_WEIGHT: [CauseKey, number][] = [
   ["session", 8], ["network", 7], ["timeout", 6], ["business", 5],
 ];
 
-export const DIAG_CATEGORIES: TaskCategory[] = [
-  "nurture", "dm", "coview", "social-reach",
-];
+export const DIAG_CATEGORIES: TaskCategory[] = [...TASK_CATEGORY_ORDER];
 
 export const STEPS = [
   "任务落库", "任务接收", "设备占用校验", "设备准备", "代理准备", "任务转发",
@@ -96,9 +97,13 @@ export const STEPS = [
 
 export const LOG_SOURCES = ["任务平台", "小Server", "执行网关", "AI工作流"] as const;
 
-export const ACTIONS = [
-  "浏览信息流", "点赞帖子", "发布评论", "发帖", "加好友", "发私信", "关注用户", "采集未读消息",
-] as const;
+/** 全部动作（按任务类型归属，保证动作与任务类型匹配） */
+export const ACTIONS: readonly string[] = [
+  ...new Set(TASK_CATEGORY_ORDER.flatMap((c) => TASK_CATEGORY_ACTIONS[c])),
+];
+
+/** 任务类型 → 该类型可执行的动作 */
+export const CATEGORY_ACTIONS = TASK_CATEGORY_ACTIONS;
 
 /** 失败原因 → 高发步骤（保证归因链路合理） */
 const CAUSE_STEPS: Record<CauseKey, string[]> = {
@@ -210,11 +215,9 @@ export const MACHINE_POOL = Array.from({ length: 9 }, (_, i) => {
 /** 任务名基础词（不含平台，运行时按实际平台拼接，避免"TikTok 养号"落在 Facebook 上） */
 const TASK_NAME_BY_CATEGORY: Record<TaskCategory, string[]> = {
   nurture: ["日常养号", "养号计划", "冷启动养号"],
-  dm: ["新客私信触达", "老客召回私信"],
-  coview: ["账号同屏巡检", "同屏批量互动"],
-  "social-reach": ["新品社媒触达", "达人社媒触达"],
-  "friend-approve": ["好友申请自动通过"],
-  "friend-reject": ["好友申请自动拒绝"],
+  coview: ["账号同屏巡检", "同屏人工接管"],
+  "social-reach": ["新客加好友触达", "达人私信触达", "潜客关注触达"],
+  "account-ops": ["品牌帖批量转发", "违规帖清理", "账号资料批量更新", "日常发帖运营"],
 };
 
 /* ---------------- 子任务记录 ---------------- */
@@ -312,11 +315,11 @@ function buildSubTasks(): SubTaskRec[] {
       : "小Server终态处理";
     const goalLabel =
       category === "nurture"
-        ? `会话时长：${int(`g${s}`, 5, 12)} 分钟`
-        : category === "dm"
+        ? `互动会话时长：${int(`g${s}`, 5, 12)} 分钟`
+        : category === "social-reach"
           ? `触达账号数：${int(`g${s}`, 20, 80)}`
-          : category === "social-reach"
-            ? `发帖/点赞目标：${int(`g${s}`, 10, 40)}`
+          : category === "account-ops"
+            ? `账号运营动作数：${int(`g${s}`, 10, 40)}`
             : `同屏账号数：${int(`g${s}`, 4, 12)}`;
     const tenant =
       ACTIVE_TENANTS[int(`TN-${taskSeed}`, 0, Math.max(ACTIVE_TENANTS.length - 1, 0))] ??
@@ -356,7 +359,7 @@ function buildSubTasks(): SubTaskRec[] {
       category,
       platform,
       account: pick(ACCOUNT_POOL, `a${s}`),
-      action: pick(ACTIONS, `ac${s}`),
+      action: pick(CATEGORY_ACTIONS[category], `ac${s}`),
       step,
       logSource: cause ? CAUSE_SOURCE[cause] : "小Server",
       cause,
@@ -376,7 +379,7 @@ function buildSubTasks(): SubTaskRec[] {
       recoveredCause,
       recoveredStep,
       recoveredText: recoveredCause ? CAUSE_TEXT[recoveredCause] : "",
-      recoveredAction: isRecovered ? pick(ACTIONS, `rac${s}`) : "",
+      recoveredAction: isRecovered ? pick(CATEGORY_ACTIONS[category], `rac${s}`) : "",
       recoveryMode,
     });
 
@@ -637,7 +640,7 @@ export function buildTrend(rows: SubTaskRec[], f: DiagFilter) {
 
 export type DimKey = "category" | "platform" | "action" | "step" | "logSource" | "account";
 export const DIM_LABEL: Record<DimKey, string> = {
-  category: "业务类型",
+  category: "任务类型",
   platform: "平台",
   action: "动作类型",
   step: "执行步骤",
