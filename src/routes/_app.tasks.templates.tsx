@@ -133,6 +133,10 @@ function TaskTemplatesPage() {
   const [useDlgTpl, setUseDlgTpl] = useState<TaskTemplate | null>(null);
   const [useDlgOpen, setUseDlgOpen] = useState(false);
   const handleUse = (tpl: TaskTemplate) => {
+    if (tpl.useDisabled) {
+      toast.info("该模版的「使用」功能即将上线，敬请期待");
+      return;
+    }
     setUseDlgTpl(tpl);
     setUseDlgOpen(true);
   };
