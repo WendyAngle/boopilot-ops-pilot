@@ -37,6 +37,7 @@ import {
 } from "@/lib/operations-store";
 import { getUsableTags } from "@/lib/systemTags";
 import { UseTemplateDialog } from "@/components/use-template-dialog";
+import { ContentOpsTaskDialog } from "@/components/content-ops-task-dialog";
 
 
 export const Route = createFileRoute("/_app/tasks/templates")({
