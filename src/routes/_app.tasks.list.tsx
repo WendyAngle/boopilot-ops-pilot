@@ -121,13 +121,7 @@ function TaskListPage() {
       if (tExec !== "all" && getExecState(t) !== tExec) return false;
       return true;
     });
-  }, [tasks, tKeyword, tSubtype, tCategory, tPlatform, tResult, tExec]);
-
-  const subtypeCounts = useMemo(() => ({
-    all: tasks.length,
-    action: tasks.filter((t) => t.subtype === "action").length,
-    nurture: tasks.filter((t) => t.subtype === "nurture").length,
-  }), [tasks]);
+  }, [tasks, tKeyword, tCategory, tPlatform, tResult, tExec]);
 
   const pageSize = 10;
   const [taskPage, setTaskPage] = useState(1);
