@@ -85,11 +85,11 @@ export function AccountScopePicker({
     onChange({ ...value, accountIds: value.accountIds.filter((x) => x !== id) });
 
   return (
-    <div className={cn("space-y-2.5 rounded-lg border p-3", className)}>
-      {/* 标签筛选 */}
-      <div className="space-y-1.5">
+    <div className={cn("rounded-lg border p-3", className)}>
+      {/* 标签筛选（横跨左右两栏） */}
+      <div className="mb-2.5 space-y-1.5">
         <p className="text-[11px] text-muted-foreground">
-          按标签筛选账号（可多选，仅用于过滤下方列表；也可直接搜索并勾选特定账号）
+          按标签筛选账号（可多选，仅用于过滤候选列表；也可直接搜索并勾选特定账号）
         </p>
         <TagMultiSelect
           value={value.tags}
@@ -98,124 +98,155 @@ export function AccountScopePicker({
         />
       </div>
 
-      {/* 账号列表 */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            className="text-[11px] text-primary hover:underline"
-            onClick={toggleAll}
-          >
-            {allFilteredSelected
-              ? "取消全选当前结果"
-              : `全选当前结果（${filtered.length}）`}
-          </button>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={kw}
-              onChange={(e) => setKw(e.target.value)}
-              placeholder="搜索账号 / 平台ID / 备注"
-              className="h-7 w-56 pl-6 text-xs"
-            />
+      {/* 左右分栏：左候选 / 右已选 */}
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        {/* 左栏：候选账号 */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              className="text-[11px] text-primary hover:underline"
+              onClick={toggleAll}
+            >
+              {allFilteredSelected
+                ? "取消全选当前结果"
+                : `全选当前结果（${filtered.length}）`}
+            </button>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={kw}
+                onChange={(e) => setKw(e.target.value)}
+                placeholder="搜索账号 / 平台ID / 备注"
+                className="h-7 w-full pl-6 text-xs"
+              />
+            </div>
           </div>
+          <ScrollArea className="h-44 rounded-md border bg-background">
+            <div className="divide-y">
+              {filtered.length === 0 ? (
+                <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">
+                  无匹配账号，可调整标签或搜索条件
+                </div>
+              ) : (
+                filtered.map((a) => {
+                  const checked = value.accountIds.includes(a.id);
+                  return (
+                    <label
+                      key={a.id}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-accent/40",
+                        checked && "bg-primary/5",
+                      )}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(c) =>
+                          onChange({
+                            ...value,
+                            accountIds: c
+                              ? [...value.accountIds, a.id]
+                              : value.accountIds.filter((x) => x !== a.id),
+                          })
+                        }
+                      />
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">
+                        {a.username.slice(0, 1).toUpperCase()}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+                        {a.username}
+                      </span>
+                      {(a.tags ?? []).slice(0, 2).map((t) => (
+                        <span
+                          key={t}
+                          className="hidden rounded bg-muted px-1.5 py-px text-[10px] text-muted-foreground sm:inline"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                      <span className="rounded border border-border/60 px-1.5 py-px text-[10px] text-muted-foreground">
+                        {a.platform}
+                      </span>
+                      <span className="hidden text-[10px] text-muted-foreground md:inline">
+                        {a.country}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
         </div>
-        <ScrollArea className="h-44 rounded-md border bg-background">
-          <div className="divide-y">
-            {filtered.length === 0 ? (
+
+        {/* 右栏：已选账号 */}
+        <div className="flex flex-col rounded-md border bg-muted/30">
+          <div className="flex items-center justify-between border-b px-2.5 py-1.5 text-[11px]">
+            <span className="text-muted-foreground">
+              已选{" "}
+              <span className="font-semibold text-foreground">
+                {selected.length}
+              </span>{" "}
+              个账号
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground">
+                候选共 {accounts.length}
+              </span>
+              {selected.length > 0 && (
+                <button
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={() => onChange({ ...value, accountIds: [] })}
+                >
+                  清空已选
+                </button>
+              )}
+            </div>
+          </div>
+          <ScrollArea className="h-44">
+            {selected.length === 0 ? (
               <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">
-                无匹配账号，可调整标签或搜索条件
+                勾选左侧账号后会显示在这里
               </div>
             ) : (
-              filtered.map((a) => {
-                const checked = value.accountIds.includes(a.id);
-                return (
-                  <label
+              <div className="divide-y">
+                {selected.map((a) => (
+                  <div
                     key={a.id}
-                    className={cn(
-                      "flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-accent/40",
-                      checked && "bg-primary/5",
-                    )}
+                    className="flex items-center gap-2 px-2.5 py-1.5 text-xs"
                   >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(c) =>
-                        onChange({
-                          ...value,
-                          accountIds: c
-                            ? [...value.accountIds, a.id]
-                            : value.accountIds.filter((x) => x !== a.id),
-                        })
-                      }
-                    />
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">
                       {a.username.slice(0, 1).toUpperCase()}
                     </span>
                     <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                       {a.username}
                     </span>
-                    {(a.tags ?? []).slice(0, 2).map((t) => (
-                      <span
-                        key={t}
-                        className="hidden rounded bg-muted px-1.5 py-px text-[10px] text-muted-foreground sm:inline"
-                      >
-                        {t}
-                      </span>
-                    ))}
                     <span className="rounded border border-border/60 px-1.5 py-px text-[10px] text-muted-foreground">
                       {a.platform}
                     </span>
-                    <span className="hidden text-[10px] text-muted-foreground md:inline">
-                      {a.country}
-                    </span>
-                  </label>
-                );
-              })
+                    <button
+                      type="button"
+                      onClick={() => remove(a.id)}
+                      className="text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
-          </div>
-        </ScrollArea>
+          </ScrollArea>
+        </div>
       </div>
 
-      {/* 已选清单 */}
-      <div className="space-y-1.5 rounded-md bg-muted/50 px-2.5 py-2">
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="text-muted-foreground">
-            已选{" "}
-            <span className="font-semibold text-foreground">
-              {selected.length}
-            </span>{" "}
-            个账号，本次将对这些账号执行（候选共 {accounts.length} 个）
-          </span>
-          {selected.length > 0 && (
-            <button
-              type="button"
-              className="text-primary hover:underline"
-              onClick={() => onChange({ ...value, accountIds: [] })}
-            >
-              清空已选
-            </button>
-          )}
-        </div>
-        {selected.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {selected.map((a) => (
-              <span
-                key={a.id}
-                className="inline-flex items-center gap-1 rounded border bg-background px-1.5 py-px text-[10px] text-foreground"
-              >
-                {a.username}
-                <button
-                  type="button"
-                  onClick={() => remove(a.id)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* 底部汇总 */}
+      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        本次将对{" "}
+        <span className="font-semibold text-foreground">
+          {selected.length}
+        </span>{" "}
+        个账号执行
+      </p>
     </div>
   );
 }
