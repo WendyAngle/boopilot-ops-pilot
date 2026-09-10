@@ -4,9 +4,60 @@ import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { TagMultiSelect } from "@/components/tag-multi-select";
 import { cn } from "@/lib/utils";
 import type { ManagedAccount } from "@/lib/managed-account-mock";
+
+/** 候选行标签：仅展示 1 个，超出以 +N 展示，点击浮层查看全部 */
+function TagOverflow({ tags, max = 1 }: { tags: string[]; max?: number }) {
+  if (!tags.length) return null;
+  const visible = tags.slice(0, max);
+  const rest = tags.length - visible.length;
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      {visible.map((t) => (
+        <span
+          key={t}
+          className="rounded bg-muted px-1.5 py-px text-[10px] text-muted-foreground"
+        >
+          {t}
+        </span>
+      ))}
+      {rest > 0 && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="rounded bg-muted px-1.5 py-px text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              +{rest}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-auto min-w-[140px] p-1.5"
+            align="end"
+          >
+            <div className="flex flex-wrap gap-1">
+              {tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded bg-muted px-1.5 py-px text-[10px] text-muted-foreground"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
+}
 
 /** 兼容旧字段：现仅保留一种统一口径（标签作为筛选工具，最终以已选账号为准） */
 export type AccountScopeMode = "tag" | "manual";
