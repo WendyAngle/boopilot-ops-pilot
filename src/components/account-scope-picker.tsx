@@ -282,7 +282,7 @@ export function AccountScopePicker({
           <ScrollArea className="h-44">
             {selected.length === 0 ? (
               <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">
-                勾选左侧账号后会显示在这里
+                {single ? "点击左侧账号完成选择" : "勾选左侧账号后会显示在这里"}
               </div>
             ) : (
               <div className="divide-y">
