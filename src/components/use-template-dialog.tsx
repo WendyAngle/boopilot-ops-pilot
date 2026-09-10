@@ -552,11 +552,10 @@ export function UseTemplateDialog({ template, task, open, onOpenChange, onViewDe
 
 
     const reachParts: string[] = [];
-    if (draft.reachMode === "tag" && draft.reachTags.length)
-      reachParts.push(`按标签匹配：${draft.reachTags.join("、")}（${scopedAccounts.length} 个账号）`);
+    if (draft.reachTags.length)
+      reachParts.push(`标签筛选：${draft.reachTags.join("、")}`);
     if (draft.reachTenants.length) reachParts.push(`租户：${draft.reachTenants.join("、")}`);
-    if (draft.reachMode === "manual" && draft.reachAccounts.length)
-      reachParts.push(`特定账号：${draft.reachAccounts.length} 个`);
+    if (scopedAccounts.length) reachParts.push(`已选账号：${scopedAccounts.length} 个`);
     lines.push(`指定账号：${reachParts.length ? reachParts.join(" ｜ ") : "未指定"}`);
     const sessionPart = `，时长 ${draft.sessionDuration} ${draft.sessionDurationUnit === "hour" ? "小时" : "分钟"}`;
     if (draft.execMode === "now") {
