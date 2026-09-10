@@ -564,7 +564,7 @@ const initialTasks: TaskRow[] = ([
       execMode: "now",
     },
   },
-].map((t, i) => {
+] as TaskRow[]).map((t, i) => {
   const tenant = TASK_TENANTS[i % Math.max(1, TASK_TENANTS.length)];
   return tenant ? { ...t, tenantId: tenant.id, tenantName: tenant.name } : t;
 });
