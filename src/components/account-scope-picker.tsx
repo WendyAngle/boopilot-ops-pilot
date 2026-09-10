@@ -200,18 +200,36 @@ export function AccountScopePicker({
                         "flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-accent/40",
                         checked && "bg-primary/5",
                       )}
+                      onClick={
+                        single
+                          ? () => onChange({ ...value, accountIds: [a.id] })
+                          : undefined
+                      }
                     >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={(c) =>
-                          onChange({
-                            ...value,
-                            accountIds: c
-                              ? [...value.accountIds, a.id]
-                              : value.accountIds.filter((x) => x !== a.id),
-                          })
-                        }
-                      />
+                      {single ? (
+                        <span
+                          className={cn(
+                            "inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border",
+                            checked ? "border-primary" : "border-input",
+                          )}
+                        >
+                          {checked && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                          )}
+                        </span>
+                      ) : (
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(c) =>
+                            onChange({
+                              ...value,
+                              accountIds: c
+                                ? [...value.accountIds, a.id]
+                                : value.accountIds.filter((x) => x !== a.id),
+                            })
+                          }
+                        />
+                      )}
                       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">
                         {a.username.slice(0, 1).toUpperCase()}
                       </span>
