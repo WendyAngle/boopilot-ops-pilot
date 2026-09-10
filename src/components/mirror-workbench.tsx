@@ -103,15 +103,7 @@ export function MirrorWorkbench({
 }) {
   const who = getCurrentUser()?.displayName ?? "当前用户";
   const [draft, setDraft] = useState<Draft>(() => toDraft(account));
-  
-  const [interestInput, setInterestInput] = useState("");
   const bioLimit = BIO_LIMIT[account.platform] ?? 150;
-  const interestLabel =
-    account.platform === "Facebook"
-      ? "兴趣偏好（兴趣 / 关注的主页与话题）"
-      : account.platform === "Tiktok"
-        ? "兴趣偏好（内容偏好分类）"
-        : "兴趣偏好";
 
   useEffect(() => {
     setDraft(toDraft(account));
