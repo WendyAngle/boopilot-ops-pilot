@@ -337,6 +337,7 @@ function BasicInfoCard({ account, derived }: { account: ManagedAccount; derived:
     tenantId: account.tenantId,
     ownerName: account.ownerName ?? "",
     deviceType: account.deviceType ?? "",
+    language: account.language ?? "",
     remark: account.remark === "--" ? "" : account.remark,
     bio: account.bio ?? "",
     accountStatus: account.accountStatus,
