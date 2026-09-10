@@ -26,7 +26,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   ACCOUNT_LANGUAGES,
   ACCOUNT_REGIONS,
-  INTEREST_GROUPS,
+  
   ACCOUNT_STATUS_META,
   type ManagedAccount,
 } from "@/lib/managed-account-mock";
