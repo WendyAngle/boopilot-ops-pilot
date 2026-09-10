@@ -37,6 +37,7 @@ import {
 } from "@/lib/operations-store";
 import { getUsableTags } from "@/lib/systemTags";
 import { UseTemplateDialog } from "@/components/use-template-dialog";
+import { ContentOpsTaskDialog } from "@/components/content-ops-task-dialog";
 
 
 export const Route = createFileRoute("/_app/tasks/templates")({
@@ -131,9 +132,15 @@ function TaskTemplatesPage() {
   // 使用模版弹窗
   const [useDlgTpl, setUseDlgTpl] = useState<TaskTemplate | null>(null);
   const [useDlgOpen, setUseDlgOpen] = useState(false);
+  // 内容运营模版使用独立的创建向导
+  const [opsDlgTpl, setOpsDlgTpl] = useState<TaskTemplate | null>(null);
+  const [opsDlgOpen, setOpsDlgOpen] = useState(false);
+  const isContentOps = (tpl: TaskTemplate) =>
+    (tpl.actions ?? []).some((a) => a === "sharePost" || a === "deletePost" || a === "editProfile");
   const handleUse = (tpl: TaskTemplate) => {
-    if (tpl.useDisabled) {
-      toast.info("该模版的「使用」功能即将上线，敬请期待");
+    if (isContentOps(tpl)) {
+      setOpsDlgTpl(tpl);
+      setOpsDlgOpen(true);
       return;
     }
     setUseDlgTpl(tpl);
@@ -494,6 +501,12 @@ function TaskTemplatesPage() {
         open={useDlgOpen}
         onOpenChange={(o) => { setUseDlgOpen(o); if (!o) setUseDlgTpl(null); }}
         onViewDetail={(tpl) => { setUseDlgOpen(false); openEdit(tpl); }}
+      />
+
+      <ContentOpsTaskDialog
+        template={opsDlgTpl}
+        open={opsDlgOpen}
+        onOpenChange={(o) => { setOpsDlgOpen(o); if (!o) setOpsDlgTpl(null); }}
       />
     </TooltipProvider>
   );
