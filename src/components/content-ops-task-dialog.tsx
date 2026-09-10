@@ -447,7 +447,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                       <Textarea
                         value={shareNote}
                         onChange={(e) => setShareNote(e.target.value)}
-                        placeholder="选填，添加转发说明文字"
+                        placeholder="请输入转发说明..."
                         className="min-h-[60px] text-xs"
                       />
                     </div>
@@ -552,7 +552,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                           <Input
                             value={deleteKeyword}
                             onChange={(e) => setDeleteKeyword(e.target.value)}
-                            placeholder="选填"
+                            placeholder="请输入关键词..."
                             className="h-9 text-sm"
                           />
                         </div>
