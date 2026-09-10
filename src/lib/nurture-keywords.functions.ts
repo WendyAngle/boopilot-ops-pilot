@@ -20,9 +20,10 @@ const SYSTEM_PROMPT = [
   "3. 不得编造用户未提供的产品信息，保持输出简洁。",
   "4. 固定输出以下四个模块：",
   "   - persona: 目标客户画像（必须是纯文本字符串，一句话中文概括，禁止输出对象或数组）",
-  "   - searchQueries: 搜索语句数组（3-6 条，优先使用目标市场语言/英文）",
-  "   - hashtags: 话题标签数组（3-6 个，不含 # 号）",
-  "   - negativeKeywords: 负向排除词数组（2-5 个，用于排除无关/低质内容）",
+  "   - searchQueries: 搜索语句数组（3-6 条，必须全部为英文）",
+  "   - hashtags: 话题标签数组（3-6 个，必须全部为英文，不含 # 号）",
+  "   - negativeKeywords: 负向排除词数组（2-5 个，必须全部为英文，用于排除无关/低质内容）",
+  "5. 语言要求（强制）：searchQueries、hashtags、negativeKeywords 只能使用英文（英文字母、数字与空格），严禁出现日文、韩文、中文、俄文、阿拉伯文等任何非英文字符；即使目标市场为非英语国家，也必须输出英文关键词。",
   "严格输出 JSON，不要输出任何其他内容。",
 ].join("\n");
 
@@ -82,8 +83,15 @@ export const generateNurtureKeywords = createServerFn({ method: "POST" })
       throw new Error("AI 返回内容解析失败，请重试");
     }
 
+    // 关键词必须是纯英文：过滤含非英文字符（日文假名、汉字、韩文等）的条目
+    const isEnglishOnly = (s: string) => !/[^\x20-\x7E]/.test(s);
     const asList = (v: unknown): string[] =>
-      Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, 8) : [];
+      Array.isArray(v)
+        ? v
+            .map((x) => String(x).trim())
+            .filter((s) => s && isEnglishOnly(s))
+            .slice(0, 8)
+        : [];
 
     // 模型偶尔会把 persona 输出为对象/数组，这里兜底压缩为一句可读文本
     const toText = (v: unknown, depth = 0): string => {
