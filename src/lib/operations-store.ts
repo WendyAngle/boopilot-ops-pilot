@@ -597,6 +597,22 @@ const initialTemplates: TaskTemplate[] = [
     tags: ["主账号", "高活跃", "出海"],
     monthlyUses: 6,
   },
+  {
+    id: uid("tpl"),
+    name: "Facebook 账号内容运营",
+    subtype: "action",
+    platforms: ["Facebook"],
+    total: 10,
+    description: "对Facebook账号执行日常内容运营和维护。",
+    createdAt: "2026-06-15 09:00:00",
+    uses: 9,
+    status: "enabled",
+    agentName: "系统内置",
+    actions: ["sharePost", "deletePost", "editProfile"],
+    tags: ["内容运营", "Facebook"],
+    monthlyUses: 3,
+    useDisabled: true,
+  },
 ];
 
 /* ============================================================ */
