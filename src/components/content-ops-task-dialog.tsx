@@ -242,15 +242,15 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
         lines.push(`指定群组链接：${groupLinks.trim()}`);
       }
     }
-    if (action === "deletePost") {
+    if (isPostManage) {
       lines.push(`目标模式：${DELETE_MODE_LABELS[deleteMode]}`);
       if (deleteMode === "specific") {
         const acc = platformAccounts.find((a) => a.id === deleteAccountId);
         lines.push(`指定账号：${acc ? acc.username : "未选择"}`);
         const links = deletePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
-        lines.push(`待删除贴文：${links.length} 条`);
+        lines.push(`待${postVerb}贴文：${links.length} 条`);
       } else {
-        lines.push(`删除范围：${deleteStartDate || "?"} 至 ${deleteEndDate || "?"}`);
+        lines.push(`${postVerb}范围：${deleteStartDate || "?"} 至 ${deleteEndDate || "?"}`);
         if (deleteKeyword.trim()) lines.push(`关键词：${deleteKeyword.trim()}`);
         lines.push(`贴文类型：${deletePostType === "all" ? "全部" : deletePostType === "original" ? "原创" : "转发"}`);
         lines.push(`条数上限：${deleteMaxCount}`);
@@ -279,13 +279,13 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       const postLinks = sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
       if (postLinks.length === 0) return toast.error("请至少填写 1 条指定贴文链接");
     }
-    if (action === "deletePost") {
+    if (isPostManage) {
       if (deleteMode === "specific") {
         if (!deleteAccountId) return toast.error("请选择指定账号");
         const links = deletePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
-        if (links.length === 0) return toast.error("请至少填写 1 条待删除贴文链接");
+        if (links.length === 0) return toast.error(`请至少填写 1 条待${postVerb}贴文链接`);
       } else {
-        if (!deleteStartDate || !deleteEndDate) return toast.error("请填写完整的删除时间范围");
+        if (!deleteStartDate || !deleteEndDate) return toast.error(`请填写完整的${postVerb}时间范围`);
         if (deleteStartDate > deleteEndDate) return toast.error("开始时间不能晚于结束时间");
         if (deleteAccountIds.length === 0) return toast.error("请至少选择 1 个账号");
         const max = parseInt(deleteMaxCount, 10);
