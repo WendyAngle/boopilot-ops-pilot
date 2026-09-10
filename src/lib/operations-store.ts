@@ -104,6 +104,8 @@ export interface TaskTemplate {
   monthlyUses?: number;
   /** 是否禁用「使用」功能（功能未实现时为 true） */
   useDisabled?: boolean;
+  /** 任务类型（与任务列表统一口径） */
+  category?: TaskCategory;
 }
 
 export const PLATFORMS: Platform[] = ["Facebook", "Tiktok", "WhatsApp", "Instagram", "Twitter/X"];
