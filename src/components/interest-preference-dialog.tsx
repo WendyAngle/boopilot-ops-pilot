@@ -292,7 +292,7 @@ export function InterestPreferenceDialog({
                       comment: hasValue,
                     });
                   }}
-                  placeholder="推荐 3-5 个，以「；」分隔，推荐英文，如：travel；food；parenting"
+                  placeholder="推荐 3-5 个，以「；」分隔，推荐英文，如：LED screen；digital devices；knitwear；game console"
                   className="ml-9 h-8 w-[calc(100%-2.25rem)] text-xs"
                 />
               </div>
@@ -311,11 +311,21 @@ export function InterestPreferenceDialog({
                     <span className="text-[11px] text-muted-foreground">关键词</span>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 rounded-md border border-primary/30 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/5"
-                      onClick={() => setGroup(idx, { keywords: "travel" })}
+                      disabled={aiLoading[g.id]}
+                      className="inline-flex items-center gap-1 rounded-md border border-primary/30 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => void handleAiGenerate(g)}
                     >
-                      <Sparkles className="h-3 w-3" />
-                      AI 生成
+                      {aiLoading[g.id] ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          生成中…
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3" />
+                          AI 生成
+                        </>
+                      )}
                     </button>
                   </div>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
