@@ -195,7 +195,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const setUniqueField = (id: string, key: "nickname" | "displayName", value: string) =>
     setEditUnique((p) => ({
       ...p,
-      [id]: { nickname: "", displayName: "", ...p[id], [key]: value },
+      [id]: { ...{ nickname: "", displayName: "" }, ...p[id], [key]: value },
     }));
 
   const hasUniqueField = editFields.some((f) => f === "nickname" || f === "displayName");
@@ -447,15 +447,314 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                 </div>
               )}
 
-              {/* 删除贴文 / 修改账号基础信息：目标占位 */}
-              {action !== "sharePost" && currentAction && (
-                <div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-                  {currentAction.targetHint}
+              {/* 删除贴文 */}
+              {action === "deletePost" && (
+                <div className="space-y-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
+                  <div className="space-y-1.5">
+                    <FieldLabel required>目标模式</FieldLabel>
+                    <RadioGroup
+                      value={deleteMode}
+                      onValueChange={(v) => setDeleteMode(v as DeleteMode)}
+                      className="flex gap-4"
+                    >
+                      {(["specific", "batch"] as DeleteMode[]).map((m) => (
+                        <label key={m} className="flex items-center gap-1.5 text-xs">
+                          <RadioGroupItem value={m} id={`dm-${m}`} />
+                          {DELETE_MODE_LABELS[m]}
+                        </label>
+                      ))}
+                    </RadioGroup>
+                    <p className="text-[11px] text-muted-foreground">
+                      {deleteMode === "specific"
+                        ? "精确删除指定贴文，仅支持单个账号"
+                        : "按时间等条件批量删除，可同时指定多个账号"}
+                    </p>
+                  </div>
+
+                  {deleteMode === "specific" ? (
+                    <>
+                      <div className="space-y-1.5">
+                        <FieldLabel required>指定账号</FieldLabel>
+                        <Select value={deleteAccountId} onValueChange={setDeleteAccountId}>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="从账号列表选择一个账号" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {platformAccounts.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>
+                                {a.username}
+                                {a.displayName ? `（${a.displayName}）` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <FieldLabel required>贴文链接 / ID</FieldLabel>
+                        <Textarea
+                          value={deletePostLinks}
+                          onChange={(e) => setDeletePostLinks(e.target.value)}
+                          placeholder="每行一条贴文链接或 ID，可输入多条"
+                          className="min-h-[80px] text-xs"
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          贴文须属于所选账号，执行时将逐条校验，不匹配的贴文会被跳过并记为失败
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <FieldLabel required>开始日期</FieldLabel>
+                          <Input
+                            type="date"
+                            value={deleteStartDate}
+                            onChange={(e) => setDeleteStartDate(e.target.value)}
+                            className="h-9 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <FieldLabel required>结束日期</FieldLabel>
+                          <Input
+                            type="date"
+                            value={deleteEndDate}
+                            onChange={(e) => setDeleteEndDate(e.target.value)}
+                            className="h-9 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1.5">
+                          <FieldLabel>关键词</FieldLabel>
+                          <Input
+                            value={deleteKeyword}
+                            onChange={(e) => setDeleteKeyword(e.target.value)}
+                            placeholder="选填"
+                            className="h-9 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <FieldLabel>贴文类型</FieldLabel>
+                          <Select
+                            value={deletePostType}
+                            onValueChange={(v) => setDeletePostType(v as typeof deletePostType)}
+                          >
+                            <SelectTrigger className="h-9 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">全部</SelectItem>
+                              <SelectItem value="original">原创贴文</SelectItem>
+                              <SelectItem value="repost">转发贴文</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <FieldLabel required>条数上限</FieldLabel>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={200}
+                            value={deleteMaxCount}
+                            onChange={(e) => setDeleteMaxCount(e.target.value)}
+                            className="h-9 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <FieldLabel required>指定账号（可多选）</FieldLabel>
+                        <ScrollArea className="h-[132px] rounded-md border bg-background p-2">
+                          <div className="space-y-1">
+                            {platformAccounts.map((a) => (
+                              <label
+                                key={a.id}
+                                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"
+                              >
+                                <Checkbox
+                                  checked={deleteAccountIds.includes(a.id)}
+                                  onCheckedChange={() => toggleDeleteAccount(a.id)}
+                                />
+                                <span>{a.username}</span>
+                                {a.displayName && (
+                                  <span className="text-muted-foreground">{a.displayName}</span>
+                                )}
+                              </label>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                      <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          预估影响范围：{deleteAccountIds.length} 个账号，最多删除{" "}
+                          {deleteAccountIds.length * (parseInt(deleteMaxCount, 10) || 0)} 条贴文。删除后不可恢复，请确认条件无误。
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
-              <p className="text-[11px] text-muted-foreground">
-                指定目标将根据所选动作类型动态展示，具体配置项待补充。
-              </p>
+
+              {/* 修改账号基础信息 */}
+              {action === "editProfile" && (
+                <div className="space-y-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
+                  <div className="space-y-1.5">
+                    <FieldLabel required>修改字段</FieldLabel>
+                    <div className="flex flex-wrap gap-3">
+                      {[...EDIT_COMMON_FIELDS, ...EDIT_UNIQUE_FIELDS].map((f) => (
+                        <label key={f.key} className="flex items-center gap-1.5 text-xs">
+                          <Checkbox
+                            checked={editFields.includes(f.key)}
+                            onCheckedChange={() => toggleEditField(f.key)}
+                          />
+                          {f.label}
+                          {EDIT_UNIQUE_FIELDS.some((u) => u.key === f.key) && (
+                            <span className="text-[10px] text-muted-foreground">（账号独有）</span>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <FieldLabel required>指定账号（可多选）</FieldLabel>
+                    <ScrollArea className="h-[132px] rounded-md border bg-background p-2">
+                      <div className="space-y-1">
+                        {platformAccounts.map((a) => (
+                          <label
+                            key={a.id}
+                            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs hover:bg-muted"
+                          >
+                            <Checkbox
+                              checked={editAccountIds.includes(a.id)}
+                              onCheckedChange={() => toggleEditAccount(a.id)}
+                            />
+                            <span>{a.username}</span>
+                            {a.displayName && (
+                              <span className="text-muted-foreground">{a.displayName}</span>
+                            )}
+                          </label>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+
+                  {hasCommonField && (
+                    <div className="space-y-2 rounded-md border bg-background px-3 py-2">
+                      <p className="text-xs font-medium">共用字段（统一应用到所选账号）</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {editFields.includes("language") && (
+                          <div className="space-y-1.5">
+                            <FieldLabel>语言</FieldLabel>
+                            <Select value={editLanguage} onValueChange={setEditLanguage}>
+                              <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="请选择语言" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ACCOUNT_LANGUAGES.map((l) => (
+                                  <SelectItem key={l} value={l}>
+                                    {l}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        {editFields.includes("region") && (
+                          <div className="space-y-1.5">
+                            <FieldLabel>地区</FieldLabel>
+                            <Select value={editRegion} onValueChange={setEditRegion}>
+                              <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="请选择地区" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ACCOUNT_REGIONS.map((r) => (
+                                  <SelectItem key={r} value={r}>
+                                    {r}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+                      {editFields.includes("bio") && (
+                        <div className="space-y-1.5">
+                          <FieldLabel>个人简介</FieldLabel>
+                          <Textarea
+                            value={editBio}
+                            onChange={(e) => setEditBio(e.target.value)}
+                            placeholder="统一应用到所选账号的个人简介内容"
+                            className="min-h-[60px] text-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {hasUniqueField && (
+                    <div className="space-y-2 rounded-md border bg-background px-3 py-2">
+                      <p className="text-xs font-medium">
+                        账号独有字段明细（留空表示该账号保持不变）
+                      </p>
+                      {editAccountIds.length === 0 ? (
+                        <p className="text-[11px] text-muted-foreground">请先选择账号</p>
+                      ) : (
+                        <ScrollArea className="max-h-[180px]">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-left text-muted-foreground">
+                                <th className="py-1 font-normal">账号</th>
+                                {editFields.includes("nickname") && (
+                                  <th className="py-1 font-normal">昵称</th>
+                                )}
+                                {editFields.includes("displayName") && (
+                                  <th className="py-1 font-normal">显示名</th>
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {editAccountIds.map((id) => {
+                                const a = platformAccounts.find((x) => x.id === id);
+                                if (!a) return null;
+                                const row = editUnique[id] ?? { nickname: "", displayName: "" };
+                                return (
+                                  <tr key={id} className="border-t">
+                                    <td className="py-1 pr-2 align-middle">{a.username}</td>
+                                    {editFields.includes("nickname") && (
+                                      <td className="py-1 pr-2">
+                                        <Input
+                                          value={row.nickname}
+                                          onChange={(e) => setUniqueField(id, "nickname", e.target.value)}
+                                          placeholder={a.username}
+                                          className="h-8 text-xs"
+                                        />
+                                      </td>
+                                    )}
+                                    {editFields.includes("displayName") && (
+                                      <td className="py-1">
+                                        <Input
+                                          value={row.displayName}
+                                          onChange={(e) =>
+                                            setUniqueField(id, "displayName", e.target.value)
+                                          }
+                                          placeholder={a.displayName ?? "保持不变"}
+                                          className="h-8 text-xs"
+                                        />
+                                      </td>
+                                    )}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </ScrollArea>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             {/* 步骤3 执行方式 */}
@@ -562,6 +861,24 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     if (step === 2 && !action) { toast.error("请选择动作类型"); return; }
                     if (step === 2 && action === "sharePost" && !shareMode) {
                       toast.error("请选择转发方式"); return;
+                    }
+                    if (step === 2 && action === "deletePost") {
+                      if (deleteMode === "specific") {
+                        if (!deleteAccountId) { toast.error("请选择指定账号"); return; }
+                        if (!deletePostLinks.split("\n").some((s) => s.trim())) {
+                          toast.error("请至少填写 1 条待删除贴文链接"); return;
+                        }
+                      } else {
+                        if (!deleteStartDate || !deleteEndDate) { toast.error("请填写完整的删除时间范围"); return; }
+                        if (deleteStartDate > deleteEndDate) { toast.error("开始时间不能晚于结束时间"); return; }
+                        if (deleteAccountIds.length === 0) { toast.error("请至少选择 1 个账号"); return; }
+                        const max = parseInt(deleteMaxCount, 10);
+                        if (!max || max < 1 || max > 200) { toast.error("条数上限需在 1-200 之间"); return; }
+                      }
+                    }
+                    if (step === 2 && action === "editProfile") {
+                      if (editFields.length === 0) { toast.error("请至少勾选 1 个修改字段"); return; }
+                      if (editAccountIds.length === 0) { toast.error("请至少选择 1 个账号"); return; }
                     }
                     setStep((s) => Math.min(3, s + 1));
                   }}
