@@ -430,8 +430,8 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                   onClick={() => {
                     if (step === 1 && !name.trim()) { toast.error("请填写任务名称"); return; }
                     if (step === 2 && !action) { toast.error("请选择动作类型"); return; }
-                    if (step === 2 && action === "sharePost" && shareModes.length === 0) {
-                      toast.error("请至少选择一种转发方式"); return;
+                    if (step === 2 && action === "sharePost" && !shareMode) {
+                      toast.error("请选择转发方式"); return;
                     }
                     setStep((s) => Math.min(3, s + 1));
                   }}
