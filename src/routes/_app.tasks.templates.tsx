@@ -109,7 +109,7 @@ function TaskTemplatesPage() {
       category: tpl.category ?? "nurture",
       platforms: tpl.platforms, total: tpl.total,
       description: tpl.description, agentName: tpl.agentName ?? "",
-      actions: tpl.actions ?? [], tags: tpl.tags ?? [],
+      actions: tpl.actions ?? [],
     });
     setDialogOpen(true);
   };
