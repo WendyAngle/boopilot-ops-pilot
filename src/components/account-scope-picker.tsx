@@ -91,6 +91,8 @@ interface Props {
   value: AccountScopeValue;
   onChange: (next: AccountScopeValue) => void;
   className?: string;
+  /** 单选模式：仅能选中 1 个账号，再次点击其他账号会替换 */
+  single?: boolean;
 }
 
 export function AccountScopePicker({
@@ -98,6 +100,7 @@ export function AccountScopePicker({
   value,
   onChange,
   className,
+  single = false,
 }: Props) {
   const [kw, setKw] = useState("");
 
