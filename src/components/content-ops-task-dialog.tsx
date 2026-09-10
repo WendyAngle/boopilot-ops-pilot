@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +18,7 @@ import {
 } from "@/lib/operations-store";
 
 type ContentOpsAction = "sharePost" | "deletePost" | "editProfile";
+type ShareMode = "immediate" | "timeline" | "group";
 
 const CONTENT_OPS_ACTIONS: Array<{
   value: ContentOpsAction;
@@ -47,6 +50,12 @@ const CONTENT_OPS_ACTIONS: Array<{
   },
 ];
 
+const SHARE_MODE_LABELS: Record<ShareMode, string> = {
+  immediate: "立即分享",
+  timeline: "分享到动态",
+  group: "分享到小组",
+};
+
 interface Props {
   template: TaskTemplate | null;
   open: boolean;
@@ -72,7 +81,10 @@ const STEP_LABELS = ["任务基本信息", "指定动作和目标", "执行方�
 export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
-  const [actions, setActions] = useState<ContentOpsAction[]>(["sharePost"]);
+  const [action, setAction] = useState<ContentOpsAction>("sharePost");
+  const [shareModes, setShareModes] = useState<ShareMode[]>(["immediate"]);
+  const [shareNote, setShareNote] = useState("");
+  const [groupLinks, setGroupLinks] = useState("");
   const [execMode, setExecMode] = useState<"now" | "scheduled">("now");
   const [scheduledMode, setScheduledMode] = useState<"datetime" | "active">("datetime");
   const [scheduledDate, setScheduledDate] = useState(todayStr());
@@ -82,7 +94,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     if (!open || !template) return;
     setStep(1);
     setName(autoName(template));
-    setActions(["sharePost"]);
+    setAction("sharePost");
+    setShareModes(["immediate"]);
+    setShareNote("");
+    setGroupLinks("");
     setExecMode("now");
     setScheduledMode("datetime");
     setScheduledDate(todayStr());
@@ -98,27 +113,42 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   }
   const tpl = template;
 
-  const toggleAction = (a: ContentOpsAction) =>
-    setActions((p) => (p.includes(a) ? p.filter((x) => x !== a) : [...p, a]));
+  const toggleShareMode = (m: ShareMode) =>
+    setShareModes((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]));
 
   const composeDescription = () => {
-    const picked = CONTENT_OPS_ACTIONS.filter((a) => actions.includes(a.value)).map((a) => a.label);
+    const actionLabel = CONTENT_OPS_ACTIONS.find((a) => a.value === action)?.label ?? "未指定";
     const lines = [
       `来源模版：${tpl.name}任务`,
       tpl.description,
-      `指定动作：${picked.join("、") || "未指定"}`,
+      `指定动作：${actionLabel}`,
+    ];
+    if (action === "sharePost" && shareModes.length > 0) {
+      const modeLabels = shareModes.map((m) => SHARE_MODE_LABELS[m]).join("、");
+      lines.push(`转发方式：${modeLabels}`);
+      if (shareModes.includes("timeline") && shareNote.trim()) {
+        lines.push(`转发说明：${shareNote.trim()}`);
+      }
+      if (shareModes.includes("group") && groupLinks.trim()) {
+        lines.push(`指定小组链接：${groupLinks.trim()}`);
+      }
+    }
+    lines.push(
       execMode === "now"
         ? "执行方式：立即执行"
         : scheduledMode === "active"
           ? "执行方式：指定时间开始执行（账号活跃时间）"
           : `执行方式：指定时间开始执行 ${scheduledDate} ${scheduledTime}`,
-    ];
+    );
     return lines.join("\n");
   };
 
   const handleSubmit = () => {
     if (!name.trim()) return toast.error("请输入任务名称");
-    if (actions.length === 0) return toast.error("请至少选择一个动作类型");
+    if (!action) return toast.error("请选择动作类型");
+    if (action === "sharePost" && shareModes.length === 0) {
+      return toast.error("请至少选择一种转发方式");
+    }
 
     const task: TaskRow = {
       id: genTaskId(),
@@ -147,6 +177,8 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     }
     onOpenChange(false);
   };
+
+  const currentAction = CONTENT_OPS_ACTIONS.find((a) => a.value === action);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -218,41 +250,90 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
             </section>
 
             {/* 步骤2 指定动作和目标 */}
-            <section className={cn("space-y-3", step !== 2 && "hidden")}>
+            <section className={cn("space-y-4", step !== 2 && "hidden")}>
               <SectionTitle index="2/3" title="指定动作和目标" />
               <div className="space-y-1.5">
                 <FieldLabel required>指定动作类型</FieldLabel>
-                <div className="space-y-2">
-                  {CONTENT_OPS_ACTIONS.map((a) => {
-                    const checked = actions.includes(a.value);
-                    const Icon = a.icon;
-                    return (
-                      <label
-                        key={a.value}
-                        className={cn(
-                          "block cursor-pointer rounded-lg border p-3 transition-colors",
-                          checked ? "border-primary/60 bg-primary/5" : "hover:border-primary/30",
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Checkbox checked={checked} onCheckedChange={() => toggleAction(a.value)} />
-                          <Icon className="h-3.5 w-3.5 text-primary" />
-                          <span className="text-xs font-medium">{a.label}</span>
-                        </div>
-                        <p className="ml-6 mt-1 text-[11px] text-muted-foreground">{a.desc}</p>
-                        {checked && (
-                          <div className="ml-6 mt-2 rounded-md border border-dashed bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-                            {a.targetHint}
-                          </div>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  指定目标将根据所选动作类型动态展示，具体配置项待补充。
-                </p>
+                <Select value={action} onValueChange={(v) => setAction(v as ContentOpsAction)}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="请选择动作类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CONTENT_OPS_ACTIONS.map((a) => (
+                      <SelectItem key={a.value} value={a.value}>
+                        <span className="flex items-center gap-2">
+                          <a.icon className="h-3.5 w-3.5 text-primary" />
+                          {a.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {currentAction && (
+                  <p className="text-[11px] text-muted-foreground">{currentAction.desc}</p>
+                )}
               </div>
+
+              {/* 转发贴文：转发方式配置 */}
+              {action === "sharePost" && (
+                <div className="space-y-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
+                  <FieldLabel required>转发方式</FieldLabel>
+                  <div className="space-y-2">
+                    {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => {
+                      const checked = shareModes.includes(m);
+                      return (
+                        <label
+                          key={m}
+                          className={cn(
+                            "flex items-center gap-2 rounded-md border px-3 py-2 transition-colors cursor-pointer",
+                            checked ? "border-primary/60 bg-primary/5" : "hover:border-primary/30",
+                          )}
+                        >
+                          <Checkbox checked={checked} onCheckedChange={() => toggleShareMode(m)} />
+                          <span className="text-xs font-medium">{SHARE_MODE_LABELS[m]}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* 分享到动态：转发说明 */}
+                  {shareModes.includes("timeline") && (
+                    <div className="space-y-1.5">
+                      <FieldLabel>转发说明</FieldLabel>
+                      <Textarea
+                        value={shareNote}
+                        onChange={(e) => setShareNote(e.target.value)}
+                        placeholder="选填，添加转发说明文字"
+                        className="min-h-[60px] text-xs"
+                      />
+                    </div>
+                  )}
+
+                  {/* 分享到小组：指定小组链接 */}
+                  {shareModes.includes("group") && (
+                    <div className="space-y-1.5">
+                      <FieldLabel>指定小组链接</FieldLabel>
+                      <Textarea
+                        value={groupLinks}
+                        onChange={(e) => setGroupLinks(e.target.value)}
+                        placeholder="输入小组链接，每行一个，可输入多个"
+                        className="min-h-[80px] text-xs"
+                      />
+                      <p className="text-[11px] text-muted-foreground">每行输入一个小组链接，支持多个小组</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 删除贴文 / 修改账号基础信息：目标占位 */}
+              {action !== "sharePost" && currentAction && (
+                <div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+                  {currentAction.targetHint}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                指定目标将根据所选动作类型动态展示，具体配置项待补充。
+              </p>
             </section>
 
             {/* 步骤3 执行方式 */}
@@ -356,7 +437,10 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                   size="sm"
                   onClick={() => {
                     if (step === 1 && !name.trim()) { toast.error("请填写任务名称"); return; }
-                    if (step === 2 && actions.length === 0) { toast.error("请至少选择一个动作类型"); return; }
+                    if (step === 2 && !action) { toast.error("请选择动作类型"); return; }
+                    if (step === 2 && action === "sharePost" && shareModes.length === 0) {
+                      toast.error("请至少选择一种转发方式"); return;
+                    }
                     setStep((s) => Math.min(3, s + 1));
                   }}
                 >
