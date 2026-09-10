@@ -175,7 +175,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     setScheduledTime(nowTimeStr());
     // 重置删除贴文
     setDeleteMode("specific");
-    setDeleteAccountId("");
+    setDeleteExactScope(EMPTY_ACCOUNT_SCOPE);
     setDeletePostLinks("");
     setDeleteStartDate("");
     setDeleteEndDate("");
@@ -525,19 +525,12 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     <>
                       <div className="space-y-1.5">
                         <FieldLabel required>指定账号</FieldLabel>
-                        <Select value={deleteAccountId} onValueChange={setDeleteAccountId}>
-                          <SelectTrigger className="h-9 text-sm">
-                            <SelectValue placeholder="从账号列表选择一个账号" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {platformAccounts.map((a) => (
-                              <SelectItem key={a.id} value={a.id}>
-                                {a.username}
-                                {a.displayName ? `（${a.displayName}）` : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <AccountScopePicker
+                          single
+                          accounts={platformAccounts}
+                          value={deleteExactScope}
+                          onChange={setDeleteExactScope}
+                        />
                       </div>
                       <div className="space-y-1.5">
                         <FieldLabel required>贴文链接 / ID</FieldLabel>
