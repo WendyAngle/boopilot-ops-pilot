@@ -484,6 +484,20 @@ function BasicInfoCard({ account, derived }: { account: ManagedAccount; derived:
     },
     { label: "最近绑定设备", value: <Mono>{derived.deviceId}</Mono> },
     {
+      label: "个人简介",
+      value: editable(
+        "bio",
+        <Textarea
+          value={form.bio}
+          onChange={(e) => setForm({ ...form, bio: e.target.value })}
+          placeholder="平台主页展示的简介，如 Daily picks for smart living · DM for wholesale"
+          className="min-h-[72px]"
+        />,
+        account.bio ? <span className="text-foreground whitespace-pre-wrap">{account.bio}</span> : "—",
+      ),
+      span: 2,
+    },
+    {
       label: "备注",
       value: editable(
         "remark",
