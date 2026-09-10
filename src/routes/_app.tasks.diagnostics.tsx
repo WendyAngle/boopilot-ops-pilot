@@ -140,24 +140,18 @@ function KpiCard({
   unit,
   delta,
   deltaGoodWhenDown = true,
-  accent,
 }: {
   title: string;
   value: string;
   unit?: string;
   delta?: number;
   deltaGoodWhenDown?: boolean;
-  accent?: boolean;
 }) {
   const up = (delta ?? 0) > 0;
   const bad = delta === undefined ? false : deltaGoodWhenDown ? up : !up;
   return (
-    <div
-      className={cn(
-        "rounded-xl border bg-card p-4 shadow-[var(--shadow-card)]",
-        accent && "border-destructive/40 bg-destructive/5",
-      )}
-    >
+    <div className="rounded-xl border bg-card p-4 shadow-[var(--shadow-card)]">
+
       <p className="truncate text-xs text-muted-foreground">{title}</p>
       <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
         {value}
