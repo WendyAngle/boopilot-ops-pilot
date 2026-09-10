@@ -5,7 +5,7 @@ import { BookmarkPlus, Sparkles, Share2, Trash2, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -82,7 +82,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [action, setAction] = useState<ContentOpsAction>("sharePost");
-  const [shareModes, setShareModes] = useState<ShareMode[]>(["immediate"]);
+  const [shareMode, setShareMode] = useState<ShareMode>("immediate");
   const [shareNote, setShareNote] = useState("");
   const [groupLinks, setGroupLinks] = useState("");
   const [execMode, setExecMode] = useState<"now" | "scheduled">("now");
@@ -95,7 +95,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     setStep(1);
     setName(autoName(template));
     setAction("sharePost");
-    setShareModes(["immediate"]);
+    setShareMode("immediate");
     setShareNote("");
     setGroupLinks("");
     setExecMode("now");
@@ -113,8 +113,6 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   }
   const tpl = template;
 
-  const toggleShareMode = (m: ShareMode) =>
-    setShareModes((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]));
 
   const composeDescription = () => {
     const actionLabel = CONTENT_OPS_ACTIONS.find((a) => a.value === action)?.label ?? "未指定";
@@ -123,13 +121,12 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       tpl.description,
       `指定动作：${actionLabel}`,
     ];
-    if (action === "sharePost" && shareModes.length > 0) {
-      const modeLabels = shareModes.map((m) => SHARE_MODE_LABELS[m]).join("、");
-      lines.push(`转发方式：${modeLabels}`);
-      if (shareModes.includes("timeline") && shareNote.trim()) {
+    if (action === "sharePost" && shareMode) {
+      lines.push(`转发方式：${SHARE_MODE_LABELS[shareMode]}`);
+      if (shareMode === "timeline" && shareNote.trim()) {
         lines.push(`转发说明：${shareNote.trim()}`);
       }
-      if (shareModes.includes("group") && groupLinks.trim()) {
+      if (shareMode === "group" && groupLinks.trim()) {
         lines.push(`指定小组链接：${groupLinks.trim()}`);
       }
     }
@@ -146,8 +143,8 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const handleSubmit = () => {
     if (!name.trim()) return toast.error("请输入任务名称");
     if (!action) return toast.error("请选择动作类型");
-    if (action === "sharePost" && shareModes.length === 0) {
-      return toast.error("请至少选择一种转发方式");
+    if (action === "sharePost" && !shareMode) {
+      return toast.error("请选择转发方式");
     }
 
     const task: TaskRow = {
@@ -278,26 +275,21 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
               {action === "sharePost" && (
                 <div className="space-y-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
                   <FieldLabel required>转发方式</FieldLabel>
-                  <div className="space-y-2">
-                    {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => {
-                      const checked = shareModes.includes(m);
-                      return (
-                        <label
-                          key={m}
-                          className={cn(
-                            "flex items-center gap-2 rounded-md border px-3 py-2 transition-colors cursor-pointer",
-                            checked ? "border-primary/60 bg-primary/5" : "hover:border-primary/30",
-                          )}
-                        >
-                          <Checkbox checked={checked} onCheckedChange={() => toggleShareMode(m)} />
-                          <span className="text-xs font-medium">{SHARE_MODE_LABELS[m]}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                  <Select value={shareMode} onValueChange={(v) => setShareMode(v as ShareMode)}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="请选择转发方式" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {SHARE_MODE_LABELS[m]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
                   {/* 分享到动态：转发说明 */}
-                  {shareModes.includes("timeline") && (
+                  {shareMode === "timeline" && (
                     <div className="space-y-1.5">
                       <FieldLabel>转发说明</FieldLabel>
                       <Textarea
@@ -310,7 +302,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                   )}
 
                   {/* 分享到小组：指定小组链接 */}
-                  {shareModes.includes("group") && (
+                  {shareMode === "group" && (
                     <div className="space-y-1.5">
                       <FieldLabel>指定小组链接</FieldLabel>
                       <Textarea
@@ -438,8 +430,8 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                   onClick={() => {
                     if (step === 1 && !name.trim()) { toast.error("请填写任务名称"); return; }
                     if (step === 2 && !action) { toast.error("请选择动作类型"); return; }
-                    if (step === 2 && action === "sharePost" && shareModes.length === 0) {
-                      toast.error("请至少选择一种转发方式"); return;
+                    if (step === 2 && action === "sharePost" && !shareMode) {
+                      toast.error("请选择转发方式"); return;
                     }
                     setStep((s) => Math.min(3, s + 1));
                   }}
