@@ -83,8 +83,15 @@ export const generateNurtureKeywords = createServerFn({ method: "POST" })
       throw new Error("AI 返回内容解析失败，请重试");
     }
 
+    // 关键词必须是纯英文：过滤含非英文字符（日文假名、汉字、韩文等）的条目
+    const isEnglishOnly = (s: string) => !/[^\x20-\x7E]/.test(s);
     const asList = (v: unknown): string[] =>
-      Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, 8) : [];
+      Array.isArray(v)
+        ? v
+            .map((x) => String(x).trim())
+            .filter((s) => s && isEnglishOnly(s))
+            .slice(0, 8)
+        : [];
 
     // 模型偶尔会把 persona 输出为对象/数组，这里兜底压缩为一句可读文本
     const toText = (v: unknown, depth = 0): string => {
