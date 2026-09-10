@@ -26,7 +26,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   ACCOUNT_LANGUAGES,
   ACCOUNT_REGIONS,
-  INTEREST_GROUPS,
+  
   ACCOUNT_STATUS_META,
   type ManagedAccount,
 } from "@/lib/managed-account-mock";
@@ -66,7 +66,6 @@ type Draft = {
   bio: string;
   language: string;
   region: string;
-  interests: string[];
 };
 
 function toDraft(a: ManagedAccount): Draft {
@@ -76,7 +75,6 @@ function toDraft(a: ManagedAccount): Draft {
     bio: a.bio ?? "",
     language: a.language ?? ACCOUNT_LANGUAGES[0],
     region: a.region ?? ACCOUNT_REGIONS[0],
-    interests: a.interests ?? [],
   };
 }
 
@@ -105,15 +103,7 @@ export function MirrorWorkbench({
 }) {
   const who = getCurrentUser()?.displayName ?? "当前用户";
   const [draft, setDraft] = useState<Draft>(() => toDraft(account));
-  
-  const [interestInput, setInterestInput] = useState("");
   const bioLimit = BIO_LIMIT[account.platform] ?? 150;
-  const interestLabel =
-    account.platform === "Facebook"
-      ? "兴趣偏好（兴趣 / 关注的主页与话题）"
-      : account.platform === "Tiktok"
-        ? "兴趣偏好（内容偏好分类）"
-        : "兴趣偏好";
 
   useEffect(() => {
     setDraft(toDraft(account));
@@ -126,16 +116,9 @@ export function MirrorWorkbench({
       base.displayName !== draft.displayName ||
       base.bio !== draft.bio ||
       base.language !== draft.language ||
-      base.region !== draft.region ||
-      base.interests.join("|") !== draft.interests.join("|")
+      base.region !== draft.region
     );
   }, [account, draft]);
-
-  const addInterest = (v: string) => {
-    const t = v.trim();
-    if (!t || draft.interests.includes(t)) return;
-    setDraft((d) => ({ ...d, interests: [...d.interests, t] }));
-  };
 
 
   /* ---------- 事项登记 ---------- */
@@ -245,79 +228,6 @@ export function MirrorWorkbench({
                 {draft.bio.length}/{bioLimit}
               </div>
             </Field>
-            <Field
-              label={interestLabel}
-              hint="按分类勾选或输入自定义兴趣词；点击已选标签可移除。需与平台侧实际设置保持一致。"
-            >
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                {draft.interests.map((t) => (
-                  <Badge
-                    key={t}
-                    variant="secondary"
-                    className="cursor-pointer text-[11px]"
-                    onClick={() =>
-                      setDraft((d) => ({
-                        ...d,
-                        interests: d.interests.filter((x) => x !== t),
-                      }))
-                    }
-                  >
-                    {t} ×
-                  </Badge>
-                ))}
-                {draft.interests.length === 0 && (
-                  <span className="text-[11px] text-muted-foreground">
-                    暂未选择兴趣分类
-                  </span>
-                )}
-              </div>
-              <Input
-                value={interestInput}
-                onChange={(e) => setInterestInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addInterest(interestInput);
-                    setInterestInput("");
-                  }
-                }}
-                placeholder="输入自定义兴趣词后回车，如 LED screen"
-              />
-              <div className="mt-2 space-y-2 rounded-md border p-2">
-                {INTEREST_GROUPS.map((g) => (
-                  <div key={g.group}>
-                    <p className="mb-1 text-[11px] font-medium text-muted-foreground">
-                      {g.group}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {g.items.map((p) => {
-                        const on = draft.interests.includes(p);
-                        return (
-                          <Badge
-                            key={p}
-                            variant={on ? "default" : "outline"}
-                            className="cursor-pointer text-[11px]"
-                            onClick={() =>
-                              on
-                                ? setDraft((d) => ({
-                                    ...d,
-                                    interests: d.interests.filter(
-                                      (x) => x !== p,
-                                    ),
-                                  }))
-                                : addInterest(p)
-                            }
-                          >
-                            {on ? "✓ " : "+ "}
-                            {p}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Field>
           </div>
 
           <div className="mt-4 flex items-center gap-2 border-t pt-3">
@@ -331,7 +241,6 @@ export function MirrorWorkbench({
                   bio: draft.bio.trim(),
                   language: draft.language,
                   region: draft.region,
-                  interests: draft.interests,
                 });
                 toast.success("已回填并同步到账号列表", {
                   description: draft.username.trim(),
