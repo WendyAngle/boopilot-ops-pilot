@@ -91,6 +91,8 @@ interface Props {
   value: AccountScopeValue;
   onChange: (next: AccountScopeValue) => void;
   className?: string;
+  /** 单选模式：仅能选中 1 个账号，再次点击其他账号会替换 */
+  single?: boolean;
 }
 
 export function AccountScopePicker({
@@ -98,6 +100,7 @@ export function AccountScopePicker({
   value,
   onChange,
   className,
+  single = false,
 }: Props) {
   const [kw, setKw] = useState("");
 
@@ -140,7 +143,9 @@ export function AccountScopePicker({
       {/* 标签筛选（横跨左右两栏） */}
       <div className="mb-2.5 space-y-1.5">
         <p className="text-[11px] text-muted-foreground">
-          按标签筛选账号（可多选，仅用于过滤候选列表；也可直接搜索并勾选特定账号）
+          {single
+            ? "按标签筛选账号（可多选，仅用于缩小候选范围）；也可直接搜索，点击选中 1 个账号"
+            : "按标签筛选账号（可多选，仅用于过滤候选列表；也可直接搜索并勾选特定账号）"}
         </p>
         <TagMultiSelect
           value={value.tags}
@@ -154,15 +159,21 @@ export function AccountScopePicker({
         {/* 左栏：候选账号 */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              className="text-[11px] text-primary hover:underline"
-              onClick={toggleAll}
-            >
-              {allFilteredSelected
-                ? "取消全选当前结果"
-                : `全选当前结果（${filtered.length}）`}
-            </button>
+            {single ? (
+              <span className="text-[11px] text-muted-foreground">
+                当前结果 {filtered.length} 个（单选）
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="text-[11px] text-primary hover:underline"
+                onClick={toggleAll}
+              >
+                {allFilteredSelected
+                  ? "取消全选当前结果"
+                  : `全选当前结果（${filtered.length}）`}
+              </button>
+            )}
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -189,18 +200,36 @@ export function AccountScopePicker({
                         "flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-accent/40",
                         checked && "bg-primary/5",
                       )}
+                      onClick={
+                        single
+                          ? () => onChange({ ...value, accountIds: [a.id] })
+                          : undefined
+                      }
                     >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={(c) =>
-                          onChange({
-                            ...value,
-                            accountIds: c
-                              ? [...value.accountIds, a.id]
-                              : value.accountIds.filter((x) => x !== a.id),
-                          })
-                        }
-                      />
+                      {single ? (
+                        <span
+                          className={cn(
+                            "inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border",
+                            checked ? "border-primary" : "border-input",
+                          )}
+                        >
+                          {checked && (
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                          )}
+                        </span>
+                      ) : (
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(c) =>
+                            onChange({
+                              ...value,
+                              accountIds: c
+                                ? [...value.accountIds, a.id]
+                                : value.accountIds.filter((x) => x !== a.id),
+                            })
+                          }
+                        />
+                      )}
                       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">
                         {a.username.slice(0, 1).toUpperCase()}
                       </span>
@@ -223,11 +252,17 @@ export function AccountScopePicker({
         <div className="flex flex-col rounded-md border bg-muted/30">
           <div className="flex items-center justify-between border-b px-2.5 py-1.5 text-[11px]">
             <span className="text-muted-foreground">
-              已选{" "}
-              <span className="font-semibold text-foreground">
-                {selected.length}
-              </span>{" "}
-              个账号
+              {single ? (
+                <>已选账号（单选）</>
+              ) : (
+                <>
+                  已选{" "}
+                  <span className="font-semibold text-foreground">
+                    {selected.length}
+                  </span>{" "}
+                  个账号
+                </>
+              )}
             </span>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-muted-foreground">
@@ -239,7 +274,7 @@ export function AccountScopePicker({
                   className="text-primary hover:underline"
                   onClick={() => onChange({ ...value, accountIds: [] })}
                 >
-                  清空已选
+                  {single ? "清除选择" : "清空已选"}
                 </button>
               )}
             </div>
@@ -247,7 +282,7 @@ export function AccountScopePicker({
           <ScrollArea className="h-44">
             {selected.length === 0 ? (
               <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">
-                勾选左侧账号后会显示在这里
+                {single ? "点击左侧账号完成选择" : "勾选左侧账号后会显示在这里"}
               </div>
             ) : (
               <div className="divide-y">
@@ -279,11 +314,22 @@ export function AccountScopePicker({
 
       {/* 底部汇总 */}
       <p className="mt-2 text-center text-[11px] text-muted-foreground">
-        本次将对{" "}
-        <span className="font-semibold text-foreground">
-          {selected.length}
-        </span>{" "}
-        个账号执行
+        {single ? (
+          <>
+            已选账号：
+            <span className="font-semibold text-foreground">
+              {selected[0]?.username ?? "未选择"}
+            </span>
+          </>
+        ) : (
+          <>
+            本次将对{" "}
+            <span className="font-semibold text-foreground">
+              {selected.length}
+            </span>{" "}
+            个账号执行
+          </>
+        )}
       </p>
     </div>
   );
