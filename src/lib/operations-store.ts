@@ -124,7 +124,7 @@ export const TASK_CATEGORY_LABEL: Record<TaskCategory, string> = {
   nurture: "养号任务",
   coview: "同屏任务",
   "social-reach": "社媒触达任务",
-  "account-ops": "账号运营任务",
+  "account-ops": "内容运营任务",
 };
 
 /** 每种任务类型包含的动作（用于任务说明、mock 数据与诊断维度） */
