@@ -30,12 +30,12 @@ import { cn } from "@/lib/utils";
 import {
   PLATFORMS, PLATFORM_CHIP, SUBTYPE_LABEL, SUBTYPE_CLS,
   TEMPLATE_ACTION_LABEL, TEMPLATE_ACTIONS,
-  type Platform, type TaskSubType, type TaskTemplate, type TemplateAction, type TemplateStatus,
+  TASK_CATEGORY_ORDER, TASK_CATEGORY_LABEL,
+  type Platform, type TaskSubType, type TaskTemplate, type TemplateAction, type TemplateStatus, type TaskCategory,
   useTasks, useTemplates, templatesActions,
   fmtNow, uid,
 } from "@/lib/operations-store";
 import { getUsableTags } from "@/lib/systemTags";
-import { TagMultiSelect } from "@/components/tag-multi-select";
 import { UseTemplateDialog } from "@/components/use-template-dialog";
 
 
@@ -95,18 +95,20 @@ function TaskTemplatesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TaskTemplate | null>(null);
   const [form, setForm] = useState<{
-    name: string; subtype: TaskSubType; platforms: Platform[]; total: number;
-    description: string; agentName: string; actions: TemplateAction[]; tags: string[];
+    name: string; subtype: TaskSubType; category: TaskCategory; platforms: Platform[]; total: number;
+    description: string; agentName: string; actions: TemplateAction[];
   }>({
-    name: "", subtype: "action", platforms: ["Facebook"], total: 10,
-    description: "", agentName: "", actions: [], tags: [],
+    name: "", subtype: "action", category: "nurture", platforms: ["Facebook"], total: 10,
+    description: "", agentName: "", actions: [],
   });
   const openEdit = (tpl: TaskTemplate) => {
     setEditing(tpl);
     setForm({
-      name: tpl.name, subtype: tpl.subtype, platforms: tpl.platforms, total: tpl.total,
+      name: tpl.name, subtype: tpl.subtype,
+      category: tpl.category ?? "nurture",
+      platforms: tpl.platforms, total: tpl.total,
       description: tpl.description, agentName: tpl.agentName ?? "",
-      actions: tpl.actions ?? [], tags: tpl.tags ?? [],
+      actions: tpl.actions ?? [],
     });
     setDialogOpen(true);
   };
@@ -124,9 +126,6 @@ function TaskTemplatesPage() {
   };
   const toggleAction = (a: TemplateAction) => {
     setForm((f) => ({ ...f, actions: f.actions.includes(a) ? f.actions.filter((x) => x !== a) : [...f.actions, a] }));
-  };
-  const toggleEditTag = (name: string) => {
-    setForm((f) => ({ ...f, tags: f.tags.includes(name) ? f.tags.filter((x) => x !== name) : [...f.tags, name] }));
   };
 
   // 使用模版弹窗
@@ -383,11 +382,12 @@ function TaskTemplatesPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>任务类型</Label>
-                <Select value={form.subtype} onValueChange={(v) => setForm((f) => ({ ...f, subtype: v as TaskSubType }))}>
+                <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v as TaskCategory }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="action">单次触达</SelectItem>
-                    <SelectItem value="nurture">周期性</SelectItem>
+                    {TASK_CATEGORY_ORDER.map((c) => (
+                      <SelectItem key={c} value={c}>{TASK_CATEGORY_LABEL[c]}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -415,7 +415,7 @@ function TaskTemplatesPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>操作类型</Label>
+              <Label>动作类型</Label>
               <div className="flex flex-wrap gap-1.5">
                 {TEMPLATE_ACTIONS.map((a) => {
                   const active = form.actions.includes(a);
@@ -432,14 +432,6 @@ function TaskTemplatesPage() {
                   );
                 })}
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>标签</Label>
-              <TagMultiSelect
-                value={form.tags}
-                onChange={(tags) => setForm((f) => ({ ...f, tags }))}
-                placeholder="选择或新增标签"
-              />
             </div>
             <div className="space-y-1.5">
               <Label>模版描述</Label>

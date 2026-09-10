@@ -104,6 +104,8 @@ export interface TaskTemplate {
   monthlyUses?: number;
   /** 是否禁用「使用」功能（功能未实现时为 true） */
   useDisabled?: boolean;
+  /** 任务类型（与任务列表统一口径） */
+  category?: TaskCategory;
 }
 
 export const PLATFORMS: Platform[] = ["Facebook", "Tiktok", "WhatsApp", "Instagram", "Twitter/X"];
@@ -596,6 +598,7 @@ const initialTemplates: TaskTemplate[] = [
     actions: ["like", "follow", "comment"],
     tags: ["主账号", "高活跃", "出海"],
     monthlyUses: 6,
+    category: "nurture",
   },
   {
     id: uid("tpl"),
@@ -612,6 +615,7 @@ const initialTemplates: TaskTemplate[] = [
     tags: ["内容运营", "Facebook"],
     monthlyUses: 3,
     useDisabled: true,
+    category: "account-ops",
   },
 ];
 
