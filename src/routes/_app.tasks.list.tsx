@@ -1347,27 +1347,24 @@ function DistList({ rows }: { rows: DistRow[] }) {
     return <div className="py-6 text-center text-xs text-muted-foreground">暂无数据</div>;
   }
   return (
-    <div className="space-y-1.5">
+    <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
       {rows.map((r) => {
         const total = r.success + r.failed;
         const sPct = total ? (r.success / total) * 100 : 0;
         const fPct = total ? (r.failed / total) * 100 : 0;
         return (
           <div key={r.label} className="flex items-center gap-2 text-xs">
-            <span className="w-24 shrink-0 truncate" title={r.label}>{r.label}</span>
-            <div className="flex h-2 flex-1 overflow-hidden rounded bg-muted">
+            <span className="w-40 shrink-0 truncate" title={r.label}>{r.label}</span>
+            <div className="flex h-2.5 flex-1 overflow-hidden rounded bg-muted">
               <div className="h-full bg-emerald-500" style={{ width: `${sPct}%` }} />
               <div className="h-full bg-destructive" style={{ width: `${fPct}%` }} />
             </div>
-            <span className="w-44 shrink-0 text-right tabular-nums text-muted-foreground">
-              <span className="text-emerald-600">{r.success}</span>
-              <span className="mx-0.5">/</span>
-              <span className="text-destructive">{r.failed}</span>
-              <span className="mx-0.5">/</span>
-              <span>{total}</span>
-              <span className="ml-1 text-[10px]">
-                ({total ? Math.round(sPct) : 0}% · {total ? Math.round(fPct) : 0}%)
-              </span>
+            <span className="w-24 shrink-0 text-right tabular-nums">
+              <span className="font-medium text-emerald-600">{r.success}</span>
+              <span className="mx-0.5 text-muted-foreground">/</span>
+              <span className="font-medium text-destructive">{r.failed}</span>
+              <span className="mx-0.5 text-muted-foreground">/</span>
+              <span className="text-foreground">{total}</span>
             </span>
           </div>
         );
@@ -1375,6 +1372,7 @@ function DistList({ rows }: { rows: DistRow[] }) {
     </div>
   );
 }
+
 
 type LogLine = { ts: string; level: "INFO" | "WARN" | "ERROR"; msg: string };
 
