@@ -185,9 +185,18 @@ export function useActivitySubtasks(parentId: string): ActivitySubTask[] {
 let _seeded = false;
 
 
+/**
+ * 历史台账回填开关：
+ * 任务列表中「社媒触达任务」已改为统一使用预置的社媒拓客任务数据，
+ * 不再把私信/好友管理的历史 mock 记录回填成台账父任务（避免列表被台账淹没）。
+ * 用户在私信/好友管理里的新操作仍会通过 recordActivity 实时记录。
+ */
+const SEED_HISTORY_LEDGER = false;
+
 export function ensureActivityTasksSeeded() {
   if (_seeded) return;
   _seeded = true;
+  if (!SEED_HISTORY_LEDGER) return;
   if (typeof window === "undefined") return;
   (async () => {
     try {
