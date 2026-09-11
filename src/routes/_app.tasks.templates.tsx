@@ -518,6 +518,30 @@ function TaskTemplatesPage() {
         open={opsDlgOpen}
         onOpenChange={(o) => { setOpsDlgOpen(o); if (!o) setOpsDlgTpl(null); }}
       />
+
+      {/* 停用二次确认 */}
+      <AlertDialog open={!!disableTpl} onOpenChange={(o) => !o && setDisableTpl(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <PauseCircle className="h-5 w-5 text-amber-500" />
+              确认停用模版
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              确认停用模版「{disableTpl?.name}」？停用后将终止该模版下所有未完成任务的后续定时/周期调度且重新启用模版任务不会恢复（已下发子任务不受影响），请慎重操作。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-600/90"
+              onClick={confirmDisable}
+            >
+              确认停用
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 }
