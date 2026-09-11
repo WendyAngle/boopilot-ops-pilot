@@ -643,6 +643,19 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
   const isNurture = task.subtype === "nurture";
   const execMode = get<string>("execMode", isNurture ? "recurring" : "now");
   const targetMode = get<string>("targetMode", "keyword");
+  type NG = {
+    id: string;
+    nurtureInterestKeywords?: string;
+    nurtureLike?: boolean; nurtureLikeMin?: number; nurtureLikeMax?: number;
+    nurtureFollow?: boolean; nurtureFollowMin?: number; nurtureFollowMax?: number;
+    nurtureComment?: boolean; nurtureCommentMin?: number; nurtureCommentMax?: number;
+    nurtureCommentEmoji?: boolean; nurtureCommentSentiment?: string; nurtureCommentStyle?: string;
+    nurtureSearch?: boolean; nurtureKeywords?: string;
+  };
+  const nurtureGroups: NG[] = Array.isArray(d.nurtureGroups) ? (d.nurtureGroups as NG[]) : [];
+  const showStrategy = isNurture && nurtureGroups.length > 0;
+  const total = showStrategy ? 4 : 3;
+
 
   return (
     <Dialog open={!!task} onOpenChange={(o) => !o && onClose()}>
@@ -654,12 +667,11 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
           <DialogDescription className="font-mono text-xs">{task.id}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[65vh] overflow-y-auto px-6 py-4">
-          {/* 1/3 任务基本信息 */}
-          <SectionHeader index="1/3" title="任务基本信息" />
+          <SectionHeader index={`1/${total}`} title="任务基本信息" />
           <DetailRow label="任务名称">{dash(get<string>("name", task.name))}</DetailRow>
 
-          {/* 2/3 执行目标 */}
-          <SectionHeader index="2/3" title="执行目标" />
+          <SectionHeader index={`2/${total}`} title="执行目标" />
+
           {isNurture && (
             <DetailRow label="目标">
               {TARGET_MODE_LABEL[targetMode] ?? "—"}
@@ -685,8 +697,60 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
             </>
           )}
 
-          {/* 3/3 执行方式 */}
-          <SectionHeader index="3/3" title="执行方式" />
+          {showStrategy && (
+            <>
+              <SectionHeader index={`3/${total}`} title="养号策略" />
+              <div className="space-y-3 py-1">
+                <div className="text-[11px] text-muted-foreground">
+                  共 {nurtureGroups.length} 组策略，每个匹配账号将随机选择一组执行
+                </div>
+                {nurtureGroups.map((g, idx) => {
+                  const actions: string[] = [];
+                  if (g.nurtureSearch) actions.push("搜索浏览");
+                  if (g.nurtureLike) actions.push(`点赞 ${g.nurtureLikeMin}–${g.nurtureLikeMax} 次/日`);
+                  if (g.nurtureFollow) actions.push(`关注 ${g.nurtureFollowMin}–${g.nurtureFollowMax} 个/日`);
+                  if (g.nurtureComment) actions.push(`评论 ${g.nurtureCommentMin}–${g.nurtureCommentMax} 条/日`);
+                  return (
+                    <div key={g.id} className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge variant="secondary" className="text-[10px]">第 {idx + 1} 组</Badge>
+                        {actions.map((a) => (
+                          <Badge key={a} variant="outline" className="text-[10px] font-normal">{a}</Badge>
+                        ))}
+                      </div>
+                      {g.nurtureInterestKeywords && (
+                        <div className="flex gap-2 text-xs">
+                          <span className="w-20 shrink-0 text-muted-foreground">兴趣关键词</span>
+                          <span>{g.nurtureInterestKeywords}</span>
+                        </div>
+                      )}
+                      {g.nurtureSearch && g.nurtureKeywords && (
+                        <div className="flex gap-2 text-xs">
+                          <span className="w-20 shrink-0 text-muted-foreground">搜索关键词</span>
+                          <span>{g.nurtureKeywords}</span>
+                        </div>
+                      )}
+                      {g.nurtureComment && (g.nurtureCommentSentiment || g.nurtureCommentStyle) && (
+                        <div className="flex gap-2 text-xs">
+                          <span className="w-20 shrink-0 text-muted-foreground">评论设定</span>
+                          <span>
+                            {[
+                              g.nurtureCommentSentiment && `情绪：${g.nurtureCommentSentiment}`,
+                              g.nurtureCommentStyle && `风格：${g.nurtureCommentStyle}`,
+                              g.nurtureCommentEmoji && "可带表情",
+                            ].filter(Boolean).join("；")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <SectionHeader index={`${total}/${total}`} title="执行方式" />
+
           <DetailRow label="执行方式">{EXEC_MODE_LABEL[execMode] ?? "—"}</DetailRow>
           {execMode === "scheduled" && (
             <DetailRow label="计划时间">
