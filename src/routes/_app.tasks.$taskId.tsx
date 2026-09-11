@@ -50,6 +50,33 @@ export const Route = createFileRoute("/_app/tasks/$taskId")({
 
 type SubStatus = "success" | "partial" | "failed" | "pending" | "running" | "aborted";
 
+/** 养号策略组（与创建弹窗 DraftState.nurtureGroups 对齐，只读展示） */
+type NurtureStrategyGroup = {
+  id: string;
+  nurtureInterestKeywords: string;
+  nurtureLike: boolean;
+  nurtureLikeMin: number;
+  nurtureLikeMax: number;
+  nurtureFollow: boolean;
+  nurtureFollowMin: number;
+  nurtureFollowMax: number;
+  nurtureComment: boolean;
+  nurtureCommentMin: number;
+  nurtureCommentMax: number;
+  nurtureCommentEmoji: boolean;
+  nurtureCommentTopic: string;
+  nurtureCommentSentiment: string;
+  nurtureCommentStyle: string;
+  nurtureSearch: boolean;
+  nurtureKeywordOn: boolean;
+  nurtureKeywords: string;
+};
+
+function getNurtureGroups(task: TaskRow): NurtureStrategyGroup[] {
+  const d = (task.draft ?? {}) as Record<string, unknown>;
+  return Array.isArray(d.nurtureGroups) ? (d.nurtureGroups as NurtureStrategyGroup[]) : [];
+}
+
 const SUB_STATUS_LABEL: Record<SubStatus, string> = {
   pending: "待执行",
   running: "执行中",
@@ -420,6 +447,67 @@ function TaskDetailPage() {
             </div>
           </div>
         </header>
+
+        {/* 养号策略（仅周期养号任务） */}
+        {task.subtype === "nurture" && (() => {
+          const groups = getNurtureGroups(task);
+          if (groups.length === 0) return null;
+          return (
+            <section className="rounded-xl border bg-card p-5 shadow-[var(--shadow-card)]">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold">养号策略</h2>
+                <span className="text-[11px] text-muted-foreground">
+                  共 {groups.length} 组策略，每个匹配账号将随机选择一组执行
+                </span>
+              </div>
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                {groups.map((g, idx) => {
+                  const actions: string[] = [];
+                  if (g.nurtureSearch) actions.push("搜索浏览");
+                  if (g.nurtureLike) actions.push(`点赞 ${g.nurtureLikeMin}–${g.nurtureLikeMax} 次/日`);
+                  if (g.nurtureFollow) actions.push(`关注 ${g.nurtureFollowMin}–${g.nurtureFollowMax} 个/日`);
+                  if (g.nurtureComment) actions.push(`评论 ${g.nurtureCommentMin}–${g.nurtureCommentMax} 条/日`);
+                  return (
+                    <div key={g.id} className="space-y-2.5 rounded-lg border bg-muted/20 p-3.5">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">第 {idx + 1} 组</Badge>
+                        <div className="flex flex-wrap gap-1">
+                          {actions.map((a) => (
+                            <Badge key={a} variant="outline" className="text-[10px] font-normal">{a}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                      {g.nurtureInterestKeywords && (
+                        <div className="flex gap-2 text-xs">
+                          <span className="w-20 shrink-0 text-muted-foreground">兴趣关键词</span>
+                          <span className="text-foreground/90">{g.nurtureInterestKeywords}</span>
+                        </div>
+                      )}
+                      {g.nurtureSearch && g.nurtureKeywords && (
+                        <div className="flex gap-2 text-xs">
+                          <span className="w-20 shrink-0 text-muted-foreground">搜索关键词</span>
+                          <span className="text-foreground/90">{g.nurtureKeywords}</span>
+                        </div>
+                      )}
+                      {g.nurtureComment && (g.nurtureCommentSentiment || g.nurtureCommentStyle) && (
+                        <div className="flex gap-2 text-xs">
+                          <span className="w-20 shrink-0 text-muted-foreground">评论设定</span>
+                          <span className="text-foreground/90">
+                            {[
+                              g.nurtureCommentSentiment && `情绪：${g.nurtureCommentSentiment}`,
+                              g.nurtureCommentStyle && `风格：${g.nurtureCommentStyle}`,
+                              g.nurtureCommentEmoji && "可带表情",
+                            ].filter(Boolean).join("；")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* 统计卡片 */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
