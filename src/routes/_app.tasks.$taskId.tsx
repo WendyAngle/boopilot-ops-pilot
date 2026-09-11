@@ -50,6 +50,33 @@ export const Route = createFileRoute("/_app/tasks/$taskId")({
 
 type SubStatus = "success" | "partial" | "failed" | "pending" | "running" | "aborted";
 
+/** 养号策略组（与创建弹窗 DraftState.nurtureGroups 对齐，只读展示） */
+type NurtureStrategyGroup = {
+  id: string;
+  nurtureInterestKeywords: string;
+  nurtureLike: boolean;
+  nurtureLikeMin: number;
+  nurtureLikeMax: number;
+  nurtureFollow: boolean;
+  nurtureFollowMin: number;
+  nurtureFollowMax: number;
+  nurtureComment: boolean;
+  nurtureCommentMin: number;
+  nurtureCommentMax: number;
+  nurtureCommentEmoji: boolean;
+  nurtureCommentTopic: string;
+  nurtureCommentSentiment: string;
+  nurtureCommentStyle: string;
+  nurtureSearch: boolean;
+  nurtureKeywordOn: boolean;
+  nurtureKeywords: string;
+};
+
+function getNurtureGroups(task: TaskRow): NurtureStrategyGroup[] {
+  const d = (task.draft ?? {}) as Record<string, unknown>;
+  return Array.isArray(d.nurtureGroups) ? (d.nurtureGroups as NurtureStrategyGroup[]) : [];
+}
+
 const SUB_STATUS_LABEL: Record<SubStatus, string> = {
   pending: "待执行",
   running: "执行中",
