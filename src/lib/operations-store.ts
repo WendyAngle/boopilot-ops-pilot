@@ -251,6 +251,83 @@ export function parseUserMessage(text: string, templates: TaskTemplate[], lastTa
 /* 初始数据                                                     */
 /* ============================================================ */
 
+/**
+ * 同屏任务：一个社媒账号对应一个同屏任务。
+ * 账号信息与「账号列表」mock（seedManagedAccounts）保持一致：
+ * 账号索引 i → id `m-${i}`、平台 ID `1000123456 + i*7919`、头像 seed `managed-${i}`、
+ * 租户 TASK_TENANTS[i % n]，避免两处数据对不上。
+ */
+const COVIEW_SEED: {
+  i: number;
+  username: string;
+  platform: Platform;
+  operator: string;
+  purpose: string;
+  createdAt: string;
+  startTime?: string;
+  endTime?: string;
+  status: TaskStatus;
+}[] = [
+  { i: 2, username: "boo.daily", platform: "Instagram", operator: "李雨欣", purpose: "人工核实账号状态并回填账号资料", createdAt: "2026-06-03 09:30:00", startTime: "2026-06-03 09:31:12", endTime: "2026-06-03 09:52:40", status: "success" },
+  { i: 3, username: "@boo_shorts", platform: "Twitter/X", operator: "李雨欣", purpose: "登录失败账号同屏复登并登记处置结果", createdAt: "2026-06-03 10:05:00", startTime: "2026-06-03 10:06:03", endTime: "2026-06-03 10:34:58", status: "success" },
+  { i: 5, username: "@zhang_ip", platform: "Tiktok", operator: "陈晓明", purpose: "私信受限申诉同屏操作", createdAt: "2026-06-03 11:20:00", startTime: "2026-06-03 11:21:40", endTime: "2026-06-03 11:47:05", status: "success" },
+  { i: 6, username: "海风出海", platform: "Instagram", operator: "王浩然", purpose: "同屏更新简介与联系方式", createdAt: "2026-06-04 09:10:00", startTime: "2026-06-04 09:12:22", endTime: "2026-06-04 09:28:16", status: "success" },
+  { i: 8, username: "极客SaaS", platform: "Twitter/X", operator: "张梦琪", purpose: "风控账号同屏验证与安全设置检查", createdAt: "2026-06-04 14:00:00", startTime: "2026-06-04 14:02:31", endTime: "2026-06-04 14:41:09", status: "partial" },
+  { i: 10, username: "星航跨境", platform: "Facebook", operator: "陈晓明", purpose: "待确认账号同屏核实与资料回填", createdAt: "2026-06-05 09:00:00", startTime: "2026-06-05 09:01:18", endTime: "2026-06-05 09:19:44", status: "success" },
+  { i: 11, username: "Boo小宇", platform: "Tiktok", operator: "刘子轩", purpose: "评论受限处置与内容偏好调整", createdAt: "2026-06-05 10:30:00", startTime: "2026-06-05 10:32:07", endTime: "2026-06-05 11:05:33", status: "failed" },
+  { i: 13, username: "DTC Brand", platform: "Twitter/X", operator: "黄雪", purpose: "同屏检查账号绑定信息", createdAt: "2026-06-05 15:40:00", startTime: "2026-06-05 15:41:55", status: "running" },
+  { i: 15, username: "Lifestyle 365", platform: "Facebook", operator: "李雨欣", purpose: "PIN 校验后同屏恢复登录态", createdAt: "2026-06-06 09:20:00", startTime: "2026-06-06 09:21:36", status: "running" },
+  { i: 16, username: "BeautyDaily", platform: "Tiktok", operator: "王浩然", purpose: "计划同屏巡检并回填地区与语言设置", createdAt: "2026-06-06 10:00:00", status: "pending" },
+];
+
+function buildCoviewTasks(): TaskRow[] {
+  return COVIEW_SEED.map((s, idx) => {
+    const tenant = TASK_TENANTS[s.i % Math.max(1, TASK_TENANTS.length)];
+    const done = s.status === "success" || s.status === "partial" ? 1 : 0;
+    const failed = s.status === "failed" || s.status === "partial" ? 1 : 0;
+    return {
+      id: `2046834200000${String(idx + 1).padStart(2, "0")}`,
+      name: `${s.platform} ${s.username} 账号同屏`,
+      subtype: "action",
+      platforms: [s.platform],
+      total: 1,
+      done,
+      failed,
+      status: s.status,
+      category: "coview",
+      description: `对托管账号「${s.username}」发起一次账号同屏，${s.purpose}。`,
+      createdBy: s.operator,
+      createdAt: s.createdAt,
+      endTime: s.endTime,
+      tenantId: tenant?.id,
+      tenantName: tenant?.name,
+      draft: {
+        name: `${s.platform} ${s.username} 账号同屏`,
+        platforms: [s.platform],
+        coviewAccountId: `m-${s.i}`,
+        coviewAccountName: s.username,
+        coviewPlatform: s.platform,
+        coviewPlatformId: `${1000123456 + s.i * 7919}`,
+        coviewAvatar: `https://api.dicebear.com/7.x/notionists/svg?seed=managed-${s.i}`,
+        coviewAction: "账号同屏",
+        coviewPurpose: s.purpose,
+        coviewOperator: s.operator,
+        coviewStartTime: s.startTime ?? "",
+        coviewEndTime: s.endTime ?? "",
+        reachTags: [],
+        reachAccounts: [`m-${s.i}`],
+        postTags: [],
+        postIds: [],
+        execMode: s.status === "pending" ? "scheduled" : "now",
+        ...(s.status === "pending"
+          ? { scheduledDate: "2026-06-07", scheduledTime: "09:30" }
+          : {}),
+      },
+    } as TaskRow;
+  });
+}
+
+
 const initialTasks: TaskRow[] = ([
   {
     id: "204683410000001",
@@ -602,27 +679,7 @@ const initialTasks: TaskRow[] = ([
       scheduledTime: "09:30",
     },
   },
-  {
-    id: "204683410000011",
-    name: "Facebook 异常账号同屏巡检",
-    subtype: "action",
-    platforms: ["Facebook"],
-    total: 8, done: 6, failed: 1,
-    status: "running",
-    category: "coview",
-    description: "对 8 个处于「待确认/处理」的 Facebook 托管账号发起同屏巡检，人工核实账号状态并回填资料、登记处置结果。",
-    createdBy: "李雨欣",
-    createdAt: "2026-06-03 09:30:00",
-    draft: {
-      name: "Facebook 异常账号同屏巡检",
-      platforms: ["Facebook"],
-      reachTags: ["待确认/处理"],
-      reachAccounts: ["acc-c01", "acc-c02", "acc-c03"],
-      postTags: [],
-      postIds: [],
-      execMode: "now",
-    },
-  },
+  ...buildCoviewTasks(),
   {
     id: "204683410000012",
     name: "Instagram 违规帖清理与资料更新",
@@ -668,6 +725,7 @@ const initialTasks: TaskRow[] = ([
     },
   },
 ] as TaskRow[]).map((t, i) => {
+  if (t.tenantId) return t;
   const tenant = TASK_TENANTS[i % Math.max(1, TASK_TENANTS.length)];
   return tenant ? { ...t, tenantId: tenant.id, tenantName: tenant.name } : t;
 });
