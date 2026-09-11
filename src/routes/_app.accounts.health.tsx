@@ -8,6 +8,7 @@ import {
   CalendarIcon,
   CheckCircle2,
   Clock,
+  KeyRound,
   Power,
   ShieldAlert,
   ShieldCheck,
@@ -125,7 +126,7 @@ function AccountHealthPage() {
       disabled: c("disabled"),
       risk: c("risk"),
       fail: c("fail"),
-      todo: scoped.filter((r) => r.needsManual && r.handleState !== "done").length,
+      loginFail: c("loginFail"),
     };
   }, [scoped]);
 
@@ -164,7 +165,7 @@ function AccountHealthPage() {
           <StatCard title="功能受限" value={stats.disabled} icon={Power} tone="warning" />
           <StatCard title="风控" value={stats.risk} icon={AlertTriangle} tone="violet" />
           <StatCard title="账号被封" value={stats.fail} icon={XCircle} tone="destructive" />
-          <StatCard title="待确认/处理" value={stats.todo} icon={ShieldAlert} tone="destructive" />
+          <StatCard title="登录失败" value={stats.loginFail} icon={KeyRound} tone="destructive" />
         </div>
 
         {/* 时间范围 */}
