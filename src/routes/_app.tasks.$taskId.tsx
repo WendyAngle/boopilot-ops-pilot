@@ -169,12 +169,16 @@ function buildSubTasks(t: TaskRow): SubTask[] {
     const h = hash(`${t.id}|${i}`);
     const platform = t.platforms[h % t.platforms.length];
     // 社媒触达 → 私信 / 加好友（同一任务包含两种动作）；周期性任务 → 培育；
-    // 同屏任务 → 同屏；其余单次任务 → 触达
+    // 同屏任务 → 同屏；内容运营 → 按「指定动作」取值；其余单次任务 → 触达
     const isReach = t.category === "social-reach";
+    const opsAction =
+      t.category === "account-ops"
+        ? t.description.match(/指定动作：([^\n]+)/)?.[1]?.trim() || "内容运营"
+        : undefined;
     const action = isReach
       ? (i % 2 === 0 ? "私信" : "加好友")
       : t.category === "coview" ? "同屏"
-      : t.subtype === "nurture" ? "培育" : "触达";
+      : opsAction ?? (t.subtype === "nurture" ? "培育" : "触达");
     const reachPool = REACH_TARGETS[platform] ?? [];
     let target: string;
     if (isReach && reachPool.length) {

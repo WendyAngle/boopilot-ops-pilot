@@ -329,11 +329,40 @@ function buildCoviewTasks(): TaskRow[] {
 
 /* ---------- 内容运营任务（来源：Facebook / Tiktok 账号内容运营模版） ---------- */
 
+/** 内容运营任务的结构化配置快照（与创建弹窗字段一致，用于详情展示） */
+export interface ContentOpsInfo {
+  /** 动作类型 */
+  action: "sharePost" | "hidePost" | "deletePost" | "editProfile";
+  /** 转发方式：immediate=立即分享/一键转发，timeline=分享到动态，group=分享到群组 */
+  shareMode?: "immediate" | "timeline" | "group";
+  /** 转发贴文链接 */
+  sharePostLinks?: string[];
+  /** 转发说明（Facebook）/ 转发附言（Tiktok） */
+  shareNote?: string;
+  /** 指定群组链接 */
+  groupLinks?: string[];
+  /** 删除/隐藏目标模式：specific=指定贴文，batch=按条件批量 */
+  targetMode?: "specific" | "batch";
+  /** 指定贴文模式下的归属账号用户名 */
+  targetAccount?: string;
+  /** 待删除/隐藏的贴文链接 */
+  targetPostLinks?: string[];
+  /** 批量模式：时间范围 */
+  rangeStart?: string;
+  rangeEnd?: string;
+  keyword?: string;
+  postType?: "all" | "original" | "repost";
+  maxCount?: number;
+  /** 修改账号基础信息：修改字段 */
+  editFields?: string[];
+}
+
 interface ContentOpsSeed {
   name: string;
   platform: Platform;
   template: string;
   lines: string[];
+  ops: ContentOpsInfo;
   total: number;
   done: number;
   failed: number;
@@ -355,6 +384,15 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Facebook 品牌主帖一键转发",
     platform: "Facebook",
     template: "Facebook 账号内容运营",
+    ops: {
+      action: "sharePost",
+      shareMode: "immediate",
+      sharePostLinks: [
+        "https://www.facebook.com/brand.official/posts/102301",
+        "https://www.facebook.com/brand.official/posts/102298",
+        "https://www.facebook.com/brand.official/posts/102275",
+      ],
+    },
     lines: ["指定动作：转发贴文", "转发方式：立即分享", "指定贴文：3 条", "执行方式：立即执行"],
     total: 12, done: 12, failed: 0, status: "success",
     operator: "黄雪", createdAt: "2026-08-18 09:20:00", endTime: "2026-08-18 09:58:22",
@@ -364,6 +402,15 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Facebook 新品帖转发到动态",
     platform: "Facebook",
     template: "Facebook 账号内容运营",
+    ops: {
+      action: "sharePost",
+      shareMode: "timeline",
+      sharePostLinks: [
+        "https://www.facebook.com/brand.official/posts/102356",
+        "https://www.facebook.com/brand.official/posts/102341",
+      ],
+      shareNote: "新款 LED smart screen 到货，欢迎来店体验",
+    },
     lines: [
       "指定动作：转发贴文",
       "转发方式：分享到动态",
@@ -379,6 +426,17 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Facebook 促销帖分享到群组",
     platform: "Facebook",
     template: "Facebook 账号内容运营",
+    ops: {
+      action: "sharePost",
+      shareMode: "group",
+      sharePostLinks: [
+        "https://www.facebook.com/brand.official/posts/102410",
+        "https://www.facebook.com/brand.official/posts/102405",
+        "https://www.facebook.com/brand.official/posts/102390",
+        "https://www.facebook.com/brand.official/posts/102388",
+      ],
+      groupLinks: ["https://www.facebook.com/groups/led.display.deals"],
+    },
     lines: [
       "指定动作：转发贴文",
       "转发方式：分享到群组",
@@ -394,6 +452,15 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Facebook 历史敏感帖批量隐藏",
     platform: "Facebook",
     template: "Facebook 账号内容运营",
+    ops: {
+      action: "hidePost",
+      targetMode: "batch",
+      rangeStart: "2026-03-01",
+      rangeEnd: "2026-05-31",
+      keyword: "clearance",
+      postType: "all",
+      maxCount: 50,
+    },
     lines: [
       "指定动作：隐藏贴文",
       "目标模式：按条件批量",
@@ -412,6 +479,15 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Facebook 指定违规帖删除",
     platform: "Facebook",
     template: "Facebook 账号内容运营",
+    ops: {
+      action: "deletePost",
+      targetMode: "specific",
+      targetAccount: "olivia.hayes.mkt",
+      targetPostLinks: [
+        "https://www.facebook.com/olivia.hayes.mkt/posts/88210",
+        "https://www.facebook.com/olivia.hayes.mkt/posts/88196",
+      ],
+    },
     lines: [
       "指定动作：删除贴文",
       "目标模式：指定贴文",
@@ -427,6 +503,10 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Facebook 账号资料统一更新",
     platform: "Facebook",
     template: "Facebook 账号内容运营",
+    ops: {
+      action: "editProfile",
+      editFields: ["nickname", "bio", "language"],
+    },
     lines: [
       "指定动作：修改账号基础信息",
       "修改字段：账号昵称、个人简介、语言",
@@ -441,6 +521,16 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Tiktok 爆款视频一键转发",
     platform: "Tiktok",
     template: "Tiktok 账号内容运营",
+    ops: {
+      action: "sharePost",
+      shareMode: "immediate",
+      sharePostLinks: [
+        "https://www.tiktok.com/@game.setup.lab/video/74102301",
+        "https://www.tiktok.com/@game.setup.lab/video/74102255",
+        "https://www.tiktok.com/@game.setup.lab/video/74102198",
+      ],
+      shareNote: "Game console setup upgrade, worth a look!",
+    },
     lines: [
       "指定动作：转发贴文",
       "转发方式：一键转发",
@@ -456,6 +546,14 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Tiktok 粉丝群内容分发",
     platform: "Tiktok",
     template: "Tiktok 账号内容运营",
+    ops: {
+      action: "sharePost",
+      shareMode: "group",
+      sharePostLinks: [
+        "https://www.tiktok.com/@game.setup.lab/video/74103312",
+        "https://www.tiktok.com/@game.setup.lab/video/74103280",
+      ],
+    },
     lines: [
       "指定动作：转发贴文",
       "转发方式：分享到群组",
@@ -470,6 +568,15 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Tiktok 过期活动视频批量删除",
     platform: "Tiktok",
     template: "Tiktok 账号内容运营",
+    ops: {
+      action: "deletePost",
+      targetMode: "batch",
+      rangeStart: "2026-06-01",
+      rangeEnd: "2026-07-31",
+      keyword: "summer sale",
+      postType: "original",
+      maxCount: 30,
+    },
     lines: [
       "指定动作：删除贴文",
       "目标模式：按条件批量",
@@ -488,6 +595,16 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Tiktok 指定视频隐藏（手动终止）",
     platform: "Tiktok",
     template: "Tiktok 账号内容运营",
+    ops: {
+      action: "hidePost",
+      targetMode: "specific",
+      targetAccount: "mia.tt.official",
+      targetPostLinks: [
+        "https://www.tiktok.com/@mia.tt.official/video/74099871",
+        "https://www.tiktok.com/@mia.tt.official/video/74099652",
+        "https://www.tiktok.com/@mia.tt.official/video/74099318",
+      ],
+    },
     lines: [
       "指定动作：隐藏贴文",
       "目标模式：指定贴文",
@@ -503,6 +620,10 @@ const CONTENT_OPS_SEED: ContentOpsSeed[] = [
     name: "Tiktok 账号简介与地区调整",
     platform: "Tiktok",
     template: "Tiktok 账号内容运营",
+    ops: {
+      action: "editProfile",
+      editFields: ["displayName", "bio", "region"],
+    },
     lines: [
       "指定动作：修改账号基础信息",
       "修改字段：账号显示名、个人简介、地区",
@@ -552,6 +673,7 @@ function buildContentOpsTasks(): TaskRow[] {
         reachAccounts: s.accounts,
         postTags: [],
         postIds: [],
+        contentOps: s.ops,
         execMode: scheduled ? "scheduled" : "now",
         ...(scheduled ? { scheduledDate: "2026-09-12", scheduledTime: "09:00" } : {}),
       },

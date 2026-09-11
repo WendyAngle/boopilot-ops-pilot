@@ -43,6 +43,7 @@ import {
   EXEC_STATE_LABEL, EXEC_STATE_CLS, getExecState, isForeverTask,
   TASK_CATEGORY_LABEL, TASK_CATEGORY_CLS, TASK_CATEGORY_ORDER, getTaskCategory,
   type Platform, type TaskStatus, type ExecState, type TaskRow, type TaskTemplate, type TaskCategory,
+  type ContentOpsInfo,
   useTasks, useTemplates, tasksActions, templatesActions,
   executeTask, abortTask, fmtNow, uid,
 } from "@/lib/operations-store";
@@ -710,6 +711,10 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
   if (getTaskCategory(task) === "social-reach" && task.draft && "reachFindMode" in (task.draft as Record<string, unknown>)) {
     return <ReachTaskDetailDialog task={task} onClose={onClose} />;
   }
+  // 内容运营任务：展示与创建弹窗一致的动作与目标配置
+  if (getTaskCategory(task) === "account-ops" && task.draft && "contentOps" in (task.draft as Record<string, unknown>)) {
+    return <ContentOpsTaskDetailDialog task={task} onClose={onClose} />;
+  }
   const d = (task.draft ?? {}) as Record<string, unknown>;
   const has = Object.keys(d).length > 0;
   const get = <T,>(k: string, fb: T): T => (d[k] === undefined || d[k] === null ? fb : (d[k] as T));
@@ -861,6 +866,143 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
             <div className="mt-3 rounded-md border border-dashed bg-muted/20 p-4 text-xs text-muted-foreground">
               该任务未保存编辑项快照，仅展示基础信息。
             </div>
+          )}
+        </div>
+        <DialogFooter className="border-t px-6 py-3">
+          <Button variant="outline" onClick={onClose}>关闭</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** 内容运营任务详情：与「创建内容运营任务」弹窗的编辑项一一对应 */
+const OPS_ACTION_LABEL: Record<ContentOpsInfo["action"], string> = {
+  sharePost: "转发贴文",
+  hidePost: "隐藏贴文",
+  deletePost: "删除贴文",
+  editProfile: "修改账号基础信息",
+};
+const OPS_EDIT_FIELD_LABEL: Record<string, string> = {
+  nickname: "昵称",
+  displayName: "显示名",
+  bio: "个人简介",
+  language: "语言",
+  region: "地区",
+};
+function opsShareModeLabel(platform: Platform, mode?: ContentOpsInfo["shareMode"]): string {
+  if (!mode) return "—";
+  if (platform === "Tiktok") return mode === "immediate" ? "一键转发" : "分享到群组";
+  return mode === "immediate" ? "立即分享" : mode === "timeline" ? "分享到动态" : "分享到群组";
+}
+function opsPostTypeLabel(t?: ContentOpsInfo["postType"]): string {
+  return t === "original" ? "原创" : t === "repost" ? "转发" : "全部";
+}
+
+function LinkList({ links }: { links: string[] }) {
+  return (
+    <div className="space-y-1">
+      {links.map((l) => (
+        <div key={l} className="break-all rounded bg-muted/40 px-2 py-1 font-mono text-[11px]">{l}</div>
+      ))}
+    </div>
+  );
+}
+
+function ContentOpsTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () => void }) {
+  const d = (task.draft ?? {}) as Record<string, unknown>;
+  const ops = (d.contentOps ?? {}) as ContentOpsInfo;
+  const platform = (task.platforms[0] ?? "Facebook") as Platform;
+  const isPostManage = ops.action === "hidePost" || ops.action === "deletePost";
+  const postVerb = ops.action === "hidePost" ? "隐藏" : "删除";
+  const accountCount = Array.isArray(d.reachAccounts) ? (d.reachAccounts as string[]).length : 0;
+  const execMode = typeof d.execMode === "string" ? (d.execMode as string) : "now";
+  const scheduledActive = d.scheduledActive === true;
+
+  return (
+    <Dialog open={!!task} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl gap-0 p-0">
+        <DialogHeader className="space-y-1 border-b px-6 py-4">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Info className="h-4 w-4 text-primary" />任务详情 - {task.name}
+          </DialogTitle>
+          <DialogDescription className="font-mono text-xs">{task.id}</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[65vh] overflow-y-auto px-6 py-4">
+          <SectionHeader index="1/4" title="任务基本信息" />
+          <DetailRow label="任务名称">{task.name}</DetailRow>
+          <DetailRow label="来源模版">{task.fromTemplate || "—"}</DetailRow>
+          <DetailRow label="平台">{platform}</DetailRow>
+
+          <SectionHeader index="2/4" title="指定动作和目标" />
+          <DetailRow label="动作类型">{OPS_ACTION_LABEL[ops.action] ?? "—"}</DetailRow>
+
+          {ops.action === "sharePost" && (
+            <>
+              <DetailRow label="转发贴文链接">
+                {ops.sharePostLinks?.length ? <LinkList links={ops.sharePostLinks} /> : "—"}
+              </DetailRow>
+              <DetailRow label="转发方式">{opsShareModeLabel(platform, ops.shareMode)}</DetailRow>
+              {ops.shareNote && (
+                <DetailRow label={platform === "Tiktok" ? "转发附言" : "转发说明"}>{ops.shareNote}</DetailRow>
+              )}
+              {ops.shareMode === "group" && ops.groupLinks?.length ? (
+                <DetailRow label="指定群组链接"><LinkList links={ops.groupLinks} /></DetailRow>
+              ) : null}
+            </>
+          )}
+
+          {isPostManage && (
+            <>
+              <DetailRow label="目标模式">
+                {ops.targetMode === "specific" ? "指定贴文" : "按条件批量"}
+              </DetailRow>
+              {ops.targetMode === "specific" ? (
+                <>
+                  <DetailRow label="归属账号">{ops.targetAccount || "—"}</DetailRow>
+                  <DetailRow label={`待${postVerb}贴文`}>
+                    {ops.targetPostLinks?.length ? <LinkList links={ops.targetPostLinks} /> : "—"}
+                  </DetailRow>
+                </>
+              ) : (
+                <>
+                  <DetailRow label={`${postVerb}范围`}>
+                    {ops.rangeStart && ops.rangeEnd ? `${ops.rangeStart} 至 ${ops.rangeEnd}` : "—"}
+                  </DetailRow>
+                  <DetailRow label="关键词">{ops.keyword || "—"}</DetailRow>
+                  <DetailRow label="贴文类型">{opsPostTypeLabel(ops.postType)}</DetailRow>
+                  <DetailRow label="条数上限">{ops.maxCount ?? "—"}</DetailRow>
+                </>
+              )}
+            </>
+          )}
+
+          {ops.action === "editProfile" && (
+            <DetailRow label="修改字段">
+              {ops.editFields?.length
+                ? ops.editFields.map((f) => OPS_EDIT_FIELD_LABEL[f] ?? f).join("、")
+                : "—"}
+            </DetailRow>
+          )}
+
+          <SectionHeader index="3/4" title="指定账号" />
+          <DetailRow label="已选账号">{accountCount > 0 ? `${accountCount} 个账号` : "—"}</DetailRow>
+          {ops.targetMode === "specific" && ops.targetAccount && (
+            <DetailRow label="说明">指定贴文模式下任务仅在归属账号「{ops.targetAccount}」上执行</DetailRow>
+          )}
+
+          <SectionHeader index="4/4" title="执行方式" />
+          <DetailRow label="执行方式">
+            {execMode === "now"
+              ? "立即执行"
+              : scheduledActive
+                ? "指定时间开始执行（账号活跃时间）"
+                : "指定时间开始执行"}
+          </DetailRow>
+          {execMode === "scheduled" && !scheduledActive && (
+            <DetailRow label="计划时间">
+              {`${typeof d.scheduledDate === "string" ? d.scheduledDate : "—"} ${typeof d.scheduledTime === "string" ? d.scheduledTime : ""}`}
+            </DetailRow>
           )}
         </div>
         <DialogFooter className="border-t px-6 py-3">
