@@ -987,9 +987,6 @@ function ContentOpsTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose:
 
           <SectionHeader index="3/4" title="指定账号" />
           <DetailRow label="已选账号">{accountCount > 0 ? `${accountCount} 个账号` : "—"}</DetailRow>
-          {ops.targetMode === "specific" && ops.targetAccount && (
-            <DetailRow label="说明">指定贴文模式下任务仅在归属账号「{ops.targetAccount}」上执行</DetailRow>
-          )}
 
           <SectionHeader index="4/4" title="执行方式" />
           <DetailRow label="执行方式">
