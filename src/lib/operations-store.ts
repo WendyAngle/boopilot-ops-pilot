@@ -4,6 +4,20 @@ import { getTenantScope } from "@/lib/tenant-scope";
 
 const TASK_TENANTS = TENANTS_SEED.filter((t) => t.status === "active");
 
+/**
+ * 账号列表 mock（managed-account-mock）中 m-i 的平台按 PLATFORMS[i % 5] 分布。
+ * 这里按平台取真实存在的账号 ID，数量不足时循环补齐，保证任务关联的账号
+ * 与账号列表数据一致（统计「按账号分布」直接展示账号用户名）。
+ */
+function managedIdsForPlatform(platform: Platform, count: number): string[] {
+  const order: Platform[] = ["Facebook", "Tiktok", "Instagram", "Twitter/X", "WhatsApp"];
+  const offset = Math.max(0, order.indexOf(platform));
+  const pool = Array.from({ length: 5 }, (_, k) =>
+    offset === 0 ? (k + 1) * 5 : offset + k * 5,
+  ).map((i) => `m-${i}`);
+  return Array.from({ length: Math.max(1, count) }, (_, i) => pool[i % pool.length]);
+}
+
 /* ============================================================ */
 /* 类型与常量                                                   */
 /* ============================================================ */
@@ -955,7 +969,7 @@ function buildReachTasks(): TaskRow[] {
         reachTargetCap: s.targetCap,
         reachDailyPerAccount: REACH_DAILY_PER_ACCOUNT,
         reachAccountCount: s.accounts,
-        reachAccounts: Array.from({ length: s.accounts }, (_, i) => `acc-rc-${idx + 1}-${i + 1}`),
+        reachAccounts: managedIdsForPlatform(s.platform, s.accounts),
         reachTags: [],
         postTags: [],
         postIds: [],
@@ -993,7 +1007,7 @@ const initialTasks: TaskRow[] = ([
       targetKeyword: "旅游、旅游达人的账号",
       targetUrl: "",
       reachTags: ["主账号", "高活跃"],
-      reachAccounts: ["acc-001", "acc-002", "acc-003", "acc-004", "acc-005", "acc-006", "acc-007", "acc-008", "acc-009", "acc-010", "acc-011", "acc-012"],
+      reachAccounts: managedIdsForPlatform("Facebook", 12),
       postTags: [],
       postIds: [],
       execMode: "recurring",
@@ -1041,7 +1055,7 @@ const initialTasks: TaskRow[] = ([
       targetKeyword: "",
       targetUrl: "",
       reachTags: ["主账号", "高活跃"],
-      reachAccounts: ["acc-901", "acc-902", "acc-903", "acc-904", "acc-905", "acc-906", "acc-907", "acc-908", "acc-909", "acc-910"],
+      reachAccounts: managedIdsForPlatform("Tiktok", 10),
       postTags: [],
       postIds: [],
       execMode: "recurring",
@@ -1100,7 +1114,7 @@ const initialTasks: TaskRow[] = ([
       platforms: ["Facebook"],
       targetMode: "random",
       reachTags: ["主账号", "高活跃"],
-      reachAccounts: ["acc-f01", "acc-f02", "acc-f03", "acc-f04", "acc-f05", "acc-f06", "acc-f07", "acc-f08"],
+      reachAccounts: managedIdsForPlatform("Facebook", 8),
       postTags: [],
       postIds: [],
       execMode: "recurring",
