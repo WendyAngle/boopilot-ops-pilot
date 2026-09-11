@@ -448,29 +448,65 @@ function TaskListPage() {
                 <StatBox label="执行失败" value={statsTask.failed} tone="danger" />
                 <StatBox label="成功率" value={`${statsTask.total ? Math.round((statsTask.done / statsTask.total) * 100) : 0}%`} />
               </div>
-              <Tabs defaultValue="platform" className="rounded-lg border p-3">
+              <Tabs defaultValue="account" className="rounded-lg border p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <div className="text-xs font-medium text-muted-foreground">分布维度</div>
                   <TabsList className="h-8">
-                    <TabsTrigger value="platform" className="text-xs">按平台分布</TabsTrigger>
-                    <TabsTrigger value="reach" className="text-xs">按账号分布</TabsTrigger>
-                    <TabsTrigger value="action" className="text-xs">按操作分布</TabsTrigger>
+                    <TabsTrigger value="account" className="text-xs">按账号分布</TabsTrigger>
+                    <TabsTrigger value="action" className="text-xs">按操作/动作分布</TabsTrigger>
+                    <TabsTrigger value="subtask" className="text-xs">按子任务统计</TabsTrigger>
                   </TabsList>
                 </div>
-                <TabsContent value="platform" className="mt-0">
-                  <DistList rows={buildDist(statsTask, "platform")} />
-                </TabsContent>
-                <TabsContent value="reach" className="mt-0">
-                  <DistList rows={buildDist(statsTask, "reach")} />
+                <TabsContent value="account" className="mt-0 space-y-2">
+                  {getTaskCategory(statsTask) === "social-reach" ? (
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-muted-foreground">
+                          {distSubject === "exec"
+                            ? "统计口径：发起任务的托管账号（我方账号）"
+                            : "统计口径：被触达的目标账号（对方账号）"}
+                        </p>
+                        <TabsList className="h-7">
+                          <button
+                            type="button"
+                            onClick={() => setDistSubject("exec")}
+                            className={cn(
+                              "rounded px-2 py-1 text-[11px] transition-colors",
+                              distSubject === "exec" ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground",
+                            )}
+                          >执行账号</button>
+                          <button
+                            type="button"
+                            onClick={() => setDistSubject("target")}
+                            className={cn(
+                              "rounded px-2 py-1 text-[11px] transition-colors",
+                              distSubject === "target" ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground",
+                            )}
+                          >目标账号</button>
+                        </TabsList>
+                      </div>
+                      <DistList rows={buildDist(statsTask, "account", distSubject)} />
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[11px] text-muted-foreground">统计口径：执行任务的托管账号</p>
+                      <DistList rows={buildDist(statsTask, "account", "exec")} />
+                    </>
+                  )}
                 </TabsContent>
                 <TabsContent value="action" className="mt-0">
                   <DistList rows={buildDist(statsTask, "action")} />
                 </TabsContent>
+                <TabsContent value="subtask" className="mt-0">
+                  <DistList rows={buildDist(statsTask, "subtask")} />
+                </TabsContent>
                 <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
                   <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-emerald-500" />执行成功</span>
                   <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-destructive" />执行失败</span>
+                  <span className="ml-auto">末尾数字格式：成功 / 失败 / 总数</span>
                 </div>
               </Tabs>
+
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <Field label="平均耗时" value="2.4s / 账号" />
