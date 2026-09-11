@@ -41,7 +41,7 @@ import { cn } from "@/lib/utils";
 import {
   PLATFORMS, PLATFORM_CHIP, STATUS_LABEL, STATUS_CLS,
   EXEC_STATE_LABEL, EXEC_STATE_CLS, getExecState, isForeverTask,
-  TASK_CATEGORY_LABEL, TASK_CATEGORY_CLS, TASK_CATEGORY_ORDER, getTaskCategory,
+  TASK_CATEGORY_LABEL, TASK_CATEGORY_CLS, TASK_CATEGORY_ORDER, TASK_CATEGORY_ACTIONS, getTaskCategory,
   type Platform, type TaskStatus, type ExecState, type TaskRow, type TaskTemplate, type TaskCategory,
   type ContentOpsInfo,
   useTasks, useTemplates, tasksActions, templatesActions,
@@ -81,6 +81,7 @@ function TaskListPage() {
   const navigate = useNavigate();
 
   const [statsTask, setStatsTask] = useState<TaskRow | null>(null);
+  const [distSubject, setDistSubject] = useState<DistSubject>("exec");
   const [saveTplFor, setSaveTplFor] = useState<TaskRow | null>(null);
   const [saveTplName, setSaveTplName] = useState("");
   const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
