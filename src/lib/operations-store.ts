@@ -805,7 +805,7 @@ function buildReachTasks(): TaskRow[] {
     const action = s.platform === "Facebook" ? "加好友" : "关注";
     const findLabel = REACH_FIND_MODE_LABEL[s.findMode];
     return {
-      id: `2046834300000${String(idx + 1).padStart(2, "0")}`,
+      id: `2046834500000${String(idx + 1).padStart(2, "0")}`,
       name: s.name,
       subtype: "action",
       platforms: [s.platform],
