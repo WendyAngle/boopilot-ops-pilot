@@ -81,6 +81,18 @@ const SHARE_MODE_DESC: Record<ShareMode, string> = {
   group: "转发到公开 / 自己所属的群组",
 };
 
+/** TikTok 平台的转发方式口径 */
+const TIKTOK_SHARE_MODE_LABELS: Record<"immediate" | "group", string> = {
+  immediate: "一键转发",
+  group: "分享到群组",
+};
+const TIKTOK_SHARE_MODE_DESC: Record<"immediate" | "group", string> = {
+  immediate: "推送到关注者的「为你推荐（For You）」信息流",
+  group: "分享到自己的好友群或粉丝群",
+};
+const SHARE_NOTE_MAX = 500;
+
+
 const DELETE_MODE_LABELS: Record<DeleteMode, string> = {
   specific: "指定贴文",
   batch: "按条件批量",
