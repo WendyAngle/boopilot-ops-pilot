@@ -368,7 +368,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       <DialogContent className="max-w-3xl gap-0 p-0">
         <DialogHeader className="space-y-2 border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <BookmarkPlus className="h-4 w-4 text-violet-600" />创建Facebook账号内容运营任务
+            <BookmarkPlus className="h-4 w-4 text-violet-600" />创建{isTiktok ? "TikTok" : tplPlatform}账号内容运营任务
           </DialogTitle>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
