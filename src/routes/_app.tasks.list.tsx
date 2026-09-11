@@ -667,12 +667,11 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
           <DialogDescription className="font-mono text-xs">{task.id}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[65vh] overflow-y-auto px-6 py-4">
-          {/* 1/3 任务基本信息 */}
-          <SectionHeader index="1/3" title="任务基本信息" />
+          <SectionHeader index={`1/${total}`} title="任务基本信息" />
           <DetailRow label="任务名称">{dash(get<string>("name", task.name))}</DetailRow>
 
-          {/* 2/3 执行目标 */}
-          <SectionHeader index="2/3" title="执行目标" />
+          <SectionHeader index={`2/${total}`} title="执行目标" />
+
           {isNurture && (
             <DetailRow label="目标">
               {TARGET_MODE_LABEL[targetMode] ?? "—"}
