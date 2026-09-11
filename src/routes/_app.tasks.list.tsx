@@ -13,7 +13,7 @@ import { UseTemplateDialog } from "@/components/use-template-dialog";
 import { ReachTaskDialog } from "@/components/reach-task-dialog";
 
 import { ensureActivityTasksSeeded, useActivitySubtasks, ACTIVITY_SOURCE_LABEL } from "@/lib/activity-tasks";
-import { PLATFORM_META } from "@/lib/managed-account-mock";
+import { PLATFORM_META, findManagedAccountById } from "@/lib/managed-account-mock";
 import { useTenantScope } from "@/lib/tenant-scope";
 import { User2, AtSign, ArrowRight } from "lucide-react";
 
