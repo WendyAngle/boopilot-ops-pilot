@@ -464,9 +464,9 @@ function TaskDetailPage() {
                 {groups.map((g, idx) => {
                   const actions: string[] = [];
                   if (g.nurtureSearch) actions.push("搜索浏览");
-                  if (g.nurtureLike) actions.push(`点赞 ${g.nurtureLikeMin}–${g.nurtureLikeMax} 次/日`);
-                  if (g.nurtureFollow) actions.push(`关注 ${g.nurtureFollowMin}–${g.nurtureFollowMax} 个/日`);
-                  if (g.nurtureComment) actions.push(`评论 ${g.nurtureCommentMin}–${g.nurtureCommentMax} 条/日`);
+                  if (g.nurtureLike) actions.push(`点赞 ${g.nurtureLikeMin}%–${g.nurtureLikeMax}%`);
+                  if (g.nurtureFollow) actions.push(`关注 ${g.nurtureFollowMin}%–${g.nurtureFollowMax}%`);
+                  if (g.nurtureComment) actions.push(`评论 ${g.nurtureCommentMin}%–${g.nurtureCommentMax}%`);
                   return (
                     <div key={g.id} className="space-y-2.5 rounded-lg border bg-muted/20 p-3.5">
                       <div className="flex items-center gap-2">
