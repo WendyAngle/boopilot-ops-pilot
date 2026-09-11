@@ -222,7 +222,7 @@ function TaskListPage() {
                 <SelectItem value="success">全部成功</SelectItem>
                 <SelectItem value="partial">部分成功</SelectItem>
                 <SelectItem value="failed">全部失败</SelectItem>
-                <SelectItem value="none">暂无结果（-）</SelectItem>
+                <SelectItem value="none">暂无结果</SelectItem>
               </SelectContent>
             </Select>
             <Select value={tExec} onValueChange={(v) => setTExec(v as typeof tExec)}>
