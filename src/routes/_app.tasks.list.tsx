@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { StatCard } from "@/components/stat-card";
@@ -135,10 +135,15 @@ function TaskListPage() {
   const pageSize = 10;
   const [taskPage, setTaskPage] = useState(1);
   const taskTotalPages = Math.max(1, Math.ceil(filteredTasks.length / pageSize));
+  // 筛选后结果变少时，当前页可能已超出范围，需要回到有效页，避免“有总数无数据”
+  const safeTaskPage = Math.min(taskPage, taskTotalPages);
+  useEffect(() => {
+    if (taskPage > taskTotalPages) setTaskPage(taskTotalPages);
+  }, [taskPage, taskTotalPages]);
   const pagedFilteredTasks = useMemo(() => {
-    const start = (taskPage - 1) * pageSize;
+    const start = (safeTaskPage - 1) * pageSize;
     return filteredTasks.slice(start, start + pageSize);
-  }, [filteredTasks, taskPage]);
+  }, [filteredTasks, safeTaskPage]);
 
   const tasksFiltersActive = tKeyword.trim() !== "" || tCategory !== "all" || tPlatform !== "all" || tResult !== "all" || tExec !== "all";
 
@@ -383,7 +388,7 @@ function TaskListPage() {
             </Table>
           </div>
 
-          <PaginationBar page={taskPage} totalPages={taskTotalPages} total={filteredTasks.length} setPage={setTaskPage} />
+          <PaginationBar page={safeTaskPage} totalPages={taskTotalPages} total={filteredTasks.length} setPage={setTaskPage} />
         </div>
       </div>
 
