@@ -4,6 +4,20 @@ import { getTenantScope } from "@/lib/tenant-scope";
 
 const TASK_TENANTS = TENANTS_SEED.filter((t) => t.status === "active");
 
+/**
+ * 账号列表 mock（managed-account-mock）中 m-i 的平台按 PLATFORMS[i % 5] 分布。
+ * 这里按平台取真实存在的账号 ID，数量不足时循环补齐，保证任务关联的账号
+ * 与账号列表数据一致（统计「按账号分布」直接展示账号用户名）。
+ */
+function managedIdsForPlatform(platform: Platform, count: number): string[] {
+  const order: Platform[] = ["Facebook", "Tiktok", "Instagram", "Twitter/X", "WhatsApp"];
+  const offset = Math.max(0, order.indexOf(platform));
+  const pool = Array.from({ length: 5 }, (_, k) =>
+    offset === 0 ? (k + 1) * 5 : offset + k * 5,
+  ).map((i) => `m-${i}`);
+  return Array.from({ length: Math.max(1, count) }, (_, i) => pool[i % pool.length]);
+}
+
 /* ============================================================ */
 /* 类型与常量                                                   */
 /* ============================================================ */
