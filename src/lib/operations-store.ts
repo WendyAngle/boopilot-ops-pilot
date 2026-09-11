@@ -640,7 +640,25 @@ const initialTemplates: TaskTemplate[] = [
     useDisabled: true,
     category: "account-ops",
   },
+  {
+    id: uid("tpl"),
+    name: "Tiktok 账号内容运营",
+    subtype: "action",
+    platforms: ["Tiktok"],
+    total: 10,
+    description: "对Tiktok账号执行日常内容运营和维护。",
+    createdAt: "2026-07-02 09:00:00",
+    uses: 5,
+    status: "enabled",
+    agentName: "系统内置",
+    actions: ["sharePost", "hidePost", "deletePost", "editProfile"],
+    tags: ["内容运营", "Tiktok"],
+    monthlyUses: 2,
+    useDisabled: true,
+    category: "account-ops",
+  },
 ];
+
 
 /* ============================================================ */
 /* 全局共享 store                                               */

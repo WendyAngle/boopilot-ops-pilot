@@ -81,6 +81,18 @@ const SHARE_MODE_DESC: Record<ShareMode, string> = {
   group: "转发到公开 / 自己所属的群组",
 };
 
+/** TikTok 平台的转发方式口径 */
+const TIKTOK_SHARE_MODE_LABELS: Record<"immediate" | "group", string> = {
+  immediate: "一键转发",
+  group: "分享到群组",
+};
+const TIKTOK_SHARE_MODE_DESC: Record<"immediate" | "group", string> = {
+  immediate: "推送到关注者的「为你推荐（For You）」信息流",
+  group: "分享到自己的好友群或粉丝群",
+};
+const SHARE_NOTE_MAX = 500;
+
+
 const DELETE_MODE_LABELS: Record<DeleteMode, string> = {
   specific: "指定贴文",
   batch: "按条件批量",
@@ -207,6 +219,19 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     );
   }
   const tpl = template;
+  const tplPlatform = tpl.platforms[0] ?? "Facebook";
+  const isTiktok = tplPlatform === "Tiktok";
+  const shareModeList: ShareMode[] = isTiktok
+    ? ["immediate", "group"]
+    : ["immediate", "timeline", "group"];
+  const shareModeLabel = (m: ShareMode) =>
+    isTiktok && m !== "timeline" ? TIKTOK_SHARE_MODE_LABELS[m] : SHARE_MODE_LABELS[m];
+  const shareModeDesc = (m: ShareMode) =>
+    isTiktok && m !== "timeline" ? TIKTOK_SHARE_MODE_DESC[m] : SHARE_MODE_DESC[m];
+  /** TikTok：两种转发方式均可填写转发附言 */
+  const showShareNote = isTiktok || shareMode === "timeline";
+  const shareNoteLabel = isTiktok ? "转发附言" : "转发说明";
+
 
   const deleteAccountIds = resolveScopeAccounts(deleteScope, platformAccounts).map((a) => a.id);
   const editAccountIds = resolveScopeAccounts(editScope, platformAccounts).map((a) => a.id);
@@ -234,13 +259,13 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       `指定动作：${actionLabel}`,
     ];
     if (action === "sharePost" && shareMode) {
-      lines.push(`转发方式：${SHARE_MODE_LABELS[shareMode]}`);
+      lines.push(`转发方式：${shareModeLabel(shareMode)}`);
       const postLinks = sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
       if (postLinks.length > 0) {
         lines.push(`指定贴文：${postLinks.length} 条`);
       }
-      if (shareMode === "timeline" && shareNote.trim()) {
-        lines.push(`转发说明：${shareNote.trim()}`);
+      if (showShareNote && shareNote.trim()) {
+        lines.push(`${shareNoteLabel}：${shareNote.trim()}`);
       }
       if (shareMode === "group" && groupLinks.trim()) {
         lines.push(`指定群组链接：${groupLinks.trim()}`);
@@ -343,7 +368,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       <DialogContent className="max-w-3xl gap-0 p-0">
         <DialogHeader className="space-y-2 border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <BookmarkPlus className="h-4 w-4 text-violet-600" />创建Facebook账号内容运营任务
+            <BookmarkPlus className="h-4 w-4 text-violet-600" />创建{isTiktok ? "TikTok" : tplPlatform}账号内容运营任务
           </DialogTitle>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
@@ -456,9 +481,9 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     <RadioGroup
                       value={shareMode}
                       onValueChange={(v) => setShareMode(v as ShareMode)}
-                      className="grid gap-2 sm:grid-cols-3"
+                      className={cn("grid gap-2", isTiktok ? "sm:grid-cols-2" : "sm:grid-cols-3")}
                     >
-                      {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => (
+                      {shareModeList.map((m) => (
                         <label
                           key={m}
                           htmlFor={`sm-${m}`}
@@ -469,9 +494,9 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                         >
                           <RadioGroupItem value={m} id={`sm-${m}`} className="mt-0.5" />
                           <span className="min-w-0">
-                            <span className="block text-xs font-medium">{SHARE_MODE_LABELS[m]}</span>
+                            <span className="block text-xs font-medium">{shareModeLabel(m)}</span>
                             <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
-                              {SHARE_MODE_DESC[m]}
+                              {shareModeDesc(m)}
                             </span>
                           </span>
                         </label>
@@ -479,18 +504,31 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     </RadioGroup>
                   </div>
 
-                  {/* 分享到动态：转发说明 */}
-                  {shareMode === "timeline" && (
+                  {/* 转发附言 / 转发说明 */}
+                  {showShareNote && (
                     <div className="space-y-1.5">
-                      <FieldLabel>转发说明</FieldLabel>
+                      <div className="flex items-center justify-between">
+                        <FieldLabel>{shareNoteLabel}</FieldLabel>
+                        {isTiktok && (
+                          <span className="text-[11px] text-muted-foreground">
+                            {shareNote.length}/{SHARE_NOTE_MAX}
+                          </span>
+                        )}
+                      </div>
                       <Textarea
                         value={shareNote}
-                        onChange={(e) => setShareNote(e.target.value)}
-                        placeholder="请输入转发说明..."
+                        onChange={(e) => setShareNote(e.target.value.slice(0, SHARE_NOTE_MAX))}
+                        placeholder={`请输入${shareNoteLabel}...`}
                         className="min-h-[60px] text-xs"
                       />
+                      {isTiktok && (
+                        <p className="text-[11px] text-muted-foreground">
+                          选填，最多 {SHARE_NOTE_MAX} 字，转发时随贴文一起发布
+                        </p>
+                      )}
                     </div>
                   )}
+
 
                   {/* 分享到群组：指定群组链接 */}
                   {shareMode === "group" && (
