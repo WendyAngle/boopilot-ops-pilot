@@ -810,6 +810,9 @@ const initialTemplates: TaskTemplate[] = [
 /* ============================================================ */
 
 let _tasks: TaskRow[] = initialTasks;
+if (typeof window !== "undefined") {
+  console.log("[operations-store] initialTasks count:", initialTasks.length, "coview:", initialTasks.filter(t => (t as any).category === "coview").length, "names:", initialTasks.filter(t => t.name.includes("同屏")).map(t => t.name));
+}
 let _templates: TaskTemplate[] = initialTemplates;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
