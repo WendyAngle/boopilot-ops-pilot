@@ -219,6 +219,19 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     );
   }
   const tpl = template;
+  const tplPlatform = tpl.platforms[0] ?? "Facebook";
+  const isTiktok = tplPlatform === "Tiktok";
+  const shareModeList: ShareMode[] = isTiktok
+    ? ["immediate", "group"]
+    : ["immediate", "timeline", "group"];
+  const shareModeLabel = (m: ShareMode) =>
+    isTiktok && m !== "timeline" ? TIKTOK_SHARE_MODE_LABELS[m] : SHARE_MODE_LABELS[m];
+  const shareModeDesc = (m: ShareMode) =>
+    isTiktok && m !== "timeline" ? TIKTOK_SHARE_MODE_DESC[m] : SHARE_MODE_DESC[m];
+  /** TikTok：两种转发方式均可填写转发附言 */
+  const showShareNote = isTiktok || shareMode === "timeline";
+  const shareNoteLabel = isTiktok ? "转发附言" : "转发说明";
+
 
   const deleteAccountIds = resolveScopeAccounts(deleteScope, platformAccounts).map((a) => a.id);
   const editAccountIds = resolveScopeAccounts(editScope, platformAccounts).map((a) => a.id);
