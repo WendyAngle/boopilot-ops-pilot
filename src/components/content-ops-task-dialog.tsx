@@ -147,6 +147,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const [shareNote, setShareNote] = useState("");
   const [groupLinks, setGroupLinks] = useState("");
   const [sharePostLinks, setSharePostLinks] = useState("");
+  const [shareScope, setShareScope] = useState<AccountScopeValue>(EMPTY_ACCOUNT_SCOPE);
   const [execMode, setExecMode] = useState<"now" | "scheduled">("now");
   const [scheduledMode, setScheduledMode] = useState<"datetime" | "active">("datetime");
   const [scheduledDate, setScheduledDate] = useState(todayStr());
@@ -188,6 +189,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
     setShareNote("");
     setGroupLinks("");
     setSharePostLinks("");
+    setShareScope(EMPTY_ACCOUNT_SCOPE);
     setExecMode("now");
     setScheduledMode("datetime");
     setScheduledDate(todayStr());
@@ -233,6 +235,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
   const shareNoteLabel = isTiktok ? "转发附言" : "转发说明";
 
 
+  const shareAccountIds = resolveScopeAccounts(shareScope, platformAccounts).map((a) => a.id);
   const deleteAccountIds = resolveScopeAccounts(deleteScope, platformAccounts).map((a) => a.id);
   const editAccountIds = resolveScopeAccounts(editScope, platformAccounts).map((a) => a.id);
 
@@ -270,6 +273,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       if (shareMode === "group" && groupLinks.trim()) {
         lines.push(`指定群组链接：${groupLinks.trim()}`);
       }
+      lines.push(`指定账号：${shareAccountIds.length} 个`);
     }
     if (isPostManage) {
       lines.push(`目标模式：${DELETE_MODE_LABELS[deleteMode]}`);
@@ -307,6 +311,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       if (!shareMode) return toast.error("请选择转发方式");
       const postLinks = sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
       if (postLinks.length === 0) return toast.error("请至少填写 1 条指定贴文链接");
+      if (shareAccountIds.length === 0) return toast.error("请至少选择 1 个账号");
     }
     if (isPostManage) {
       if (deleteMode === "specific") {
@@ -342,10 +347,55 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       done: 0,
       failed: 0,
       status: "pending",
+      category: "account-ops",
       description: composeDescription(),
       createdBy: "黄雪",
       createdAt: fmtNow(),
       fromTemplate: tpl.name,
+      draft: {
+        name: name.trim(),
+        platforms: [...tpl.platforms],
+        contentOps: {
+          action,
+          ...(action === "sharePost"
+            ? {
+                shareMode,
+                sharePostLinks: sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean),
+                ...(showShareNote && shareNote.trim() ? { shareNote: shareNote.trim() } : {}),
+                ...(shareMode === "group" && groupLinks.trim()
+                  ? { groupLinks: groupLinks.split("\n").map((s) => s.trim()).filter(Boolean) }
+                  : {}),
+              }
+            : {}),
+          ...(isPostManage
+            ? {
+                targetMode: deleteMode,
+                ...(deleteMode === "specific"
+                  ? {
+                      targetAccount: platformAccounts.find((a) => a.id === deleteAccountId)?.username,
+                      targetPostLinks: deletePostLinks.split("\n").map((s) => s.trim()).filter(Boolean),
+                    }
+                  : {
+                      rangeStart: deleteStartDate,
+                      rangeEnd: deleteEndDate,
+                      ...(deleteKeyword.trim() ? { keyword: deleteKeyword.trim() } : {}),
+                      postType: deletePostType,
+                      maxCount: parseInt(deleteMaxCount, 10),
+                    }),
+              }
+            : {}),
+          ...(action === "editProfile" ? { editFields: [...editFields] } : {}),
+        },
+        reachTags: [],
+        reachAccounts: action === "sharePost" ? shareAccountIds : isPostManage && deleteMode === "specific" ? [deleteAccountId] : isPostManage ? deleteAccountIds : editAccountIds,
+        postTags: [],
+        postIds: [],
+        execMode: execMode === "now" ? "now" : "scheduled",
+        ...(execMode === "scheduled" && scheduledMode === "datetime"
+          ? { scheduledDate, scheduledTime }
+          : {}),
+        ...(execMode === "scheduled" && scheduledMode === "active" ? { scheduledActive: true } : {}),
+      },
     };
     tasksActions.add(task);
     templatesActions.update(tpl.id, {
@@ -543,6 +593,19 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                       <p className="text-[11px] text-muted-foreground">每行输入一个群组链接，支持多个群组</p>
                     </div>
                   )}
+
+                  {/* 指定账号 */}
+                  <div className="space-y-1.5">
+                    <FieldLabel required>指定账号</FieldLabel>
+                    <AccountScopePicker
+                      accounts={platformAccounts}
+                      value={shareScope}
+                      onChange={setShareScope}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      转发动作将在已选账号上执行，可按标签筛选后追加特定账号
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -929,6 +992,7 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                       if (!sharePostLinks.split("\n").some((s) => s.trim())) {
                         toast.error("请至少填写 1 条指定贴文链接"); return;
                       }
+                      if (shareAccountIds.length === 0) { toast.error("请至少选择 1 个账号"); return; }
                     }
                     if (step === 2 && isPostManage) {
                       if (deleteMode === "specific") {
