@@ -1319,24 +1319,35 @@ function actionLabels(t: TaskRow): string[] {
   return TASK_CATEGORY_ACTIONS[cat];
 }
 
+/** 子任务动作序列，与任务详情页 buildSubTasks 保持一致 */
+function subTaskAction(t: TaskRow, i: number): string {
+  const cat = getTaskCategory(t);
+  if (cat === "social-reach") return ["加好友", "关注", "私信"][i % 3];
+  if (cat === "coview") return "同屏";
+  if (cat === "account-ops") return parseContentOpsAction(t);
+  return ["点赞", "关注", "评论"][i % 3];
+}
+
+/** 按子任务统计：使用任务真实的子任务编号 */
+function subTaskRows(t: TaskRow): DistRow[] {
+  const count = Math.min(t.total, 60);
+  return Array.from({ length: count }, (_, i) => {
+    const id = `${t.id}-${String(i + 1).padStart(3, "0")}`;
+    const success = i < t.done ? 1 : 0;
+    const failed = i >= t.done && i < t.done + t.failed ? 1 : 0;
+    return { label: `${id} · ${subTaskAction(t, i)}`, success, failed };
+  });
+}
+
 function distLabels(t: TaskRow, dim: DistDimension, subject: DistSubject): string[] {
   if (dim === "account") {
     return subject === "target" ? targetAccountLabels(t) : execAccountLabels(t);
   }
-  if (dim === "action") return actionLabels(t);
-  const accounts = execAccountLabels(t).slice(0, 6);
-  const actions = actionLabels(t);
-  const rows: string[] = [];
-  for (const a of accounts) {
-    for (const act of actions) {
-      rows.push(`${a} · ${act}`);
-      if (rows.length >= 15) return rows;
-    }
-  }
-  return rows;
+  return actionLabels(t);
 }
 
 function buildDist(t: TaskRow, dim: DistDimension, subject: DistSubject = "exec"): DistRow[] {
+  if (dim === "subtask") return subTaskRows(t);
   // Deterministic pseudo-random based on task id + dim to avoid SSR hydration drift
   const seed = (s: string) => {
     let h = 0;
@@ -1349,6 +1360,7 @@ function buildDist(t: TaskRow, dim: DistDimension, subject: DistSubject = "exec"
   };
 
   const labels = distLabels(t, dim, subject);
+
 
   const n = labels.length || 1;
   // Distribute totals across buckets with slight variation while preserving sums.
