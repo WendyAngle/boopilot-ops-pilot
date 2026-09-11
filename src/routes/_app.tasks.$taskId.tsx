@@ -463,7 +463,6 @@ function TaskDetailPage() {
               <div className="mt-3 grid gap-3 lg:grid-cols-2">
                 {groups.map((g, idx) => {
                   const actions: string[] = [];
-                  if (g.nurtureSearch) actions.push("搜索浏览");
                   if (g.nurtureLike) actions.push(`点赞 ${g.nurtureLikeMin}%–${g.nurtureLikeMax}%`);
                   if (g.nurtureFollow) actions.push(`关注 ${g.nurtureFollowMin}%–${g.nurtureFollowMax}%`);
                   if (g.nurtureComment) actions.push(`评论 ${g.nurtureCommentMin}%–${g.nurtureCommentMax}%`);
