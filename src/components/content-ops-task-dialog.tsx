@@ -481,9 +481,9 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     <RadioGroup
                       value={shareMode}
                       onValueChange={(v) => setShareMode(v as ShareMode)}
-                      className="grid gap-2 sm:grid-cols-3"
+                      className={cn("grid gap-2", isTiktok ? "sm:grid-cols-2" : "sm:grid-cols-3")}
                     >
-                      {(["immediate", "timeline", "group"] as ShareMode[]).map((m) => (
+                      {shareModeList.map((m) => (
                         <label
                           key={m}
                           htmlFor={`sm-${m}`}
@@ -494,9 +494,9 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                         >
                           <RadioGroupItem value={m} id={`sm-${m}`} className="mt-0.5" />
                           <span className="min-w-0">
-                            <span className="block text-xs font-medium">{SHARE_MODE_LABELS[m]}</span>
+                            <span className="block text-xs font-medium">{shareModeLabel(m)}</span>
                             <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
-                              {SHARE_MODE_DESC[m]}
+                              {shareModeDesc(m)}
                             </span>
                           </span>
                         </label>
@@ -504,18 +504,31 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
                     </RadioGroup>
                   </div>
 
-                  {/* 分享到动态：转发说明 */}
-                  {shareMode === "timeline" && (
+                  {/* 转发附言 / 转发说明 */}
+                  {showShareNote && (
                     <div className="space-y-1.5">
-                      <FieldLabel>转发说明</FieldLabel>
+                      <div className="flex items-center justify-between">
+                        <FieldLabel>{shareNoteLabel}</FieldLabel>
+                        {isTiktok && (
+                          <span className="text-[11px] text-muted-foreground">
+                            {shareNote.length}/{SHARE_NOTE_MAX}
+                          </span>
+                        )}
+                      </div>
                       <Textarea
                         value={shareNote}
-                        onChange={(e) => setShareNote(e.target.value)}
-                        placeholder="请输入转发说明..."
+                        onChange={(e) => setShareNote(e.target.value.slice(0, SHARE_NOTE_MAX))}
+                        placeholder={`请输入${shareNoteLabel}...`}
                         className="min-h-[60px] text-xs"
                       />
+                      {isTiktok && (
+                        <p className="text-[11px] text-muted-foreground">
+                          选填，最多 {SHARE_NOTE_MAX} 字，转发时随贴文一起发布
+                        </p>
+                      )}
                     </div>
                   )}
+
 
                   {/* 分享到群组：指定群组链接 */}
                   {shareMode === "group" && (
