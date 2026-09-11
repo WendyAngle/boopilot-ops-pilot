@@ -327,6 +327,239 @@ function buildCoviewTasks(): TaskRow[] {
   });
 }
 
+/* ---------- 内容运营任务（来源：Facebook / Tiktok 账号内容运营模版） ---------- */
+
+interface ContentOpsSeed {
+  name: string;
+  platform: Platform;
+  template: string;
+  lines: string[];
+  total: number;
+  done: number;
+  failed: number;
+  status: TaskStatus;
+  operator: string;
+  createdAt: string;
+  endTime?: string;
+  aborted?: boolean;
+  accounts: string[];
+}
+
+const CONTENT_OPS_TPL_DESC: Record<string, string> = {
+  "Facebook 账号内容运营": "对Facebook账号执行日常内容运营和维护。",
+  "Tiktok 账号内容运营": "对Tiktok账号执行日常内容运营和维护。",
+};
+
+const CONTENT_OPS_SEED: ContentOpsSeed[] = [
+  {
+    name: "Facebook 品牌主帖一键转发",
+    platform: "Facebook",
+    template: "Facebook 账号内容运营",
+    lines: ["指定动作：转发贴文", "转发方式：立即分享", "指定贴文：3 条", "执行方式：立即执行"],
+    total: 12, done: 12, failed: 0, status: "success",
+    operator: "黄雪", createdAt: "2026-08-18 09:20:00", endTime: "2026-08-18 09:58:22",
+    accounts: ["m-1", "m-3", "m-5"],
+  },
+  {
+    name: "Facebook 新品帖转发到动态",
+    platform: "Facebook",
+    template: "Facebook 账号内容运营",
+    lines: [
+      "指定动作：转发贴文",
+      "转发方式：分享到动态",
+      "指定贴文：2 条",
+      "转发说明：新款 LED smart screen 到货，欢迎来店体验",
+      "执行方式：立即执行",
+    ],
+    total: 10, done: 6, failed: 0, status: "running",
+    operator: "陈晓明", createdAt: "2026-08-24 10:05:00",
+    accounts: ["m-2", "m-4"],
+  },
+  {
+    name: "Facebook 促销帖分享到群组",
+    platform: "Facebook",
+    template: "Facebook 账号内容运营",
+    lines: [
+      "指定动作：转发贴文",
+      "转发方式：分享到群组",
+      "指定贴文：4 条",
+      "指定群组链接：https://www.facebook.com/groups/led.display.deals",
+      "执行方式：指定时间开始执行 2026-08-26 20:00",
+    ],
+    total: 15, done: 11, failed: 4, status: "partial",
+    operator: "李雨欣", createdAt: "2026-08-26 20:00:00", endTime: "2026-08-26 21:12:40",
+    accounts: ["m-6", "m-7", "m-8"],
+  },
+  {
+    name: "Facebook 历史敏感帖批量隐藏",
+    platform: "Facebook",
+    template: "Facebook 账号内容运营",
+    lines: [
+      "指定动作：隐藏贴文",
+      "目标模式：按条件批量",
+      "隐藏范围：2026-03-01 至 2026-05-31",
+      "关键词：clearance",
+      "贴文类型：全部",
+      "条数上限：50",
+      "指定账号：8 个",
+      "执行方式：立即执行",
+    ],
+    total: 8, done: 8, failed: 0, status: "success",
+    operator: "黄雪", createdAt: "2026-08-28 14:00:00", endTime: "2026-08-28 14:41:05",
+    accounts: ["m-1", "m-2", "m-9"],
+  },
+  {
+    name: "Facebook 指定违规帖删除",
+    platform: "Facebook",
+    template: "Facebook 账号内容运营",
+    lines: [
+      "指定动作：删除贴文",
+      "目标模式：指定贴文",
+      "指定账号：olivia.hayes.mkt",
+      "待删除贴文：2 条",
+      "执行方式：立即执行",
+    ],
+    total: 2, done: 0, failed: 2, status: "failed",
+    operator: "陈晓明", createdAt: "2026-09-01 11:30:00", endTime: "2026-09-01 11:33:18",
+    accounts: ["m-4"],
+  },
+  {
+    name: "Facebook 账号资料统一更新",
+    platform: "Facebook",
+    template: "Facebook 账号内容运营",
+    lines: [
+      "指定动作：修改账号基础信息",
+      "修改字段：账号昵称、个人简介、语言",
+      "指定账号：6 个",
+      "执行方式：指定时间开始执行（账号活跃时间）",
+    ],
+    total: 6, done: 0, failed: 0, status: "pending",
+    operator: "李雨欣", createdAt: "2026-09-05 09:15:00",
+    accounts: ["m-3", "m-5", "m-10"],
+  },
+  {
+    name: "Tiktok 爆款视频一键转发",
+    platform: "Tiktok",
+    template: "Tiktok 账号内容运营",
+    lines: [
+      "指定动作：转发贴文",
+      "转发方式：一键转发",
+      "指定贴文：3 条",
+      "转发附言：Game console setup upgrade, worth a look!",
+      "执行方式：立即执行",
+    ],
+    total: 10, done: 10, failed: 0, status: "success",
+    operator: "黄雪", createdAt: "2026-08-30 10:00:00", endTime: "2026-08-30 10:36:44",
+    accounts: ["m-11", "m-12"],
+  },
+  {
+    name: "Tiktok 粉丝群内容分发",
+    platform: "Tiktok",
+    template: "Tiktok 账号内容运营",
+    lines: [
+      "指定动作：转发贴文",
+      "转发方式：分享到群组",
+      "指定贴文：2 条",
+      "执行方式：立即执行",
+    ],
+    total: 9, done: 4, failed: 1, status: "running",
+    operator: "陈晓明", createdAt: "2026-09-03 15:20:00",
+    accounts: ["m-13", "m-14"],
+  },
+  {
+    name: "Tiktok 过期活动视频批量删除",
+    platform: "Tiktok",
+    template: "Tiktok 账号内容运营",
+    lines: [
+      "指定动作：删除贴文",
+      "目标模式：按条件批量",
+      "删除范围：2026-06-01 至 2026-07-31",
+      "关键词：summer sale",
+      "贴文类型：原创",
+      "条数上限：30",
+      "指定账号：7 个",
+      "执行方式：立即执行",
+    ],
+    total: 7, done: 5, failed: 2, status: "partial",
+    operator: "李雨欣", createdAt: "2026-09-06 09:40:00", endTime: "2026-09-06 10:22:03",
+    accounts: ["m-15", "m-16"],
+  },
+  {
+    name: "Tiktok 指定视频隐藏（手动终止）",
+    platform: "Tiktok",
+    template: "Tiktok 账号内容运营",
+    lines: [
+      "指定动作：隐藏贴文",
+      "目标模式：指定贴文",
+      "指定账号：mia.tt.official",
+      "待隐藏贴文：3 条",
+      "执行方式：立即执行",
+    ],
+    total: 3, done: 1, failed: 0, status: "running", aborted: true,
+    operator: "黄雪", createdAt: "2026-09-08 16:10:00",
+    accounts: ["m-17"],
+  },
+  {
+    name: "Tiktok 账号简介与地区调整",
+    platform: "Tiktok",
+    template: "Tiktok 账号内容运营",
+    lines: [
+      "指定动作：修改账号基础信息",
+      "修改字段：账号显示名、个人简介、地区",
+      "指定账号：5 个",
+      "执行方式：指定时间开始执行 2026-09-12 09:00",
+    ],
+    total: 5, done: 0, failed: 0, status: "pending",
+    operator: "陈晓明", createdAt: "2026-09-09 17:05:00",
+    accounts: ["m-18", "m-19"],
+  },
+];
+
+function buildContentOpsTasks(): TaskRow[] {
+  return CONTENT_OPS_SEED.map((s, idx) => {
+    const tenant = TASK_TENANTS[idx % Math.max(1, TASK_TENANTS.length)];
+    const desc = [
+      `来源模版：${s.template}任务`,
+      CONTENT_OPS_TPL_DESC[s.template] ?? "",
+      ...s.lines,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const execLine = s.lines[s.lines.length - 1] ?? "";
+    const scheduled = execLine.includes("指定时间");
+    return {
+      id: `2046834300000${String(idx + 1).padStart(2, "0")}`,
+      name: s.name,
+      subtype: "action",
+      platforms: [s.platform],
+      total: s.total,
+      done: s.done,
+      failed: s.failed,
+      status: s.status,
+      category: "account-ops",
+      description: desc,
+      createdBy: s.operator,
+      createdAt: s.createdAt,
+      endTime: s.endTime,
+      aborted: s.aborted,
+      fromTemplate: s.template,
+      tenantId: tenant?.id,
+      tenantName: tenant?.name,
+      draft: {
+        name: s.name,
+        platforms: [s.platform],
+        reachTags: [],
+        reachAccounts: s.accounts,
+        postTags: [],
+        postIds: [],
+        execMode: scheduled ? "scheduled" : "now",
+        ...(scheduled ? { scheduledDate: "2026-09-12", scheduledTime: "09:00" } : {}),
+      },
+    } as TaskRow;
+  });
+}
+
+
 
 /* ============================================================ */
 /* 社媒触达任务（社媒拓客）预置数据                              */
@@ -669,53 +902,6 @@ const initialTasks: TaskRow[] = ([
     },
   },
   {
-    id: "204683410000002",
-    name: "Tiktok 新品上线触达",
-    subtype: "action",
-    platforms: ["Tiktok"],
-    total: 20, done: 14, failed: 2,
-    status: "partial",
-    description: "围绕新品上线，对 20 个目标账号一次性发布带话题视频。",
-    category: "account-ops",
-    createdBy: "陈晓明",
-    createdAt: "2026-05-25 09:45:13",
-    endTime: "2026-05-25 10:20:00",
-    fromTemplate: "Facebook发帖",
-    draft: {
-      name: "Tiktok 新品上线触达",
-      platforms: ["Tiktok"],
-      reachTags: ["新品种草", "高意向"],
-      reachAccounts: ["acc-101", "acc-102", "acc-103", "acc-104", "acc-105"],
-      postTags: ["新品促销", "种草"],
-      postIds: ["post-201", "post-202", "post-203"],
-      execMode: "now",
-    },
-  },
-  {
-    id: "204683410000003",
-    name: "多平台节日营销触达",
-    subtype: "action",
-    platforms: ["Facebook", "Instagram", "Twitter/X"],
-    total: 30, done: 6, failed: 0,
-    status: "running",
-    category: "account-ops",
-    description: "节日活动多平台同步触达，覆盖 Facebook / Instagram / Twitter/X。",
-    createdBy: "李雨欣",
-    createdAt: "2026-05-26 09:10:00",
-    fromTemplate: "Facebook发帖",
-    draft: {
-      name: "多平台节日营销触达",
-      platforms: ["Facebook", "Instagram", "Twitter/X"],
-      reachTags: ["节日问候", "品牌"],
-      reachAccounts: ["acc-301", "acc-302", "acc-303", "acc-304", "acc-305", "acc-306", "acc-307", "acc-308"],
-      postTags: ["节日问候", "品牌"],
-      postIds: ["post-401", "post-402", "post-403", "post-404"],
-      execMode: "scheduled",
-      scheduledDate: "2026-05-26",
-      scheduledTime: "20:00",
-    },
-  },
-  {
     id: "204683410000006",
     name: "Tiktok 周期性养号互动",
     subtype: "nurture",
@@ -837,50 +1023,8 @@ const initialTasks: TaskRow[] = ([
   },
   ...buildReachTasks(),
   ...buildCoviewTasks(),
-  {
-    id: "204683410000012",
-    name: "Instagram 违规帖清理与资料更新",
-    subtype: "action",
-    platforms: ["Instagram"],
-    total: 16, done: 16, failed: 0,
-    status: "success",
-    category: "account-ops",
-    description: "对 16 个 Instagram 托管账号执行账号运营动作：删除 3 天前的违规帖、转发品牌主帖并统一修改账号简介与头像。",
-    createdBy: "陈晓明",
-    createdAt: "2026-06-02 14:10:00",
-    endTime: "2026-06-02 15:26:11",
-    draft: {
-      name: "Instagram 违规帖清理与资料更新",
-      platforms: ["Instagram"],
-      reachTags: ["品牌", "主账号"],
-      reachAccounts: ["acc-o01", "acc-o02", "acc-o03", "acc-o04"],
-      postTags: ["品牌"],
-      postIds: ["post-1001"],
-      execMode: "now",
-    },
-  },
-  {
-    id: "204683410000013",
-    name: "Facebook 历史违规帖批量隐藏",
-    subtype: "action",
-    platforms: ["Facebook"],
-    total: 12, done: 9, failed: 1,
-    status: "running",
-    category: "account-ops",
-    description: "来源模版：Facebook 账号内容运营任务\n对Facebook账号执行日常内容运营和维护。\n指定动作：隐藏贴文\n目标模式：按条件批量\n隐藏范围：2026-03-01 至 2026-05-31\n贴文类型：全部\n条数上限：50\n指定账号：12 个\n执行方式：立即执行",
-    createdBy: "黄雪",
-    createdAt: "2026-06-05 10:15:00",
-    fromTemplate: "Facebook 账号内容运营",
-    draft: {
-      name: "Facebook 历史违规帖批量隐藏",
-      platforms: ["Facebook"],
-      reachTags: ["主账号"],
-      reachAccounts: ["acc-f01", "acc-f02", "acc-f03", "acc-f04"],
-      postTags: [],
-      postIds: [],
-      execMode: "now",
-    },
-  },
+  ...buildContentOpsTasks(),
+
 ] as TaskRow[]).map((t, i) => {
   if (t.tenantId) return t;
   const tenant = TASK_TENANTS[i % Math.max(1, TASK_TENANTS.length)];
@@ -933,12 +1077,12 @@ const initialTemplates: TaskTemplate[] = [
     total: 10,
     description: "对Facebook账号执行日常内容运营和维护。",
     createdAt: "2026-06-15 09:00:00",
-    uses: 9,
+    uses: 6,
     status: "enabled",
     agentName: "系统内置",
     actions: ["sharePost", "hidePost", "deletePost", "editProfile"],
     tags: ["内容运营", "Facebook"],
-    monthlyUses: 3,
+    monthlyUses: 2,
     useDisabled: true,
     category: "account-ops",
   },
