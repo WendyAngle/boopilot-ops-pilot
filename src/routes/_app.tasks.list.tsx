@@ -703,6 +703,10 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
   if (getTaskCategory(task) === "coview") {
     return <CoviewTaskDetailDialog task={task} onClose={onClose} />;
   }
+  // 社媒触达（拓客）任务：展示寻找目标、执行账号与周期执行方式
+  if (getTaskCategory(task) === "social-reach" && task.draft && "reachFindMode" in (task.draft as Record<string, unknown>)) {
+    return <ReachTaskDetailDialog task={task} onClose={onClose} />;
+  }
   const d = (task.draft ?? {}) as Record<string, unknown>;
   const has = Object.keys(d).length > 0;
   const get = <T,>(k: string, fb: T): T => (d[k] === undefined || d[k] === null ? fb : (d[k] as T));
