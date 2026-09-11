@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { StatCard } from "@/components/stat-card";
@@ -388,7 +388,7 @@ function TaskListPage() {
             </Table>
           </div>
 
-          <PaginationBar page={taskPage} totalPages={taskTotalPages} total={filteredTasks.length} setPage={setTaskPage} />
+          <PaginationBar page={safeTaskPage} totalPages={taskTotalPages} total={filteredTasks.length} setPage={setTaskPage} />
         </div>
       </div>
 
