@@ -617,6 +617,76 @@ function SectionHeader({ index, title }: { index: string; title: string }) {
   );
 }
 
+const REACH_FIND_MODE_TEXT: Record<string, string> = {
+  smart: "系统智能搜索",
+  post: "指定贴文搜索",
+  group: "指定群组搜索",
+};
+
+/** 社媒触达（拓客）任务详情 */
+function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () => void }) {
+  const d = (task.draft ?? {}) as Record<string, unknown>;
+  const s = (k: string) => (d[k] === undefined || d[k] === null || d[k] === "" ? "—" : String(d[k]));
+  const list = (k: string) => (Array.isArray(d[k]) && (d[k] as string[]).length ? (d[k] as string[]).join("、") : "—");
+  const links = Array.isArray(d.reachLinks) ? (d.reachLinks as string[]) : [];
+  const findMode = String(d.reachFindMode ?? "smart");
+  const startAt = `${s("recurStartDate")} ${d.recurStartTime ?? ""}`.trim();
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl gap-0 p-0">
+        <DialogHeader className="space-y-1 border-b px-6 py-4">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Info className="h-4 w-4 text-primary" />任务详情 - {task.name}
+          </DialogTitle>
+          <DialogDescription className="font-mono text-xs">{task.id}</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[65vh] overflow-y-auto px-6 py-4">
+          <SectionHeader index="1/4" title="任务基本信息" />
+          <DetailRow label="任务名称">{task.name}</DetailRow>
+          <DetailRow label="平台">{task.platforms.join("、")}</DetailRow>
+          <DetailRow label="触达动作">{s("reachAction")}</DetailRow>
+          <DetailRow label="目标市场">{s("reachRegion")}</DetailRow>
+          <DetailRow label="推广产品">{list("reachProducts")}</DetailRow>
+
+          <SectionHeader index="2/4" title="寻找目标" />
+          <DetailRow label="寻找目标方式">{REACH_FIND_MODE_TEXT[findMode] ?? "—"}</DetailRow>
+          <DetailRow label="搜索关键词">{s("reachKeywords")}</DetailRow>
+          {links.length > 0 && (
+            <DetailRow label={findMode === "group" ? "指定群组链接" : "指定贴文链接"}>
+              <div className="space-y-1">
+                {links.map((l) => (
+                  <div key={l} className="break-all text-xs text-muted-foreground">{l}</div>
+                ))}
+              </div>
+            </DetailRow>
+          )}
+          <DetailRow label="活跃时间范围">{s("reachActiveWindow")}</DetailRow>
+          <DetailRow label="目标数量上限">{s("reachTargetCap")}</DetailRow>
+
+          <SectionHeader index="3/4" title="执行账号与话术" />
+          <DetailRow label="执行账号">
+            {Array.isArray(d.reachAccounts) && (d.reachAccounts as string[]).length
+              ? `已选 ${(d.reachAccounts as string[]).length} 个账号`
+              : "—"}
+          </DetailRow>
+          <DetailRow label="每账号每日上限">{s("reachDailyPerAccount")}</DetailRow>
+          <DetailRow label="话术（中文）">{s("scriptZh")}</DetailRow>
+          <DetailRow label="发送话术">{s("scriptSend")}</DetailRow>
+
+          <SectionHeader index="4/4" title="执行方式" />
+          <DetailRow label="执行方式">周期(每日)</DetailRow>
+          <DetailRow label="开始时间">{startAt || "—"}</DetailRow>
+          <DetailRow label="结束时间">{task.endTime ?? "—"}</DetailRow>
+        </div>
+        <DialogFooter className="border-t px-6 py-3">
+          <Button variant="outline" onClick={onClose}>关闭</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: () => void }) {
   if (!task) {
     return (
@@ -632,6 +702,10 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
   // 同屏任务：一个社媒账号一个任务，展示账号 / 平台 / 动作 / 执行时间
   if (getTaskCategory(task) === "coview") {
     return <CoviewTaskDetailDialog task={task} onClose={onClose} />;
+  }
+  // 社媒触达（拓客）任务：展示寻找目标、执行账号与周期执行方式
+  if (getTaskCategory(task) === "social-reach" && task.draft && "reachFindMode" in (task.draft as Record<string, unknown>)) {
+    return <ReachTaskDetailDialog task={task} onClose={onClose} />;
   }
   const d = (task.draft ?? {}) as Record<string, unknown>;
   const has = Object.keys(d).length > 0;
