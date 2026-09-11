@@ -13,7 +13,7 @@ import { UseTemplateDialog } from "@/components/use-template-dialog";
 import { ReachTaskDialog } from "@/components/reach-task-dialog";
 
 import { ensureActivityTasksSeeded, useActivitySubtasks, ACTIVITY_SOURCE_LABEL } from "@/lib/activity-tasks";
-import { PLATFORM_META } from "@/lib/managed-account-mock";
+import { PLATFORM_META, findManagedAccountById } from "@/lib/managed-account-mock";
 import { useTenantScope } from "@/lib/tenant-scope";
 import { User2, AtSign, ArrowRight } from "lucide-react";
 
@@ -41,7 +41,7 @@ import { cn } from "@/lib/utils";
 import {
   PLATFORMS, PLATFORM_CHIP, STATUS_LABEL, STATUS_CLS,
   EXEC_STATE_LABEL, EXEC_STATE_CLS, getExecState, isForeverTask,
-  TASK_CATEGORY_LABEL, TASK_CATEGORY_CLS, TASK_CATEGORY_ORDER, getTaskCategory,
+  TASK_CATEGORY_LABEL, TASK_CATEGORY_CLS, TASK_CATEGORY_ORDER, TASK_CATEGORY_ACTIONS, getTaskCategory,
   type Platform, type TaskStatus, type ExecState, type TaskRow, type TaskTemplate, type TaskCategory,
   type ContentOpsInfo,
   useTasks, useTemplates, tasksActions, templatesActions,
@@ -81,6 +81,7 @@ function TaskListPage() {
   const navigate = useNavigate();
 
   const [statsTask, setStatsTask] = useState<TaskRow | null>(null);
+  const [distSubject, setDistSubject] = useState<DistSubject>("exec");
   const [saveTplFor, setSaveTplFor] = useState<TaskRow | null>(null);
   const [saveTplName, setSaveTplName] = useState("");
   const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
@@ -448,29 +449,65 @@ function TaskListPage() {
                 <StatBox label="执行失败" value={statsTask.failed} tone="danger" />
                 <StatBox label="成功率" value={`${statsTask.total ? Math.round((statsTask.done / statsTask.total) * 100) : 0}%`} />
               </div>
-              <Tabs defaultValue="platform" className="rounded-lg border p-3">
+              <Tabs defaultValue="account" className="rounded-lg border p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <div className="text-xs font-medium text-muted-foreground">分布维度</div>
                   <TabsList className="h-8">
-                    <TabsTrigger value="platform" className="text-xs">按平台分布</TabsTrigger>
-                    <TabsTrigger value="reach" className="text-xs">按账号分布</TabsTrigger>
-                    <TabsTrigger value="action" className="text-xs">按操作分布</TabsTrigger>
+                    <TabsTrigger value="account" className="text-xs">按账号分布</TabsTrigger>
+                    <TabsTrigger value="action" className="text-xs">按操作/动作分布</TabsTrigger>
+                    <TabsTrigger value="subtask" className="text-xs">按子任务统计</TabsTrigger>
                   </TabsList>
                 </div>
-                <TabsContent value="platform" className="mt-0">
-                  <DistList rows={buildDist(statsTask, "platform")} />
-                </TabsContent>
-                <TabsContent value="reach" className="mt-0">
-                  <DistList rows={buildDist(statsTask, "reach")} />
+                <TabsContent value="account" className="mt-0 space-y-2">
+                  {getTaskCategory(statsTask) === "social-reach" ? (
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-muted-foreground">
+                          {distSubject === "exec"
+                            ? "统计口径：发起任务的托管账号（我方账号）"
+                            : "统计口径：被触达的目标账号（对方账号）"}
+                        </p>
+                        <TabsList className="h-7">
+                          <button
+                            type="button"
+                            onClick={() => setDistSubject("exec")}
+                            className={cn(
+                              "rounded px-2 py-1 text-[11px] transition-colors",
+                              distSubject === "exec" ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground",
+                            )}
+                          >执行账号</button>
+                          <button
+                            type="button"
+                            onClick={() => setDistSubject("target")}
+                            className={cn(
+                              "rounded px-2 py-1 text-[11px] transition-colors",
+                              distSubject === "target" ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground",
+                            )}
+                          >目标账号</button>
+                        </TabsList>
+                      </div>
+                      <DistList rows={buildDist(statsTask, "account", distSubject)} />
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[11px] text-muted-foreground">统计口径：执行任务的托管账号</p>
+                      <DistList rows={buildDist(statsTask, "account", "exec")} />
+                    </>
+                  )}
                 </TabsContent>
                 <TabsContent value="action" className="mt-0">
                   <DistList rows={buildDist(statsTask, "action")} />
                 </TabsContent>
+                <TabsContent value="subtask" className="mt-0">
+                  <DistList rows={buildDist(statsTask, "subtask")} />
+                </TabsContent>
                 <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
                   <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-emerald-500" />执行成功</span>
                   <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-destructive" />执行失败</span>
+                  <span className="ml-auto">末尾数字格式：成功 / 失败 / 总数</span>
                 </div>
               </Tabs>
+
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <Field label="平均耗时" value="2.4s / 账号" />
@@ -1248,7 +1285,58 @@ function StatBox({ label, value, tone }: { label: string; value: string | number
 
 type DistRow = { label: string; success: number; failed: number };
 
-function buildDist(t: TaskRow, dim: "platform" | "reach" | "action"): DistRow[] {
+export type DistDimension = "account" | "action" | "subtask";
+export type DistSubject = "exec" | "target";
+
+/** 内容运营任务：从任务说明中解析实际动作 */
+function parseContentOpsAction(t: TaskRow): string {
+  const m = /指定动作：([^\n，,。]+)/.exec(t.description ?? "");
+  return m?.[1]?.trim() || "内容运营";
+}
+
+function execAccountLabels(t: TaskRow): string[] {
+  const ids = (t.draft?.["reachAccounts"] as string[] | undefined) ?? [];
+  const names = ids
+    .slice(0, 12)
+    .map((id) => findManagedAccountById(id)?.username ?? id);
+  if (names.length) return names;
+  if (t.sourceAccountId) {
+    return [findManagedAccountById(t.sourceAccountId)?.username ?? t.sourceAccountId];
+  }
+  return ["执行账号 A", "执行账号 B", "执行账号 C"];
+}
+
+/** 触达任务的目标账号（对方账号）为确定性 mock 名单 */
+function targetAccountLabels(t: TaskRow): string[] {
+  const n = Math.min(8, Math.max(3, t.total % 7 || 5));
+  return Array.from({ length: n }, (_, i) => `目标账号 ${t.id.slice(-4)}-${i + 1}`);
+}
+
+function actionLabels(t: TaskRow): string[] {
+  const cat = getTaskCategory(t);
+  if (cat === "account-ops") return [parseContentOpsAction(t)];
+  if (cat === "coview") return ["同屏"];
+  return TASK_CATEGORY_ACTIONS[cat];
+}
+
+function distLabels(t: TaskRow, dim: DistDimension, subject: DistSubject): string[] {
+  if (dim === "account") {
+    return subject === "target" ? targetAccountLabels(t) : execAccountLabels(t);
+  }
+  if (dim === "action") return actionLabels(t);
+  const accounts = execAccountLabels(t).slice(0, 6);
+  const actions = actionLabels(t);
+  const rows: string[] = [];
+  for (const a of accounts) {
+    for (const act of actions) {
+      rows.push(`${a} · ${act}`);
+      if (rows.length >= 15) return rows;
+    }
+  }
+  return rows;
+}
+
+function buildDist(t: TaskRow, dim: DistDimension, subject: DistSubject = "exec"): DistRow[] {
   // Deterministic pseudo-random based on task id + dim to avoid SSR hydration drift
   const seed = (s: string) => {
     let h = 0;
@@ -1256,14 +1344,11 @@ function buildDist(t: TaskRow, dim: "platform" | "reach" | "action"): DistRow[] 
     return h;
   };
   const rng = (key: string) => {
-    const h = seed(`${t.id}|${dim}|${key}`);
+    const h = seed(`${t.id}|${dim}|${subject}|${key}`);
     return (h % 1000) / 1000;
   };
 
-  let labels: string[] = [];
-  if (dim === "platform") labels = [...t.platforms];
-  else if (dim === "action") labels = ["点赞", "评论", "发帖", "关注", "转发", "私信"];
-  else labels = ["主账号", "矩阵号", "合作号", "外联号"];
+  const labels = distLabels(t, dim, subject);
 
   const n = labels.length || 1;
   // Distribute totals across buckets with slight variation while preserving sums.
@@ -1293,32 +1378,30 @@ function buildDist(t: TaskRow, dim: "platform" | "reach" | "action"): DistRow[] 
   return rows;
 }
 
+
 function DistList({ rows }: { rows: DistRow[] }) {
   if (rows.length === 0) {
     return <div className="py-6 text-center text-xs text-muted-foreground">暂无数据</div>;
   }
   return (
-    <div className="space-y-1.5">
+    <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
       {rows.map((r) => {
         const total = r.success + r.failed;
         const sPct = total ? (r.success / total) * 100 : 0;
         const fPct = total ? (r.failed / total) * 100 : 0;
         return (
           <div key={r.label} className="flex items-center gap-2 text-xs">
-            <span className="w-24 shrink-0 truncate" title={r.label}>{r.label}</span>
-            <div className="flex h-2 flex-1 overflow-hidden rounded bg-muted">
+            <span className="w-40 shrink-0 truncate" title={r.label}>{r.label}</span>
+            <div className="flex h-2.5 flex-1 overflow-hidden rounded bg-muted">
               <div className="h-full bg-emerald-500" style={{ width: `${sPct}%` }} />
               <div className="h-full bg-destructive" style={{ width: `${fPct}%` }} />
             </div>
-            <span className="w-44 shrink-0 text-right tabular-nums text-muted-foreground">
-              <span className="text-emerald-600">{r.success}</span>
-              <span className="mx-0.5">/</span>
-              <span className="text-destructive">{r.failed}</span>
-              <span className="mx-0.5">/</span>
-              <span>{total}</span>
-              <span className="ml-1 text-[10px]">
-                ({total ? Math.round(sPct) : 0}% · {total ? Math.round(fPct) : 0}%)
-              </span>
+            <span className="w-24 shrink-0 text-right tabular-nums">
+              <span className="font-medium text-emerald-600">{r.success}</span>
+              <span className="mx-0.5 text-muted-foreground">/</span>
+              <span className="font-medium text-destructive">{r.failed}</span>
+              <span className="mx-0.5 text-muted-foreground">/</span>
+              <span className="text-foreground">{total}</span>
             </span>
           </div>
         );
@@ -1326,6 +1409,7 @@ function DistList({ rows }: { rows: DistRow[] }) {
     </div>
   );
 }
+
 
 type LogLine = { ts: string; level: "INFO" | "WARN" | "ERROR"; msg: string };
 
