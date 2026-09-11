@@ -340,7 +340,7 @@ function TaskTemplatesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-36">
-                            <DropdownMenuItem onClick={() => toggleStatus(tpl)}>
+                            <DropdownMenuItem onClick={() => enabled ? setDisableTpl(tpl) : enableTemplate(tpl)}>
                               {enabled
                                 ? <><PauseCircle className="h-3.5 w-3.5" />停用</>
                                 : <><CheckCircle2 className="h-3.5 w-3.5" />启用</>}
