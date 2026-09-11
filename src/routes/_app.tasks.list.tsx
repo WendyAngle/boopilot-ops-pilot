@@ -800,8 +800,6 @@ function CoviewTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () 
   const platform = (str("coviewPlatform") || task.platforms[0]) as Platform;
   const meta = PLATFORM_META[platform as keyof typeof PLATFORM_META];
   const accountName = str("coviewAccountName") || "—";
-  const avatar = str("coviewAvatar");
-  const platformId = str("coviewPlatformId");
   const action = str("coviewAction") || "账号同屏";
   const start = str("coviewStartTime");
   const end = str("coviewEndTime") || task.endTime || "";
@@ -817,28 +815,13 @@ function CoviewTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () 
           <DialogDescription className="font-mono text-xs">{task.id}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[65vh] space-y-4 overflow-y-auto px-6 py-4">
-          <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 px-3 py-3">
-            <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              同屏账号（我方托管账号）
-            </div>
-            <div className="flex items-center gap-2.5">
-              {avatar ? (
-                <img src={avatar} alt="" className="h-8 w-8 rounded-full border border-border/60" loading="lazy" />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-muted text-muted-foreground">
-                  <User2 className="h-3.5 w-3.5" />
-                </div>
-              )}
-              <div className="min-w-0 leading-tight">
-                <div className="truncate text-sm font-medium">{accountName}</div>
-                {platformId && (
-                  <div className="font-mono text-[11px] text-muted-foreground">ID {platformId}</div>
-                )}
-              </div>
-              <Badge variant="outline" className={cn("ml-auto text-[10px] font-normal", EXEC_STATE_CLS[execState])}>
-                {EXEC_STATE_LABEL[execState]}
-              </Badge>
-            </div>
+          <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              执行状态
+            </span>
+            <Badge variant="outline" className={cn("text-[10px] font-normal", EXEC_STATE_CLS[execState])}>
+              {EXEC_STATE_LABEL[execState]}
+            </Badge>
           </div>
 
           <div className="rounded-lg border">
@@ -854,18 +837,13 @@ function CoviewTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () 
             <DetailRowBox label="动作">
               <Badge variant="outline" className="text-[10px] font-normal">{action}</Badge>
             </DetailRowBox>
-            <DetailRowBox label="执行时间" last>
-              <span className="font-mono text-xs tabular-nums">
-                {start || "—"} <span className="mx-1 text-muted-foreground">---</span> {end || "—"}
-              </span>
+            <DetailRowBox label="开始时间">
+              <span className="font-mono text-xs tabular-nums">{start || "—"}</span>
+            </DetailRowBox>
+            <DetailRowBox label="结束时间" last>
+              <span className="font-mono text-xs tabular-nums">{end || "—"}</span>
             </DetailRowBox>
           </div>
-
-          {str("coviewPurpose") && (
-            <div className="rounded-lg border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-              同屏目的：{str("coviewPurpose")}
-            </div>
-          )}
         </div>
         <DialogFooter className="border-t px-6 py-3">
           <Button variant="outline" onClick={onClose}>关闭</Button>
