@@ -328,6 +328,296 @@ function buildCoviewTasks(): TaskRow[] {
 }
 
 
+/* ============================================================ */
+/* 社媒触达任务（社媒拓客）预置数据                              */
+/* ------------------------------------------------------------ */
+/* 口径与「创建社媒拓客任务」保持一致：                            */
+/*  · 平台动作：Facebook = 加好友，Tiktok = 关注                  */
+/*  · 寻找目标方式：系统智能搜索 / 指定贴文搜索 / 指定群组搜索      */
+/*  · 每账号每日触达上限固定 5，执行方式固定为「周期(每日)」        */
+/* ============================================================ */
+
+/** 寻找目标方式 */
+export type ReachFindMode = "smart" | "post" | "group";
+export const REACH_FIND_MODE_LABEL: Record<ReachFindMode, string> = {
+  smart: "系统智能搜索",
+  post: "指定贴文搜索",
+  group: "指定群组搜索",
+};
+/** 触达任务执行方式（当前仅支持周期执行，频率每日） */
+export const REACH_EXEC_LABEL = "周期(每日)";
+/** 每个账号每日触达上限 */
+export const REACH_DAILY_PER_ACCOUNT = 5;
+
+interface ReachSeed {
+  platform: Extract<Platform, "Facebook" | "Tiktok">;
+  name: string;
+  region: string;
+  products: string[];
+  keywords: string[];
+  findMode: ReachFindMode;
+  links?: string[];
+  activeWindow: string;
+  targetCap: number;
+  accounts: number;
+  lang: string;
+  scriptZh: string;
+  scriptSend: string;
+  operator: string;
+  status: TaskStatus;
+  done: number;
+  failed: number;
+  replies: number;
+  createdAt: string;
+  startTime: string;
+  endTime?: string;
+}
+
+const REACH_SEED: ReachSeed[] = [
+  // ---------------- Facebook · 加好友 ----------------
+  {
+    platform: "Facebook", name: "Facebook 美国钢材进口商拓客", region: "美国",
+    products: ["建筑螺纹钢", "彩涂钢卷"], keywords: ["steel importer", "structural steel", "rebar supplier"],
+    findMode: "smart", activeWindow: "近两周", targetCap: 30, accounts: 3, lang: "en",
+    scriptZh: "Hi {联系人名}，我是 {我的公司} 的 {我的姓名}，看到您在美国做钢材进口业务，方便聊聊供货与报价吗？",
+    scriptSend: "Hi {联系人名}, I'm {我的姓名} from {我的公司}. Noticed you source structural steel in the US — happy to share our latest quote.",
+    operator: "李雨欣", status: "running", done: 21, failed: 2, replies: 6,
+    createdAt: "2026-06-01 09:20:00", startTime: "2026-06-01 09:30:00",
+  },
+  {
+    platform: "Facebook", name: "Facebook 德国光伏支架采购拓客", region: "德国",
+    products: ["光伏支架", "工业铝型材"], keywords: ["solar mounting", "pv bracket", "aluminium profile"],
+    findMode: "group", links: ["https://www.facebook.com/groups/solarinstallers.de", "https://www.facebook.com/groups/pv.europe"],
+    activeWindow: "近一个月", targetCap: 40, accounts: 4, lang: "en",
+    scriptZh: "Hi {联系人名}，我们做光伏支架与铝型材出口，欧洲项目交付经验丰富，方便发一份规格与报价表吗？",
+    scriptSend: "Hi {联系人名}, we manufacture PV mounting brackets and aluminium profiles with EU project experience — may I send you our spec sheet?",
+    operator: "陈晓明", status: "partial", done: 33, failed: 7, replies: 9,
+    createdAt: "2026-05-28 10:00:00", startTime: "2026-05-28 10:05:00", endTime: "2026-06-04 13:59:59",
+  },
+  {
+    platform: "Facebook", name: "Facebook 英国跨境物流潜客拓展", region: "英国",
+    products: ["跨境物流服务"], keywords: ["freight forwarder", "cross border logistics", "warehouse uk"],
+    findMode: "post", links: ["https://www.facebook.com/ukfreight/posts/1024578899"],
+    activeWindow: "近一周", targetCap: 25, accounts: 2, lang: "en",
+    scriptZh: "Hi {联系人名}，看到您在讨论英国海外仓，我们提供中英专线与本地派送，方便交流一下吗？",
+    scriptSend: "Hi {联系人名}, saw your post about UK warehousing. We run CN–UK line-haul with local delivery — open to a quick chat?",
+    operator: "黄雪", status: "success", done: 25, failed: 0, replies: 8,
+    createdAt: "2026-05-25 09:00:00", startTime: "2026-05-25 09:10:00", endTime: "2026-05-31 13:59:59",
+  },
+  {
+    platform: "Facebook", name: "Facebook 巴西建材经销商拓客", region: "巴西",
+    products: ["建筑螺纹钢"], keywords: ["material de construção", "aço importador", "distribuidor"],
+    findMode: "smart", activeWindow: "近三个月", targetCap: 50, accounts: 5, lang: "pt",
+    scriptZh: "Hi {联系人名}，我们是螺纹钢生产商，长期供货巴西建材经销商，方便看看我们的报价吗？",
+    scriptSend: "Olá {联系人名}, somos fabricantes de vergalhões com fornecimento regular ao Brasil. Posso enviar nossa cotação?",
+    operator: "王浩然", status: "running", done: 18, failed: 4, replies: 3,
+    createdAt: "2026-06-03 14:00:00", startTime: "2026-06-03 14:20:00",
+  },
+  {
+    platform: "Facebook", name: "Facebook 日本美妆分销商拓客", region: "日本",
+    products: ["护肤精华", "美妆彩盘"], keywords: ["化粧品 卸", "スキンケア 仕入れ", "美容 代理店"],
+    findMode: "group", links: ["https://www.facebook.com/groups/jp.beauty.wholesale"],
+    activeWindow: "近两周", targetCap: 30, accounts: 3, lang: "ja",
+    scriptZh: "Hi {联系人名}，我们做护肤精华与彩妆代工出口，方便发一份产品目录给您吗？",
+    scriptSend: "{联系人名}様、スキンケア・メイク製品のOEM輸出を行っております。カタログをお送りしてもよろしいでしょうか。",
+    operator: "张梦琪", status: "pending", done: 0, failed: 0, replies: 0,
+    createdAt: "2026-06-06 09:40:00", startTime: "2026-06-07 09:00:00",
+  },
+  {
+    platform: "Facebook", name: "Facebook 东南亚智能家居代理拓客", region: "印度尼西亚",
+    products: ["智能家居套装"], keywords: ["smart home distributor", "iot reseller", "grosir smart home"],
+    findMode: "smart", activeWindow: "近一个月", targetCap: 35, accounts: 3, lang: "en",
+    scriptZh: "Hi {联系人名}，我们提供智能家居整套方案，正在寻找印尼本地代理，方便聊聊合作吗？",
+    scriptSend: "Hi {联系人名}, we supply complete smart home kits and are looking for local partners in Indonesia — open to a chat?",
+    operator: "李雨欣", status: "partial", done: 26, failed: 9, replies: 5,
+    createdAt: "2026-05-30 11:00:00", startTime: "2026-05-30 11:15:00", endTime: "2026-06-05 13:59:59",
+  },
+  {
+    platform: "Facebook", name: "Facebook 越南工业铝型材拓客", region: "越南",
+    products: ["工业铝型材"], keywords: ["nhôm công nghiệp", "aluminium supplier", "nhà phân phối"],
+    findMode: "post", links: ["https://www.facebook.com/vnindustry/posts/883421177", "https://www.facebook.com/aluvn/posts/771120934"],
+    activeWindow: "近两周", targetCap: 28, accounts: 2, lang: "vi",
+    scriptZh: "Hi {联系人名}，我们供应工业铝型材，可按图纸开模，方便发一份规格给您吗？",
+    scriptSend: "Chào {联系人名}, chúng tôi cung cấp nhôm định hình công nghiệp theo bản vẽ. Tôi gửi bảng quy cách nhé?",
+    operator: "刘子轩", status: "failed", done: 0, failed: 12, replies: 0,
+    createdAt: "2026-06-02 15:30:00", startTime: "2026-06-02 15:40:00", endTime: "2026-06-03 13:59:59",
+  },
+  {
+    platform: "Facebook", name: "Facebook 韩国美妆买手拓客", region: "韩国",
+    products: ["美妆彩盘"], keywords: ["뷰티 바이어", "화장품 도매", "beauty buyer"],
+    findMode: "smart", activeWindow: "近一周", targetCap: 20, accounts: 2, lang: "en",
+    scriptZh: "Hi {联系人名}，我们是彩妆工厂，支持小批量定制，方便看看我们的爆款清单吗？",
+    scriptSend: "Hi {联系人名}, we're a color cosmetics factory supporting small-batch OEM — may I share our best-seller list?",
+    operator: "黄雪", status: "success", done: 20, failed: 0, replies: 7,
+    createdAt: "2026-05-26 10:20:00", startTime: "2026-05-26 10:30:00", endTime: "2026-05-30 13:59:59",
+  },
+  {
+    platform: "Facebook", name: "Facebook 泰国建材群组拓客", region: "泰国",
+    products: ["彩涂钢卷", "建筑螺纹钢"], keywords: ["วัสดุก่อสร้าง", "steel coil", "โรงงานเหล็ก"],
+    findMode: "group", links: ["https://www.facebook.com/groups/th.construction.material"],
+    activeWindow: "近三个月", targetCap: 32, accounts: 3, lang: "th",
+    scriptZh: "Hi {联系人名}，我们供应彩涂钢卷与螺纹钢，泰国客户交付稳定，方便聊聊吗？",
+    scriptSend: "สวัสดีค่ะ {联系人名} เราจำหน่ายเหล็กม้วนเคลือบสีและเหล็กเส้น ส่งลูกค้าไทยเป็นประจำ สนใจพูดคุยไหมคะ",
+    operator: "陈晓明", status: "running", done: 12, failed: 1, replies: 2,
+    createdAt: "2026-06-05 09:00:00", startTime: "2026-06-05 09:20:00",
+  },
+  {
+    platform: "Facebook", name: "Facebook 全球外贸潜客常态拓客", region: "全球",
+    products: ["跨境物流服务", "工业铝型材"], keywords: ["import export", "sourcing agent", "b2b trade"],
+    findMode: "smart", activeWindow: "近半年", targetCap: 60, accounts: 6, lang: "en",
+    scriptZh: "Hi {联系人名}，我们是外贸供应链服务商，涵盖采购与物流，方便交换一下需求吗？",
+    scriptSend: "Hi {联系人名}, we provide sourcing and logistics for cross-border trade — happy to exchange notes on your needs.",
+    operator: "王浩然", status: "running", done: 41, failed: 5, replies: 12,
+    createdAt: "2026-05-20 08:30:00", startTime: "2026-05-20 09:00:00",
+  },
+  // ---------------- Tiktok · 关注 ----------------
+  {
+    platform: "Tiktok", name: "Tiktok 美国美妆达人关注拓客", region: "美国",
+    products: ["护肤精华", "美妆彩盘"], keywords: ["skincare routine", "makeup haul", "beauty creator"],
+    findMode: "smart", activeWindow: "近一周", targetCap: 40, accounts: 4, lang: "en",
+    scriptZh: "Hi {联系人名}，你的美妆内容很棒，我们是护肤精华品牌，想寄样合作，方便聊聊吗？",
+    scriptSend: "Hi {联系人名}, love your beauty content! We're a skincare brand and would love to send you samples — open to collab?",
+    operator: "黄雪", status: "running", done: 28, failed: 3, replies: 9,
+    createdAt: "2026-06-01 10:10:00", startTime: "2026-06-01 10:20:00",
+  },
+  {
+    platform: "Tiktok", name: "Tiktok 英国家居好物达人拓客", region: "英国",
+    products: ["智能家居套装"], keywords: ["home gadgets", "smart home uk", "amazon finds"],
+    findMode: "post", links: ["https://www.tiktok.com/@homehacks.uk/video/7391123456789012345"],
+    activeWindow: "近两周", targetCap: 30, accounts: 3, lang: "en",
+    scriptZh: "Hi {联系人名}，看到你分享的家居好物视频，我们有智能家居新品想寄给你体验。",
+    scriptSend: "Hi {联系人名}, saw your home gadget video — we'd love to send you our new smart home kit to try.",
+    operator: "李雨欣", status: "success", done: 30, failed: 0, replies: 11,
+    createdAt: "2026-05-24 09:30:00", startTime: "2026-05-24 09:40:00", endTime: "2026-05-29 13:59:59",
+  },
+  {
+    platform: "Tiktok", name: "Tiktok 日本护肤内容达人拓客", region: "日本",
+    products: ["护肤精华"], keywords: ["スキンケア", "美容垢", "コスメ紹介"],
+    findMode: "smart", activeWindow: "近一个月", targetCap: 35, accounts: 3, lang: "ja",
+    scriptZh: "Hi {联系人名}，我们是护肤品牌，想邀请你试用新品并合作内容。",
+    scriptSend: "{联系人名}さん、スキンケアブランドです。新商品のご提供とコラボのご相談をさせてください。",
+    operator: "张梦琪", status: "partial", done: 24, failed: 8, replies: 4,
+    createdAt: "2026-05-29 14:00:00", startTime: "2026-05-29 14:10:00", endTime: "2026-06-04 13:59:59",
+  },
+  {
+    platform: "Tiktok", name: "Tiktok 泰国穿搭达人关注拓客", region: "泰国",
+    products: ["美妆彩盘"], keywords: ["แฟชั่น", "รีวิวเครื่องสำอาง", "ootd thailand"],
+    findMode: "smart", activeWindow: "近两周", targetCap: 25, accounts: 2, lang: "th",
+    scriptZh: "Hi {联系人名}，喜欢你的穿搭与美妆内容，我们想邀请你合作新品彩盘。",
+    scriptSend: "สวัสดีค่ะ {联系人名} ชอบคอนเทนต์แฟชั่นและเมคอัพของคุณมาก อยากชวนร่วมงานพาเลตต์ใหม่ค่ะ",
+    operator: "刘子轩", status: "pending", done: 0, failed: 0, replies: 0,
+    createdAt: "2026-06-06 11:00:00", startTime: "2026-06-07 10:00:00",
+  },
+  {
+    platform: "Tiktok", name: "Tiktok 越南电商小店拓客", region: "越南",
+    products: ["跨境物流服务"], keywords: ["tiktok shop", "bán hàng online", "dropshipping"],
+    findMode: "post", links: ["https://www.tiktok.com/@shopvn/video/7385566778899001122", "https://www.tiktok.com/@logisticsvn/video/7386677889900112233"],
+    activeWindow: "近一周", targetCap: 30, accounts: 3, lang: "vi",
+    scriptZh: "Hi {联系人名}，我们提供中越专线物流，适合 TikTok Shop 卖家，方便聊聊吗？",
+    scriptSend: "Chào {联系人名}, chúng tôi có tuyến vận chuyển Trung–Việt phù hợp cho người bán TikTok Shop. Trao đổi thêm nhé?",
+    operator: "陈晓明", status: "running", done: 15, failed: 2, replies: 3,
+    createdAt: "2026-06-04 09:50:00", startTime: "2026-06-04 10:00:00",
+  },
+  {
+    platform: "Tiktok", name: "Tiktok 韩国美妆测评号拓客", region: "韩国",
+    products: ["美妆彩盘", "护肤精华"], keywords: ["뷰티리뷰", "화장품 추천", "kbeauty"],
+    findMode: "smart", activeWindow: "近三个月", targetCap: 45, accounts: 4, lang: "en",
+    scriptZh: "Hi {联系人名}，我们是彩妆品牌，想邀请你做新品测评合作。",
+    scriptSend: "Hi {联系人名}, we're a cosmetics brand and would love to partner with you on a new product review.",
+    operator: "王浩然", status: "success", done: 45, failed: 0, replies: 14,
+    createdAt: "2026-05-22 10:00:00", startTime: "2026-05-22 10:15:00", endTime: "2026-05-31 13:59:59",
+  },
+  {
+    platform: "Tiktok", name: "Tiktok 印尼母婴内容达人拓客", region: "印度尼西亚",
+    products: ["智能家居套装"], keywords: ["ibu rumah tangga", "review produk", "smart home id"],
+    findMode: "smart", activeWindow: "近两周", targetCap: 28, accounts: 2, lang: "en",
+    scriptZh: "Hi {联系人名}，我们的智能家居产品适合家庭场景，想邀请你体验并共创内容。",
+    scriptSend: "Hi {联系人名}, our smart home products fit family life — would you like to try them and co-create content?",
+    operator: "黄雪", status: "failed", done: 0, failed: 9, replies: 0,
+    createdAt: "2026-06-02 13:20:00", startTime: "2026-06-02 13:30:00", endTime: "2026-06-03 13:59:59",
+  },
+  {
+    platform: "Tiktok", name: "Tiktok 巴西健身达人关注拓客", region: "巴西",
+    products: ["智能家居套装"], keywords: ["fitness brasil", "treino em casa", "review"],
+    findMode: "post", links: ["https://www.tiktok.com/@fitbrasil/video/7388899001122334455"],
+    activeWindow: "近一个月", targetCap: 32, accounts: 3, lang: "pt",
+    scriptZh: "Hi {联系人名}，我们做家庭智能设备，想邀请你做居家场景内容合作。",
+    scriptSend: "Olá {联系人名}, trabalhamos com dispositivos inteligentes para casa e queremos convidá-lo para uma parceria de conteúdo.",
+    operator: "张梦琪", status: "partial", done: 20, failed: 6, replies: 4,
+    createdAt: "2026-05-31 15:00:00", startTime: "2026-05-31 15:10:00", endTime: "2026-06-05 13:59:59",
+  },
+  {
+    platform: "Tiktok", name: "Tiktok 德国工业内容账号拓客", region: "德国",
+    products: ["工业铝型材", "光伏支架"], keywords: ["industrie", "solar diy", "aluminium profil"],
+    findMode: "smart", activeWindow: "近半年", targetCap: 22, accounts: 2, lang: "en",
+    scriptZh: "Hi {联系人名}，我们生产铝型材与光伏支架，想在你的内容里做产品露出，方便聊聊吗？",
+    scriptSend: "Hi {联系人名}, we manufacture aluminium profiles and PV brackets — interested in a product feature collaboration?",
+    operator: "刘子轩", status: "running", done: 9, failed: 1, replies: 1,
+    createdAt: "2026-06-05 16:00:00", startTime: "2026-06-05 16:10:00",
+  },
+  {
+    platform: "Tiktok", name: "Tiktok 全球好物达人常态拓客", region: "全球",
+    products: ["护肤精华", "智能家居套装", "美妆彩盘"], keywords: ["tiktokmademebuyit", "product review", "unboxing"],
+    findMode: "smart", activeWindow: "近三个月", targetCap: 60, accounts: 5, lang: "en",
+    scriptZh: "Hi {联系人名}，我们有多条产品线在找达人合作，方便聊聊寄样与佣金吗？",
+    scriptSend: "Hi {联系人名}, we have several product lines looking for creators — happy to discuss samples and commission.",
+    operator: "李雨欣", status: "running", done: 37, failed: 4, replies: 10,
+    createdAt: "2026-05-18 09:00:00", startTime: "2026-05-18 09:30:00",
+  },
+];
+
+function buildReachTasks(): TaskRow[] {
+  return REACH_SEED.map((s, idx) => {
+    const tenant = TASK_TENANTS[idx % Math.max(1, TASK_TENANTS.length)];
+    const action = s.platform === "Facebook" ? "加好友" : "关注";
+    const findLabel = REACH_FIND_MODE_LABEL[s.findMode];
+    return {
+      id: `2046834300000${String(idx + 1).padStart(2, "0")}`,
+      name: s.name,
+      subtype: "action",
+      platforms: [s.platform],
+      total: s.targetCap,
+      done: s.done,
+      failed: s.failed,
+      status: s.status,
+      category: "social-reach",
+      description: `在 ${s.platform} 面向${s.region}，以${findLabel}寻找「${s.keywords.join("、")}」相关目标账号，用 ${s.accounts} 个托管账号执行${action}触达，目标上限 ${s.targetCap} 个，每账号每日 ${REACH_DAILY_PER_ACCOUNT} 个。`,
+      createdBy: s.operator,
+      createdAt: s.createdAt,
+      endTime: s.endTime,
+      tenantId: tenant?.id,
+      tenantName: tenant?.name,
+      draft: {
+        name: s.name,
+        platforms: [s.platform],
+        reachAction: action,
+        reachRegion: s.region,
+        reachProducts: s.products,
+        reachKeywords: s.keywords.join(", "),
+        reachFindMode: s.findMode,
+        reachLinks: s.links ?? [],
+        reachActiveWindow: s.activeWindow,
+        reachTargetCap: s.targetCap,
+        reachDailyPerAccount: REACH_DAILY_PER_ACCOUNT,
+        reachAccountCount: s.accounts,
+        reachAccounts: Array.from({ length: s.accounts }, (_, i) => `acc-rc-${idx + 1}-${i + 1}`),
+        reachTags: [],
+        postTags: [],
+        postIds: [],
+        replies: s.replies,
+        scriptZh: s.scriptZh,
+        scriptTargetLang: s.lang,
+        scriptSend: s.scriptSend,
+        execMode: "recurring",
+        recurFreq: "daily",
+        recurStartDate: s.startTime.slice(0, 10),
+        recurStartTime: s.startTime.slice(11, 16),
+        recurDeadline: s.endTime ?? "",
+      },
+    } as TaskRow;
+  });
+}
+
 const initialTasks: TaskRow[] = ([
   {
     id: "204683410000001",
