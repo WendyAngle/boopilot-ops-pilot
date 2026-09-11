@@ -1248,7 +1248,58 @@ function StatBox({ label, value, tone }: { label: string; value: string | number
 
 type DistRow = { label: string; success: number; failed: number };
 
-function buildDist(t: TaskRow, dim: "platform" | "reach" | "action"): DistRow[] {
+export type DistDimension = "account" | "action" | "subtask";
+export type DistSubject = "exec" | "target";
+
+/** 内容运营任务：从任务说明中解析实际动作 */
+function parseContentOpsAction(t: TaskRow): string {
+  const m = /指定动作：([^\n，,。]+)/.exec(t.description ?? "");
+  return m?.[1]?.trim() || "内容运营";
+}
+
+function execAccountLabels(t: TaskRow): string[] {
+  const ids = (t.draft?.["reachAccounts"] as string[] | undefined) ?? [];
+  const names = ids
+    .slice(0, 12)
+    .map((id) => findManagedAccountById(id)?.username ?? id);
+  if (names.length) return names;
+  if (t.sourceAccountId) {
+    return [findManagedAccountById(t.sourceAccountId)?.username ?? t.sourceAccountId];
+  }
+  return ["执行账号 A", "执行账号 B", "执行账号 C"];
+}
+
+/** 触达任务的目标账号（对方账号）为确定性 mock 名单 */
+function targetAccountLabels(t: TaskRow): string[] {
+  const n = Math.min(8, Math.max(3, t.total % 7 || 5));
+  return Array.from({ length: n }, (_, i) => `目标账号 ${t.id.slice(-4)}-${i + 1}`);
+}
+
+function actionLabels(t: TaskRow): string[] {
+  const cat = getTaskCategory(t);
+  if (cat === "account-ops") return [parseContentOpsAction(t)];
+  if (cat === "coview") return ["同屏"];
+  return TASK_CATEGORY_ACTIONS[cat];
+}
+
+function distLabels(t: TaskRow, dim: DistDimension, subject: DistSubject): string[] {
+  if (dim === "account") {
+    return subject === "target" ? targetAccountLabels(t) : execAccountLabels(t);
+  }
+  if (dim === "action") return actionLabels(t);
+  const accounts = execAccountLabels(t).slice(0, 6);
+  const actions = actionLabels(t);
+  const rows: string[] = [];
+  for (const a of accounts) {
+    for (const act of actions) {
+      rows.push(`${a} · ${act}`);
+      if (rows.length >= 15) return rows;
+    }
+  }
+  return rows;
+}
+
+function buildDist(t: TaskRow, dim: DistDimension, subject: DistSubject = "exec"): DistRow[] {
   // Deterministic pseudo-random based on task id + dim to avoid SSR hydration drift
   const seed = (s: string) => {
     let h = 0;
@@ -1256,14 +1307,11 @@ function buildDist(t: TaskRow, dim: "platform" | "reach" | "action"): DistRow[] 
     return h;
   };
   const rng = (key: string) => {
-    const h = seed(`${t.id}|${dim}|${key}`);
+    const h = seed(`${t.id}|${dim}|${subject}|${key}`);
     return (h % 1000) / 1000;
   };
 
-  let labels: string[] = [];
-  if (dim === "platform") labels = [...t.platforms];
-  else if (dim === "action") labels = ["点赞", "评论", "发帖", "关注", "转发", "私信"];
-  else labels = ["主账号", "矩阵号", "合作号", "外联号"];
+  const labels = distLabels(t, dim, subject);
 
   const n = labels.length || 1;
   // Distribute totals across buckets with slight variation while preserving sums.
@@ -1292,6 +1340,7 @@ function buildDist(t: TaskRow, dim: "platform" | "reach" | "action"): DistRow[] 
   adjust("failed", t.failed);
   return rows;
 }
+
 
 function DistList({ rows }: { rows: DistRow[] }) {
   if (rows.length === 0) {
