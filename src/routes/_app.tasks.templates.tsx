@@ -159,11 +159,17 @@ function TaskTemplatesPage() {
     toast.success(`已复制模版「${tpl.name}」`);
   };
 
-  const toggleStatus = (tpl: TaskTemplate) => {
-    const cur = tpl.status ?? "enabled";
-    const next: TemplateStatus = cur === "enabled" ? "draft" : "enabled";
-    templatesActions.update(tpl.id, { status: next });
-    toast.success(next === "enabled" ? "模版已启用" : "模版已停用");
+  // 停用二次确认
+  const [disableTpl, setDisableTpl] = useState<TaskTemplate | null>(null);
+  const confirmDisable = () => {
+    if (!disableTpl) return;
+    templatesActions.update(disableTpl.id, { status: "draft" });
+    toast.success("模版已停用");
+    setDisableTpl(null);
+  };
+  const enableTemplate = (tpl: TaskTemplate) => {
+    templatesActions.update(tpl.id, { status: "enabled" });
+    toast.success("模版已启用");
   };
 
   // 查看使用记录
