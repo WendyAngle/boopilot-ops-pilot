@@ -669,15 +669,13 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
           <DetailRow label="活跃时间范围">{s("reachActiveWindow")}</DetailRow>
           <DetailRow label="目标数量上限">{s("reachTargetCap")}</DetailRow>
 
-          <SectionHeader index="3/4" title="执行账号与话术" />
+          <SectionHeader index="3/4" title="执行账号" />
           <DetailRow label="执行账号">
             {Array.isArray(d.reachAccounts) && (d.reachAccounts as string[]).length
               ? `已选 ${(d.reachAccounts as string[]).length} 个账号`
               : "—"}
           </DetailRow>
           <DetailRow label="每账号每日上限">{s("reachDailyPerAccount")}</DetailRow>
-          <DetailRow label="话术（中文）">{s("scriptZh")}</DetailRow>
-          <DetailRow label="发送话术">{s("scriptSend")}</DetailRow>
 
           <SectionHeader index="4/4" title="执行方式" />
           <DetailRow label="执行方式">周期(每日)</DetailRow>
