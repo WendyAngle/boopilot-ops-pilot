@@ -282,7 +282,7 @@ const COVIEW_SEED: {
 
 function buildCoviewTasks(): TaskRow[] {
   return COVIEW_SEED.map((s, idx) => {
-    const tenant = TASK_TENANTS[s.i % Math.max(1, TASK_TENANTS.length)];
+    const tenant = TASK_TENANTS[idx % Math.max(1, TASK_TENANTS.length)];
     const done = s.status === "success" || s.status === "partial" ? 1 : 0;
     const failed = s.status === "failed" || s.status === "partial" ? 1 : 0;
     return {
