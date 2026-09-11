@@ -810,13 +810,6 @@ const initialTemplates: TaskTemplate[] = [
 /* ============================================================ */
 
 let _tasks: TaskRow[] = initialTasks;
-if (typeof window !== "undefined") {
-  console.log("[operations-store] init: count:", initialTasks.length, "coview:", initialTasks.filter(t => (t as any).category === "coview").length);
-  (window as any).__debugTasks = () => {
-    const coview = _tasks.filter(t => (t as any).category === "coview");
-    console.log("[operations-store] NOW: count:", _tasks.length, "coview:", coview.length, "has 同屏:", _tasks.some(t => t.name.includes("同屏")), "coview names:", coview.map(t => t.name));
-  };
-}
 let _templates: TaskTemplate[] = initialTemplates;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
