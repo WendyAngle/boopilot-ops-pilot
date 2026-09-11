@@ -643,6 +643,19 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
   const isNurture = task.subtype === "nurture";
   const execMode = get<string>("execMode", isNurture ? "recurring" : "now");
   const targetMode = get<string>("targetMode", "keyword");
+  type NG = {
+    id: string;
+    nurtureInterestKeywords?: string;
+    nurtureLike?: boolean; nurtureLikeMin?: number; nurtureLikeMax?: number;
+    nurtureFollow?: boolean; nurtureFollowMin?: number; nurtureFollowMax?: number;
+    nurtureComment?: boolean; nurtureCommentMin?: number; nurtureCommentMax?: number;
+    nurtureCommentEmoji?: boolean; nurtureCommentSentiment?: string; nurtureCommentStyle?: string;
+    nurtureSearch?: boolean; nurtureKeywords?: string;
+  };
+  const nurtureGroups: NG[] = Array.isArray(d.nurtureGroups) ? (d.nurtureGroups as NG[]) : [];
+  const showStrategy = isNurture && nurtureGroups.length > 0;
+  const total = showStrategy ? 4 : 3;
+
 
   return (
     <Dialog open={!!task} onOpenChange={(o) => !o && onClose()}>
