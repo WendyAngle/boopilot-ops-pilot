@@ -259,13 +259,13 @@ export function ContentOpsTaskDialog({ template, open, onOpenChange }: Props) {
       `指定动作：${actionLabel}`,
     ];
     if (action === "sharePost" && shareMode) {
-      lines.push(`转发方式：${SHARE_MODE_LABELS[shareMode]}`);
+      lines.push(`转发方式：${shareModeLabel(shareMode)}`);
       const postLinks = sharePostLinks.split("\n").map((s) => s.trim()).filter(Boolean);
       if (postLinks.length > 0) {
         lines.push(`指定贴文：${postLinks.length} 条`);
       }
-      if (shareMode === "timeline" && shareNote.trim()) {
-        lines.push(`转发说明：${shareNote.trim()}`);
+      if (showShareNote && shareNote.trim()) {
+        lines.push(`${shareNoteLabel}：${shareNote.trim()}`);
       }
       if (shareMode === "group" && groupLinks.trim()) {
         lines.push(`指定群组链接：${groupLinks.trim()}`);
