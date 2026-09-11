@@ -629,6 +629,10 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
   if (task.source) {
     return <ActivityTaskDetailDialog task={task} onClose={onClose} />;
   }
+  // 同屏任务：一个社媒账号一个任务，展示账号 / 平台 / 动作 / 执行时间
+  if (getTaskCategory(task) === "coview") {
+    return <CoviewTaskDetailDialog task={task} onClose={onClose} />;
+  }
   const d = (task.draft ?? {}) as Record<string, unknown>;
   const has = Object.keys(d).length > 0;
   const get = <T,>(k: string, fb: T): T => (d[k] === undefined || d[k] === null ? fb : (d[k] as T));
