@@ -725,7 +725,7 @@ const initialTasks: TaskRow[] = ([
     description: "对 15 个 Tiktok 种子账号开启 14 天周期养号，每日浏览 10、点赞 4、评论 1。",
     createdBy: "黄雪",
     createdAt: "2026-05-28 09:42:08",
-    fromTemplate: "Facebook 日常养号",
+    fromTemplate: "Tiktok 日常养号",
     draft: {
       name: "Tiktok 周期性养号互动",
       platforms: ["Tiktok"],
@@ -916,7 +916,7 @@ const initialTemplates: TaskTemplate[] = [
     platforms: ["Tiktok"],
     total: 10,
     description: "对 Tiktok 账号执行轻量互动，每日点赞、关注与少量评论。",
-    createdAt: "2026-07-02 09:00:00",
+    createdAt: "2026-05-12 09:00:00",
     uses: 7,
     status: "enabled",
     agentName: "系统内置",
