@@ -19,6 +19,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -155,11 +159,17 @@ function TaskTemplatesPage() {
     toast.success(`已复制模版「${tpl.name}」`);
   };
 
-  const toggleStatus = (tpl: TaskTemplate) => {
-    const cur = tpl.status ?? "enabled";
-    const next: TemplateStatus = cur === "enabled" ? "draft" : "enabled";
-    templatesActions.update(tpl.id, { status: next });
-    toast.success(next === "enabled" ? "模版已启用" : "模版已停用");
+  // 停用二次确认
+  const [disableTpl, setDisableTpl] = useState<TaskTemplate | null>(null);
+  const confirmDisable = () => {
+    if (!disableTpl) return;
+    templatesActions.update(disableTpl.id, { status: "draft" });
+    toast.success("模版已停用");
+    setDisableTpl(null);
+  };
+  const enableTemplate = (tpl: TaskTemplate) => {
+    templatesActions.update(tpl.id, { status: "enabled" });
+    toast.success("模版已启用");
   };
 
   // 查看使用记录
@@ -330,7 +340,7 @@ function TaskTemplatesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-36">
-                            <DropdownMenuItem onClick={() => toggleStatus(tpl)}>
+                            <DropdownMenuItem onClick={() => enabled ? setDisableTpl(tpl) : enableTemplate(tpl)}>
                               {enabled
                                 ? <><PauseCircle className="h-3.5 w-3.5" />停用</>
                                 : <><CheckCircle2 className="h-3.5 w-3.5" />启用</>}
@@ -508,6 +518,30 @@ function TaskTemplatesPage() {
         open={opsDlgOpen}
         onOpenChange={(o) => { setOpsDlgOpen(o); if (!o) setOpsDlgTpl(null); }}
       />
+
+      {/* 停用二次确认 */}
+      <AlertDialog open={!!disableTpl} onOpenChange={(o) => !o && setDisableTpl(null)}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <PauseCircle className="h-5 w-5 text-amber-500" />
+              确认停用模版
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              确认停用模版「{disableTpl?.name}」？停用后将终止该模版下所有未完成任务的后续定时/周期调度且重新启用模版任务不会恢复（已下发子任务不受影响），请慎重操作。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-600/90"
+              onClick={confirmDisable}
+            >
+              确认停用
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 }
