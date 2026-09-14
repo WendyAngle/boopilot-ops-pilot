@@ -681,7 +681,7 @@ const REACH_FIND_MODE_TEXT: Record<string, string> = {
   group: "指定群组搜索",
 };
 
-/** 社媒触达（拓客）任务详情 */
+/** 社媒触达（拓客）/ 私信任务详情 */
 function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () => void }) {
   const d = (task.draft ?? {}) as Record<string, unknown>;
   const s = (k: string) => (d[k] === undefined || d[k] === null || d[k] === "" ? "—" : String(d[k]));
@@ -689,6 +689,10 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
   const links = Array.isArray(d.reachLinks) ? (d.reachLinks as string[]) : [];
   const findMode = String(d.reachFindMode ?? "smart");
   const startAt = `${s("recurStartDate")} ${d.recurStartTime ?? ""}`.trim();
+  const isDm = getTaskCategory(task) === "dm";
+  const accountIds = Array.isArray(d.reachAccounts) ? (d.reachAccounts as string[]) : [];
+  const accountNames = accountIds.map((id) => findManagedAccountById(id)?.username ?? id);
+  const total = isDm ? 5 : 4;
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -700,14 +704,14 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
           <DialogDescription className="font-mono text-xs">{task.id}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[65vh] overflow-y-auto px-6 py-4">
-          <SectionHeader index="1/4" title="任务基本信息" />
+          <SectionHeader index={`1/${total}`} title="任务基本信息" />
           <DetailRow label="任务名称">{task.name}</DetailRow>
           <DetailRow label="平台">{task.platforms.join("、")}</DetailRow>
-          <DetailRow label="触达动作">{s("reachAction")}</DetailRow>
+          <DetailRow label={isDm ? "任务动作" : "触达动作"}>{s("reachAction")}</DetailRow>
           <DetailRow label="目标市场">{s("reachRegion")}</DetailRow>
           <DetailRow label="推广产品">{list("reachProducts")}</DetailRow>
 
-          <SectionHeader index="2/4" title="寻找目标" />
+          <SectionHeader index={`2/${total}`} title="寻找目标" />
           <DetailRow label="寻找目标方式">{REACH_FIND_MODE_TEXT[findMode] ?? "—"}</DetailRow>
           <DetailRow label="搜索关键词">{s("reachKeywords")}</DetailRow>
           {links.length > 0 && (
@@ -722,18 +726,38 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
           <DetailRow label="活跃时间范围">{s("reachActiveWindow")}</DetailRow>
           <DetailRow label="目标数量上限">{s("reachTargetCap")}</DetailRow>
 
-          <SectionHeader index="3/4" title="执行账号" />
+          {isDm && (
+            <>
+              <SectionHeader index={`3/${total}`} title="私信内容" />
+              <DetailRow label="发送语种">{s("scriptTargetLang")}</DetailRow>
+              <DetailRow label="私信原文">
+                <span className="whitespace-pre-wrap break-words">{s("scriptSend")}</span>
+              </DetailRow>
+              <DetailRow label="中文译文">
+                <span className="whitespace-pre-wrap break-words text-muted-foreground">{s("scriptZh")}</span>
+              </DetailRow>
+            </>
+          )}
+
+          <SectionHeader index={`${isDm ? 4 : 3}/${total}`} title="执行账号" />
           <DetailRow label="执行账号">
-            {Array.isArray(d.reachAccounts) && (d.reachAccounts as string[]).length
-              ? `已选 ${(d.reachAccounts as string[]).length} 个账号`
-              : "—"}
+            {accountNames.length ? (
+              <div className="flex flex-wrap gap-1.5">
+                {accountNames.map((n, i) => (
+                  <Badge key={`${n}-${i}`} variant="outline" className="text-xs font-normal">{n}</Badge>
+                ))}
+              </div>
+            ) : (
+              "—"
+            )}
           </DetailRow>
           <DetailRow label="每账号每日上限">{s("reachDailyPerAccount")}</DetailRow>
 
-          <SectionHeader index="4/4" title="执行方式" />
+          <SectionHeader index={`${total}/${total}`} title="执行方式" />
           <DetailRow label="执行方式">周期(每日)</DetailRow>
           <DetailRow label="开始时间">{startAt || "—"}</DetailRow>
           <DetailRow label="结束时间">{task.endTime ?? "—"}</DetailRow>
+
         </div>
         <DialogFooter className="border-t px-6 py-3">
           <Button variant="outline" onClick={onClose}>关闭</Button>
