@@ -947,6 +947,7 @@ function buildReachTasks(): TaskRow[] {
     const tenant = TASK_TENANTS[idx % Math.max(1, TASK_TENANTS.length)];
     const action = s.dm ? "私信" : s.platform === "Facebook" ? "加好友" : "关注";
     const findLabel = REACH_FIND_MODE_LABEL[s.findMode];
+    const accountCount = s.dm ? 1 : s.accounts;
     return {
       id: `2046834500000${String(idx + 1).padStart(2, "0")}`,
       name: s.name,
@@ -957,7 +958,9 @@ function buildReachTasks(): TaskRow[] {
       failed: s.failed,
       status: s.status,
       category: s.dm ? "dm" : "social-reach",
-      description: `在 ${s.platform} 面向${s.region}，以${findLabel}寻找「${s.keywords.join("、")}」相关目标账号，用 ${s.accounts} 个托管账号执行${action}触达，目标上限 ${s.targetCap} 个，每账号每日 ${REACH_DAILY_PER_ACCOUNT} 个。`,
+      description: s.dm
+        ? `在 ${s.platform} 向指定目标账号发送私信，由 1 个托管账号立即执行。`
+        : `在 ${s.platform} 面向${s.region}，以${findLabel}寻找「${s.keywords.join("、")}」相关目标账号，用 ${accountCount} 个托管账号执行${action}触达，目标上限 ${s.targetCap} 个，每账号每日 ${REACH_DAILY_PER_ACCOUNT} 个。`,
       createdBy: s.operator,
       createdAt: s.createdAt,
       endTime: s.endTime,
@@ -975,8 +978,8 @@ function buildReachTasks(): TaskRow[] {
         reachActiveWindow: s.activeWindow,
         reachTargetCap: s.targetCap,
         reachDailyPerAccount: REACH_DAILY_PER_ACCOUNT,
-        reachAccountCount: s.accounts,
-        reachAccounts: managedIdsForPlatform(s.platform, s.accounts),
+        reachAccountCount: accountCount,
+        reachAccounts: managedIdsForPlatform(s.platform, accountCount),
         reachTags: [],
         postTags: [],
         postIds: [],
@@ -984,7 +987,8 @@ function buildReachTasks(): TaskRow[] {
         scriptZh: s.scriptZh,
         scriptTargetLang: s.lang,
         scriptSend: s.scriptSend,
-        execMode: "recurring",
+        execMode: s.dm ? "now" : "recurring",
+        executionTime: s.startTime,
         recurFreq: "daily",
         recurStartDate: s.startTime.slice(0, 10),
         recurStartTime: s.startTime.slice(11, 16),

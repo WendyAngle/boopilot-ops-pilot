@@ -15,6 +15,7 @@ import { ReachTaskDialog } from "@/components/reach-task-dialog";
 import { ensureActivityTasksSeeded, useActivitySubtasks, ACTIVITY_SOURCE_LABEL } from "@/lib/activity-tasks";
 import { PLATFORM_META, findManagedAccountById } from "@/lib/managed-account-mock";
 import { useTenantScope } from "@/lib/tenant-scope";
+import { dmTargetAccount, fillDmScript } from "@/lib/dm-task-display";
 import { User2, AtSign, ArrowRight } from "lucide-react";
 
 ensureActivityTasksSeeded();
@@ -692,6 +693,10 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
   const isDm = getTaskCategory(task) === "dm";
   const accountIds = Array.isArray(d.reachAccounts) ? (d.reachAccounts as string[]) : [];
   const accountNames = accountIds.map((id) => findManagedAccountById(id)?.username ?? id);
+  const targetAccount = dmTargetAccount(task);
+  const company = task.tenantName ?? "BooPilot";
+  const dmOriginal = fillDmScript(s("scriptSend"), targetAccount, company, task.createdBy);
+  const dmTranslation = fillDmScript(s("scriptZh"), targetAccount, company, task.createdBy);
   const total = isDm ? 5 : 4;
 
   return (
@@ -708,13 +713,17 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
           <DetailRow label="任务名称">{task.name}</DetailRow>
           <DetailRow label="平台">{task.platforms.join("、")}</DetailRow>
           <DetailRow label={isDm ? "任务动作" : "触达动作"}>{s("reachAction")}</DetailRow>
-          <DetailRow label="目标市场">{s("reachRegion")}</DetailRow>
-          <DetailRow label="推广产品">{list("reachProducts")}</DetailRow>
+          {!isDm && <DetailRow label="目标市场">{s("reachRegion")}</DetailRow>}
+          {!isDm && <DetailRow label="推广产品">{list("reachProducts")}</DetailRow>}
 
-          <SectionHeader index={`2/${total}`} title="寻找目标" />
-          <DetailRow label="寻找目标方式">{REACH_FIND_MODE_TEXT[findMode] ?? "—"}</DetailRow>
-          <DetailRow label="搜索关键词">{s("reachKeywords")}</DetailRow>
-          {links.length > 0 && (
+          <SectionHeader index={`2/${total}`} title={isDm ? "目标" : "寻找目标"} />
+          {isDm ? (
+            <DetailRow label="目标账号">{targetAccount}</DetailRow>
+          ) : (
+            <>
+              <DetailRow label="寻找目标方式">{REACH_FIND_MODE_TEXT[findMode] ?? "—"}</DetailRow>
+              <DetailRow label="搜索关键词">{s("reachKeywords")}</DetailRow>
+              {links.length > 0 && (
             <DetailRow label={findMode === "group" ? "指定群组链接" : "指定贴文链接"}>
               <div className="space-y-1">
                 {links.map((l) => (
@@ -722,19 +731,21 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
                 ))}
               </div>
             </DetailRow>
+              )}
+              <DetailRow label="活跃时间范围">{s("reachActiveWindow")}</DetailRow>
+              <DetailRow label="目标数量上限">{s("reachTargetCap")}</DetailRow>
+            </>
           )}
-          <DetailRow label="活跃时间范围">{s("reachActiveWindow")}</DetailRow>
-          <DetailRow label="目标数量上限">{s("reachTargetCap")}</DetailRow>
 
           {isDm && (
             <>
               <SectionHeader index={`3/${total}`} title="私信内容" />
               <DetailRow label="发送语种">{s("scriptTargetLang")}</DetailRow>
               <DetailRow label="私信原文">
-                <span className="whitespace-pre-wrap break-words">{s("scriptSend")}</span>
+                <span className="whitespace-pre-wrap break-words">{dmOriginal}</span>
               </DetailRow>
               <DetailRow label="中文译文">
-                <span className="whitespace-pre-wrap break-words text-muted-foreground">{s("scriptZh")}</span>
+                <span className="whitespace-pre-wrap break-words text-muted-foreground">{dmTranslation}</span>
               </DetailRow>
             </>
           )}
@@ -743,7 +754,7 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
           <DetailRow label="执行账号">
             {accountNames.length ? (
               <div className="flex flex-wrap gap-1.5">
-                {accountNames.map((n, i) => (
+                {accountNames.slice(0, isDm ? 1 : undefined).map((n, i) => (
                   <Badge key={`${n}-${i}`} variant="outline" className="text-xs font-normal">{n}</Badge>
                 ))}
               </div>
@@ -751,12 +762,18 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
               "—"
             )}
           </DetailRow>
-          <DetailRow label="每账号每日上限">{s("reachDailyPerAccount")}</DetailRow>
+          {!isDm && <DetailRow label="每账号每日上限">{s("reachDailyPerAccount")}</DetailRow>}
 
           <SectionHeader index={`${total}/${total}`} title="执行方式" />
-          <DetailRow label="执行方式">周期(每日)</DetailRow>
-          <DetailRow label="开始时间">{startAt || "—"}</DetailRow>
-          <DetailRow label="结束时间">{task.endTime ?? "—"}</DetailRow>
+          <DetailRow label="执行方式">{isDm ? "立即执行" : "周期(每日)"}</DetailRow>
+          {isDm ? (
+            <DetailRow label="执行时间">{s("executionTime")}</DetailRow>
+          ) : (
+            <>
+              <DetailRow label="开始时间">{startAt || "—"}</DetailRow>
+              <DetailRow label="结束时间">{task.endTime ?? "—"}</DetailRow>
+            </>
+          )}
 
         </div>
         <DialogFooter className="border-t px-6 py-3">

@@ -36,6 +36,7 @@ import {
 import { useActivitySubtasks, ensureActivityTasksSeeded } from "@/lib/activity-tasks";
 import { ActivityTaskDetail } from "@/components/activity-task-detail";
 import { USERNAMES, PLATFORM_META, findManagedAccountById } from "@/lib/managed-account-mock";
+import { DM_TARGET_ACCOUNTS, dmTargetAccount, fillDmScript } from "@/lib/dm-task-display";
 
 ensureActivityTasksSeeded();
 
@@ -157,14 +158,6 @@ function peerHandleOf(name: string): string {
 function peerAvatarOf(name: string): string {
   return `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}`;
 }
-/** 话术占位符替换：{联系人名} / {我的公司} / {我的姓名} */
-function fillScript(tpl: string, peer: string, company: string, sender: string): string {
-  return tpl
-    .replace(/\{联系人名\}/g, peer.replace(/^@/, ""))
-    .replace(/\{我的公司\}/g, company)
-    .replace(/\{我的姓名\}/g, sender);
-}
-
 const pad2 = (n: number) => String(n).padStart(2, "0");
 function fmtDateTime(d: Date): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
@@ -209,13 +202,14 @@ function buildSubTasks(t: TaskRow): SubTask[] {
       : t.category === "nurture" || t.subtype === "nurture"
         ? NURTURE_ACTIONS[i % NURTURE_ACTIONS.length]
         : opsAction ?? "触达";
-    const reachPool = REACH_TARGETS[platform] ?? [];
+    const reachPool = isDm ? (DM_TARGET_ACCOUNTS[platform] ?? []) : (REACH_TARGETS[platform] ?? []);
     let target: string;
     if (isReach && reachPool.length) {
       // 每个子任务分配不同目标账号：按序轮转，超出池长度时追加序号后缀
       const seq = Math.floor(i / REACH_ACTIONS.length); // 同一动作内的序号
       const offset = REACH_ACTIONS.indexOf(action) * Math.floor(reachPool.length / REACH_ACTIONS.length);
-      const idx = (seq + offset) % reachPool.length;
+      const dmBase = isDm ? reachPool.indexOf(dmTargetAccount(t)) : 0;
+      const idx = (seq + offset + Math.max(0, dmBase)) % reachPool.length;
       const dup = Math.floor(seq / reachPool.length);
       target = dup === 0 ? reachPool[idx] : `${reachPool[idx]} (${dup + 1})`;
     } else {
@@ -263,8 +257,8 @@ function buildSubTasks(t: TaskRow): SubTask[] {
         ? {
           peerHandle: peerHandleOf(target),
           peerAvatar: peerAvatarOf(target),
-          dmText: scriptSend ? fillScript(scriptSend, target, company, t.createdBy) : undefined,
-          dmZh: scriptZh ? fillScript(scriptZh, target, company, t.createdBy) : undefined,
+           dmText: scriptSend ? fillDmScript(scriptSend, target, company, t.createdBy) : undefined,
+           dmZh: scriptZh ? fillDmScript(scriptZh, target, company, t.createdBy) : undefined,
         }
         : {}),
     });
