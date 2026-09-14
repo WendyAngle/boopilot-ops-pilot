@@ -667,16 +667,32 @@ function TaskDetailPage() {
                       aria-label="选择当前页可终止的子任务"
                     />
                   </TableHead>
-                  <TableHead className="min-w-[200px]">任务ID</TableHead>
-                  <TableHead className="min-w-[160px]">账号</TableHead>
-                  <TableHead className="w-[110px]">操作/动作</TableHead>
-                  <TableHead className="w-[120px]">目标</TableHead>
-                  <TableHead className="w-[130px]">平台</TableHead>
-                  <TableHead className="w-[110px]">任务结果</TableHead>
-                  <TableHead className="w-[110px]">执行状态</TableHead>
-                  <TableHead className="w-[170px]">预计执行时间</TableHead>
-                  <TableHead className="w-[170px]">实际执行时间</TableHead>
-                  <TableHead className="w-[160px] text-center pr-4">操作</TableHead>
+                  {isDmTask ? (
+                    <>
+                      <TableHead className="min-w-[190px]">子任务ID</TableHead>
+                      <TableHead className="min-w-[190px]">目标账号</TableHead>
+                      <TableHead className="w-[110px]">平台</TableHead>
+                      <TableHead className="min-w-[360px]">私信内容</TableHead>
+                      <TableHead className="min-w-[170px]">执行账号</TableHead>
+                      <TableHead className="w-[180px]">发送时间</TableHead>
+                      <TableHead className="w-[110px]">任务结果</TableHead>
+                      <TableHead className="w-[110px]">执行状态</TableHead>
+                      <TableHead className="w-[160px] text-center pr-4">操作</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead className="min-w-[200px]">任务ID</TableHead>
+                      <TableHead className="min-w-[160px]">账号</TableHead>
+                      <TableHead className="w-[110px]">操作/动作</TableHead>
+                      <TableHead className="w-[120px]">目标</TableHead>
+                      <TableHead className="w-[130px]">平台</TableHead>
+                      <TableHead className="w-[110px]">任务结果</TableHead>
+                      <TableHead className="w-[110px]">执行状态</TableHead>
+                      <TableHead className="w-[170px]">预计执行时间</TableHead>
+                      <TableHead className="w-[170px]">实际执行时间</TableHead>
+                      <TableHead className="w-[160px] text-center pr-4">操作</TableHead>
+                    </>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
