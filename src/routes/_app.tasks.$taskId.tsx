@@ -199,12 +199,13 @@ function buildSubTasks(t: TaskRow): SubTask[] {
         : opsAction ?? "触达";
     const reachPool = isDm ? (DM_TARGET_ACCOUNTS[platform] ?? []) : (REACH_TARGETS[platform] ?? []);
     let target: string;
-    if (isReach && reachPool.length) {
+    if (isDm && dmTargets) {
+      target = dmTargets[i];
+    } else if (isReach && reachPool.length) {
       // 每个子任务分配不同目标账号：按序轮转，超出池长度时追加序号后缀
       const seq = Math.floor(i / REACH_ACTIONS.length); // 同一动作内的序号
       const offset = REACH_ACTIONS.indexOf(action) * Math.floor(reachPool.length / REACH_ACTIONS.length);
-      const dmBase = isDm ? reachPool.indexOf(dmTargetAccount(t)) : 0;
-      const idx = (seq + offset + Math.max(0, dmBase)) % reachPool.length;
+      const idx = (seq + offset) % reachPool.length;
       const dup = Math.floor(seq / reachPool.length);
       target = dup === 0 ? reachPool[idx] : `${reachPool[idx]} (${dup + 1})`;
     } else {
