@@ -722,12 +722,81 @@ function TaskDetailPage() {
                         />
                       </TableCell>
                       <TableCell className="font-mono text-[11px] text-muted-foreground">{s.id}</TableCell>
-                      <TableCell className="text-sm">{s.reachAccount}</TableCell>
-                      <TableCell className="text-sm">{s.action}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{s.target}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("text-[10px] font-normal", PLATFORM_CHIP[s.platform])}>{s.platform}</Badge>
-                      </TableCell>
+                      {isDmTask ? (
+                        <>
+                          {/* 目标账号（对方社媒账号） */}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={s.peerAvatar}
+                                alt=""
+                                className="h-6 w-6 shrink-0 rounded-full border border-border/60 bg-background"
+                                loading="lazy"
+                              />
+                              <div className="min-w-0 leading-tight">
+                                <div className="truncate text-sm">{s.target}</div>
+                                {s.peerHandle && s.peerHandle !== s.target && (
+                                  <div className="truncate text-[11px] text-muted-foreground">{s.peerHandle}</div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn("text-[10px] font-normal", PLATFORM_CHIP[s.platform])}>{s.platform}</Badge>
+                          </TableCell>
+                          {/* 私信内容：原文 + 中文译文 */}
+                          <TableCell className="whitespace-normal">
+                            {s.dmText ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="max-w-[420px] space-y-0.5">
+                                    <div className="truncate text-xs text-foreground/90">{s.dmText}</div>
+                                    {s.dmZh && (
+                                      <div className="truncate text-[11px] text-muted-foreground">中文：{s.dmZh}</div>
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[460px] space-y-1 whitespace-pre-wrap break-words">
+                                  <div>{s.dmText}</div>
+                                  {s.dmZh && <div className="text-muted-foreground">中文：{s.dmZh}</div>}
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          {/* 执行账号（我方托管账号） */}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={cn(
+                                  "flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-semibold",
+                                  PLATFORM_META[s.platform]?.cls,
+                                )}
+                                title={s.platform}
+                              >
+                                {PLATFORM_META[s.platform]?.letter}
+                              </div>
+                              <span className="text-sm">{s.reachAccount}</span>
+                            </div>
+                          </TableCell>
+                          {/* 发送时间 */}
+                          <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">
+                            {s.actual !== "-" ? s.actual : (
+                              <span>{s.estimated}<span className="ml-1 font-sans text-[10px]">（预计）</span></span>
+                            )}
+                          </TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell className="text-sm">{s.reachAccount}</TableCell>
+                          <TableCell className="text-sm">{s.action}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{s.target}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn("text-[10px] font-normal", PLATFORM_CHIP[s.platform])}>{s.platform}</Badge>
+                          </TableCell>
+                        </>
+                      )}
                       <TableCell>
                         {showDash ? (
                           <span className="text-xs text-muted-foreground">-</span>
