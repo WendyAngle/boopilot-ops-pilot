@@ -1414,7 +1414,8 @@ function DistList({ rows }: { rows: DistRow[] }) {
   return (
     <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
       {rows.map((r) => {
-        const total = r.success + r.failed;
+        const pending = r.pending ?? 0;
+        const total = r.success + r.failed + pending;
         const sPct = total ? (r.success / total) * 100 : 0;
         const fPct = total ? (r.failed / total) * 100 : 0;
         return (
