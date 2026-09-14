@@ -246,6 +246,10 @@ function buildSubTasks(t: TaskRow): SubTask[] {
     const actDate = new Date(estDate.getTime() + actVar * 1000);
     const estimated = fmtDateTime(estDate);
     const actual = (status === "pending" || status === "running") ? "-" : fmtDateTime(actDate);
+    // 私信内容：用任务自身话术模板填充目标昵称 / 公司 / 发送人
+    const scriptSend = typeof draft.scriptSend === "string" ? draft.scriptSend : "";
+    const scriptZh = typeof draft.scriptZh === "string" ? draft.scriptZh : "";
+    const company = t.tenantName ?? "BooPilot";
     list.push({
       id: `${t.id}-${String(i + 1).padStart(3, "0")}`,
       reachAccount,
@@ -255,6 +259,14 @@ function buildSubTasks(t: TaskRow): SubTask[] {
       status,
       estimated,
       actual,
+      ...(isDm
+        ? {
+          peerHandle: peerHandleOf(target),
+          peerAvatar: peerAvatarOf(target),
+          dmText: scriptSend ? fillScript(scriptSend, target, company, t.createdBy) : undefined,
+          dmZh: scriptZh ? fillScript(scriptZh, target, company, t.createdBy) : undefined,
+        }
+        : {}),
     });
   }
   return list;
