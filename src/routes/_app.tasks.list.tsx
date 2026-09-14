@@ -15,7 +15,7 @@ import { ReachTaskDialog } from "@/components/reach-task-dialog";
 import { ensureActivityTasksSeeded, useActivitySubtasks, ACTIVITY_SOURCE_LABEL } from "@/lib/activity-tasks";
 import { PLATFORM_META, findManagedAccountById } from "@/lib/managed-account-mock";
 import { useTenantScope } from "@/lib/tenant-scope";
-import { dmTargetAccount, dmTargetAccountList, peerAvatarOf, peerHandleOf, fillDmScript } from "@/lib/dm-task-display";
+import { dmTargetAccountList, peerAvatarOf, peerHandleOf } from "@/lib/dm-task-display";
 import { User2, AtSign, ArrowRight } from "lucide-react";
 
 ensureActivityTasksSeeded();
@@ -697,7 +697,6 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
   const dmTargets = isDm ? dmTargetAccountList(task, task.total) : [];
   const dmFinished = task.done + task.failed;
   const dmRate = dmFinished > 0 ? `${Math.round((task.done / dmFinished) * 100)}%` : "—";
-  const total = isDm ? 4 : 4;
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
