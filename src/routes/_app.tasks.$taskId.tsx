@@ -223,9 +223,18 @@ function buildSubTasks(t: TaskRow): SubTask[] {
     }
 
 
-    const base = USERNAMES[i % USERNAMES.length];
-    const round = Math.floor(i / USERNAMES.length);
-    const reachAccount = round === 0 ? base : `${base}-${round + 1}`;
+    // 执行账号：私信任务使用任务关联的真实托管账号（与账号列表一致）
+    const draft = (t.draft ?? {}) as Record<string, unknown>;
+    const dmAccountIds = Array.isArray(draft.reachAccounts) ? (draft.reachAccounts as string[]) : [];
+    let reachAccount: string;
+    if (isDm && dmAccountIds.length) {
+      const accId = dmAccountIds[i % dmAccountIds.length];
+      reachAccount = findManagedAccountById(accId)?.username ?? accId;
+    } else {
+      const base = USERNAMES[i % USERNAMES.length];
+      const round = Math.floor(i / USERNAMES.length);
+      reachAccount = round === 0 ? base : `${base}-${round + 1}`;
+    }
     let status: SubStatus;
     if (i < done) status = "success";
     else if (i < done + failed) status = "failed";
