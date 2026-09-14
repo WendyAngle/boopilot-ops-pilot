@@ -348,7 +348,11 @@ function TaskDetailPage() {
     const k = kw.trim().toLowerCase();
     return subtasks.filter((s) => {
       if (k && !s.id.toLowerCase().includes(k) && !s.reachAccount.toLowerCase().includes(k)
-        && !s.action.toLowerCase().includes(k) && !s.platform.toLowerCase().includes(k)) return false;
+        && !s.action.toLowerCase().includes(k) && !s.platform.toLowerCase().includes(k)
+        && !s.target.toLowerCase().includes(k)
+        && !(s.peerHandle ?? "").toLowerCase().includes(k)
+        && !(s.dmText ?? "").toLowerCase().includes(k)
+        && !(s.dmZh ?? "").toLowerCase().includes(k)) return false;
       if (fPlatform !== "all" && s.platform !== fPlatform) return false;
       if (fAction !== "all" && s.action !== fAction) return false;
       if (fResult !== "all") {
