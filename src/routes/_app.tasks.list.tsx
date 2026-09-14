@@ -1284,7 +1284,7 @@ function StatBox({ label, value, tone }: { label: string; value: string | number
   );
 }
 
-type DistRow = { label: string; success: number; failed: number };
+type DistRow = { label: string; success: number; failed: number; pending?: number };
 
 export type DistDimension = "account" | "action" | "subtask";
 export type DistSubject = "exec" | "target";
