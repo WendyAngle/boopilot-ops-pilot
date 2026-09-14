@@ -605,7 +605,7 @@ function TaskDetailPage() {
             <div className="relative w-[300px]">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input value={kw} onChange={(e) => { setKw(e.target.value); setPage(1); }}
-                placeholder="搜索任务ID / 账号 / 动作 / 平台" className="h-8 pl-8 text-xs" />
+                placeholder={isDmTask ? "搜索子任务ID / 目标账号 / 执行账号 / 私信内容" : "搜索任务ID / 账号 / 动作 / 平台"} className="h-8 pl-8 text-xs" />
             </div>
             <Select value={fPlatform} onValueChange={(v) => { setFPlatform(v as typeof fPlatform); setPage(1); }}>
               <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="平台" /></SelectTrigger>
