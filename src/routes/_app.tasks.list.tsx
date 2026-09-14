@@ -1350,7 +1350,8 @@ function subTaskRows(t: TaskRow): DistRow[] {
     const id = `${t.id}-${String(i + 1).padStart(3, "0")}`;
     const success = i < t.done ? 1 : 0;
     const failed = i >= t.done && i < t.done + t.failed ? 1 : 0;
-    return { label: `${id} · ${subTaskAction(t, i)}`, success, failed };
+    const pending = success === 0 && failed === 0 ? 1 : 0;
+    return { label: `${id} · ${subTaskAction(t, i)}`, success, failed, pending };
   });
 }
 
