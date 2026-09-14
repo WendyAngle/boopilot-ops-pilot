@@ -171,8 +171,9 @@ function buildSubTasks(t: TaskRow): SubTask[] {
     // 各任务类型包含的动作：
     // 养号任务 → 点赞 / 关注 / 评论；同屏任务 → 同屏；
     // 社媒触达任务 → 加好友 / 关注 / 私信；内容运营任务 → 按「指定动作」取值
-    const isReach = t.category === "social-reach";
-    const REACH_ACTIONS = ["加好友", "关注", "私信"];
+    const isDm = t.category === "dm";
+    const isReach = t.category === "social-reach" || isDm;
+    const REACH_ACTIONS = isDm ? ["私信"] : ["加好友", "关注"];
     const NURTURE_ACTIONS = ["点赞", "关注", "评论"];
     const opsAction =
       t.category === "account-ops"

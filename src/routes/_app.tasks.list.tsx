@@ -7,7 +7,7 @@ import {
   Bot, Sparkles, ListChecks, CheckCircle2, XCircle, Clock3,
   PlayCircle, PauseCircle, Trash2, BookmarkPlus, StopCircle,
   Search, RotateCcw, Filter, Eye, ScrollText, BarChart3, Pencil, MoreHorizontal, Info, Plus,
-  UserCheck, MonitorPlay, Send, type LucideIcon,
+  UserCheck, MonitorPlay, Send, MessageSquare, type LucideIcon,
 } from "lucide-react";
 import { UseTemplateDialog } from "@/components/use-template-dialog";
 import { ReachTaskDialog } from "@/components/reach-task-dialog";
@@ -61,6 +61,7 @@ const CATEGORY_ICON: Record<TaskCategory, LucideIcon> = {
   nurture: Bot,
   coview: MonitorPlay,
   "social-reach": Send,
+  dm: MessageSquare,
   "account-ops": UserCheck,
 };
 const STATUS_ICON: Record<TaskStatus, LucideIcon> = {
@@ -459,7 +460,7 @@ function TaskListPage() {
                   </TabsList>
                 </div>
                 <TabsContent value="account" className="mt-0 space-y-2">
-                  {getTaskCategory(statsTask) === "social-reach" ? (
+                  {(getTaskCategory(statsTask) === "social-reach" || getTaskCategory(statsTask) === "dm") ? (
                     <>
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[11px] text-muted-foreground">
@@ -579,15 +580,15 @@ function TaskListPage() {
 
 
       <UseTemplateDialog
-        task={editingTask && (!!editingTask?.source || getTaskCategory(editingTask!) !== "social-reach") ? editingTask : null}
-        open={!!editingTask && (!!editingTask?.source || getTaskCategory(editingTask!) !== "social-reach")}
+        task={editingTask && (!!editingTask?.source || !isReachLike(editingTask!)) ? editingTask : null}
+        open={!!editingTask && (!!editingTask?.source || !isReachLike(editingTask!))}
         onOpenChange={(o) => { if (!o) setEditingTask(null); }}
       />
 
 
       <ReachTaskDialog
-        task={editingTask && (!editingTask?.source && getTaskCategory(editingTask!) === "social-reach") ? editingTask : null}
-        open={!!editingTask && (!editingTask?.source && getTaskCategory(editingTask!) === "social-reach")}
+        task={editingTask && (!editingTask?.source && isReachLike(editingTask!)) ? editingTask : null}
+        open={!!editingTask && (!editingTask?.source && isReachLike(editingTask!))}
         onOpenChange={(o) => { if (!o) setEditingTask(null); }}
       />
 
@@ -745,7 +746,7 @@ function TaskDetailDialog({ task, onClose }: { task: TaskRow | null; onClose: ()
     return <CoviewTaskDetailDialog task={task} onClose={onClose} />;
   }
   // 社媒触达（拓客）任务：展示寻找目标、执行账号与周期执行方式
-  if (getTaskCategory(task) === "social-reach" && task.draft && "reachFindMode" in (task.draft as Record<string, unknown>)) {
+  if ((getTaskCategory(task) === "social-reach" || getTaskCategory(task) === "dm") && task.draft && "reachFindMode" in (task.draft as Record<string, unknown>)) {
     return <ReachTaskDetailDialog task={task} onClose={onClose} />;
   }
   // 内容运营任务：展示与创建弹窗一致的动作与目标配置
@@ -1294,6 +1295,12 @@ function parseContentOpsAction(t: TaskRow): string {
   return m?.[1]?.trim() || "内容运营";
 }
 
+/** 社媒触达 / 私信任务：共用触达任务的表单与详情渲染 */
+function isReachLike(t: TaskRow): boolean {
+  const c = getTaskCategory(t);
+  return c === "social-reach" || c === "dm";
+}
+
 function execAccountLabels(t: TaskRow): string[] {
   const ids = (t.draft?.["reachAccounts"] as string[] | undefined) ?? [];
   const names = ids
@@ -1322,7 +1329,8 @@ function actionLabels(t: TaskRow): string[] {
 /** 子任务动作序列，与任务详情页 buildSubTasks 保持一致 */
 function subTaskAction(t: TaskRow, i: number): string {
   const cat = getTaskCategory(t);
-  if (cat === "social-reach") return ["加好友", "关注", "私信"][i % 3];
+  if (cat === "dm") return "私信";
+  if (cat === "social-reach") return ["加好友", "关注"][i % 2];
   if (cat === "coview") return "同屏";
   if (cat === "account-ops") return parseContentOpsAction(t);
   return ["点赞", "关注", "评论"][i % 3];

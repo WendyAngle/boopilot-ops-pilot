@@ -100,13 +100,18 @@ function mkRow(
 
 // 社媒触达（拓客）任务的动作池：不含 follow_user / like_post / comment_post / post_create / share_post
 export const REACH_ACTION_TYPES = [
-  "gather_friend_list", "gather_unread_message", "visit_no_target",
-  "send_message", "add_friend",
+  "gather_friend_list", "visit_no_target", "add_friend",
+] as const;
+
+// 私信任务的动作池：拉取未读消息 / 发送私信 / 无目标访问
+export const DM_ACTION_TYPES = [
+  "gather_unread_message", "send_message", "visit_no_target",
 ] as const;
 
 export function buildLogs(t: TaskRow): LogRow[] {
   const rows: LogRow[] = [];
   const isReach = t.category === "social-reach";
+  const isDm = t.category === "dm";
   const total = t.total;
   const done = t.done;
   const failed = t.failed;
@@ -142,8 +147,10 @@ export function buildLogs(t: TaskRow): LogRow[] {
     const pf = platformText(platform);
 
     // 每个账号子任务包含 2~3 个动作，覆盖整次任务的多种操作
-    // 社媒触达任务只做拓客类动作（私信/加好友/拉取列表等），不含关注、发帖、点赞、评论
-    const pool = isReach ? REACH_ACTION_TYPES : ACTION_TYPES;
+    // 社媒触达任务只做拓客类动作（加好友/拉取列表等）；私信任务只做私信相关动作
+    const pool: readonly string[] = isDm
+      ? DM_ACTION_TYPES
+      : isReach ? REACH_ACTION_TYPES : ACTION_TYPES;
     const actionCount = 2 + ((h >>> 21) % 2); // 2 或 3
     const actions: string[] = [];
     for (let a = 0; a < actionCount; a++) {
