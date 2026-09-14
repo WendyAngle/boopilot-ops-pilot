@@ -1302,10 +1302,17 @@ function isReachLike(t: TaskRow): boolean {
 }
 
 function execAccountLabels(t: TaskRow): string[] {
-  const ids = Array.from(new Set((t.draft?.["reachAccounts"] as string[] | undefined) ?? []));
-  const names = Array.from(new Set(
-    ids.map((id) => findManagedAccountById(id)?.username ?? id),
-  )).slice(0, 12);
+  // 账号 ID 去重；同名不同号的账号补上 ID 后缀，保证每个账号只占一行且可区分
+  const ids = Array.from(new Set((t.draft?.["reachAccounts"] as string[] | undefined) ?? [])).slice(0, 12);
+  const nameCount = new Map<string, number>();
+  for (const id of ids) {
+    const n = findManagedAccountById(id)?.username ?? id;
+    nameCount.set(n, (nameCount.get(n) ?? 0) + 1);
+  }
+  const names = ids.map((id) => {
+    const n = findManagedAccountById(id)?.username ?? id;
+    return (nameCount.get(n) ?? 0) > 1 ? `${n}（${id}）` : n;
+  });
   if (names.length) return names;
   if (t.sourceAccountId) {
     return [findManagedAccountById(t.sourceAccountId)?.username ?? t.sourceAccountId];
