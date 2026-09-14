@@ -216,7 +216,8 @@ export const MACHINE_POOL = Array.from({ length: 9 }, (_, i) => {
 const TASK_NAME_BY_CATEGORY: Record<TaskCategory, string[]> = {
   nurture: ["日常养号", "养号计划", "冷启动养号"],
   coview: ["账号同屏巡检", "同屏人工接管"],
-  "social-reach": ["新客加好友触达", "达人私信触达", "潜客关注触达"],
+  "social-reach": ["新客加好友触达", "潜客关注触达", "群组好友拓展"],
+  dm: ["达人私信触达", "潜客私信跟进", "未读消息回访"],
   "account-ops": ["品牌帖批量转发", "违规帖清理", "历史帖批量隐藏", "账号资料批量更新", "日常发帖运营"],
 };
 
@@ -318,6 +319,8 @@ function buildSubTasks(): SubTaskRec[] {
         ? `互动会话时长：${int(`g${s}`, 5, 12)} 分钟`
         : category === "social-reach"
           ? `触达账号数：${int(`g${s}`, 20, 80)}`
+          : category === "dm"
+            ? `私信发送数：${int(`g${s}`, 15, 60)}`
           : category === "account-ops"
             ? `账号运营动作数：${int(`g${s}`, 10, 40)}`
             : `同屏账号数：${int(`g${s}`, 4, 12)}`;
