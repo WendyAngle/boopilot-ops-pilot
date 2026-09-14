@@ -36,6 +36,35 @@ export function dmTargetAccount(task: Pick<TaskRow, "id" | "platforms">): string
   return pool[stableIndex(task.id, pool.length)] ?? "—";
 }
 
+/**
+ * 私信任务的完整目标账号清单（与子任务页同一确定性规则）：
+ * 以 dmTargetAccount 为起点在平台目标池内按序轮转，超出池长追加序号后缀。
+ */
+export function dmTargetAccountList(
+  task: Pick<TaskRow, "id" | "platforms">,
+  count: number,
+): string[] {
+  const platform = task.platforms[0] ?? "Facebook";
+  const pool = DM_TARGET_ACCOUNTS[platform] ?? [];
+  if (!pool.length || count <= 0) return [];
+  const base = pool.indexOf(dmTargetAccount(task));
+  return Array.from({ length: count }, (_, i) => {
+    const name = pool[(i + Math.max(0, base)) % pool.length];
+    const dup = Math.floor(i / pool.length);
+    return dup === 0 ? name : `${name} (${dup + 1})`;
+  });
+}
+
+/** 由目标昵称派生对方 handle（Tiktok 目标池本身即 handle） */
+export function peerHandleOf(name: string): string {
+  if (name.startsWith("@")) return name;
+  return `@${name.toLowerCase().replace(/\s*\(\d+\)$/, "").replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "")}`;
+}
+
+export function peerAvatarOf(name: string): string {
+  return `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}`;
+}
+
 export function fillDmScript(template: string, target: string, company: string, sender: string): string {
   return template
     .replace(/\{联系人名\}/g, target.replace(/^@/, ""))
