@@ -444,11 +444,25 @@ function TaskListPage() {
           </DialogHeader>
           {statsTask && (
             <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-3">
-                <StatBox label="总计" value={statsTask.total} />
-                <StatBox label="执行成功" value={statsTask.done} tone="success" />
-                <StatBox label="执行失败" value={statsTask.failed} tone="danger" />
-                <StatBox label="成功率" value={`${statsTask.total ? Math.round((statsTask.done / statsTask.total) * 100) : 0}%`} />
+              <div className="space-y-2">
+                <div className="grid grid-cols-4 gap-3">
+                  <StatBox label="总计" value={statsTask.total} />
+                  <StatBox label="执行成功" value={statsTask.done} tone="success" />
+                  <StatBox label="执行失败" value={statsTask.failed} tone="danger" />
+                  <StatBox
+                    label="成功率"
+                    value={statsTask.done + statsTask.failed
+                      ? `${Math.round((statsTask.done / (statsTask.done + statsTask.failed)) * 100)}%`
+                      : "—"}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  统计口径：子任务执行情况，成功 + 失败 + 进行中 = 总计（当前进行中
+                  <span className="mx-0.5 tabular-nums text-foreground">
+                    {Math.max(0, statsTask.total - statsTask.done - statsTask.failed)}
+                  </span>
+                  ）；成功率 = 成功 ÷ 已结束子任务
+                </p>
               </div>
               <Tabs defaultValue="account" className="rounded-lg border p-3">
                 <div className="mb-2 flex items-center justify-between">
