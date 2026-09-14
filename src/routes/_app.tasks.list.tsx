@@ -7,7 +7,7 @@ import {
   Bot, Sparkles, ListChecks, CheckCircle2, XCircle, Clock3,
   PlayCircle, PauseCircle, Trash2, BookmarkPlus, StopCircle,
   Search, RotateCcw, Filter, Eye, ScrollText, BarChart3, Pencil, MoreHorizontal, Info, Plus,
-  UserCheck, MonitorPlay, Send, type LucideIcon,
+  UserCheck, MonitorPlay, Send, MessageSquare, type LucideIcon,
 } from "lucide-react";
 import { UseTemplateDialog } from "@/components/use-template-dialog";
 import { ReachTaskDialog } from "@/components/reach-task-dialog";
