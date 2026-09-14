@@ -335,6 +335,9 @@ function TaskDetailPage() {
     [rawSubtasks, abortedSubs],
   );
 
+  /** 私信任务：使用「触达会话」口径的专用列（目标账号 / 私信内容 / 执行账号 / 发送时间） */
+  const isDmTask = task?.category === "dm" && !task?.source;
+
   const [kw, setKw] = useState("");
   const [fPlatform, setFPlatform] = useState<"all" | Platform>("all");
   const [fAction, setFAction] = useState<"all" | string>("all");
