@@ -35,7 +35,7 @@ import {
 } from "@/lib/operations-store";
 import { useActivitySubtasks, ensureActivityTasksSeeded } from "@/lib/activity-tasks";
 import { ActivityTaskDetail } from "@/components/activity-task-detail";
-import { USERNAMES } from "@/lib/managed-account-mock";
+import { USERNAMES, PLATFORM_META, findManagedAccountById } from "@/lib/managed-account-mock";
 
 ensureActivityTasksSeeded();
 
