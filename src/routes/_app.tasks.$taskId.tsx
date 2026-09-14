@@ -698,7 +698,7 @@ function TaskDetailPage() {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="h-32 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={isDmTask ? 10 : 11} className="h-32 text-center text-sm text-muted-foreground">
                       {subtasks.length === 0 ? "暂无子任务" : (
                         <span className="inline-flex items-center gap-2">
                           没有符合筛选条件的子任务
