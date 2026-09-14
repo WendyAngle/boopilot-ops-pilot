@@ -15,7 +15,7 @@ import { ReachTaskDialog } from "@/components/reach-task-dialog";
 import { ensureActivityTasksSeeded, useActivitySubtasks, ACTIVITY_SOURCE_LABEL } from "@/lib/activity-tasks";
 import { PLATFORM_META, findManagedAccountById } from "@/lib/managed-account-mock";
 import { useTenantScope } from "@/lib/tenant-scope";
-import { dmTargetAccount, fillDmScript } from "@/lib/dm-task-display";
+import { dmTargetAccount, dmTargetAccountList, peerAvatarOf, peerHandleOf, fillDmScript } from "@/lib/dm-task-display";
 import { User2, AtSign, ArrowRight } from "lucide-react";
 
 ensureActivityTasksSeeded();
@@ -693,11 +693,11 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
   const isDm = getTaskCategory(task) === "dm";
   const accountIds = Array.isArray(d.reachAccounts) ? (d.reachAccounts as string[]) : [];
   const accountNames = accountIds.map((id) => findManagedAccountById(id)?.username ?? id);
-  const targetAccount = dmTargetAccount(task);
-  const company = task.tenantName ?? "BooPilot";
-  const dmOriginal = fillDmScript(s("scriptSend"), targetAccount, company, task.createdBy);
-  const dmTranslation = fillDmScript(s("scriptZh"), targetAccount, company, task.createdBy);
-  const total = isDm ? 5 : 4;
+  // 私信任务：完整目标账号清单，与子任务页同一确定性规则
+  const dmTargets = isDm ? dmTargetAccountList(task, task.total) : [];
+  const dmFinished = task.done + task.failed;
+  const dmRate = dmFinished > 0 ? `${Math.round((task.done / dmFinished) * 100)}%` : "—";
+  const total = isDm ? 4 : 4;
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
