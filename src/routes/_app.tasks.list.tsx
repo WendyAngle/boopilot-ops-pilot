@@ -709,16 +709,41 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
           <DialogDescription className="font-mono text-xs">{task.id}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[65vh] overflow-y-auto px-6 py-4">
-          <SectionHeader index={`1/${total}`} title="任务基本信息" />
+          <SectionHeader index="1/4" title="任务基本信息" />
           <DetailRow label="任务名称">{task.name}</DetailRow>
           <DetailRow label="平台">{task.platforms.join("、")}</DetailRow>
           <DetailRow label={isDm ? "任务动作" : "触达动作"}>{s("reachAction")}</DetailRow>
-          {!isDm && <DetailRow label="目标市场">{s("reachRegion")}</DetailRow>}
-          {!isDm && <DetailRow label="推广产品">{list("reachProducts")}</DetailRow>}
-
-          <SectionHeader index={`2/${total}`} title={isDm ? "目标" : "寻找目标"} />
           {isDm ? (
-            <DetailRow label="目标账号">{targetAccount}</DetailRow>
+            <>
+              <DetailRow label="执行状态">{STATUS_LABEL[task.status]}</DetailRow>
+              <DetailRow label="创建人">{task.createdBy}</DetailRow>
+              <DetailRow label="创建时间">{task.createdAt}</DetailRow>
+            </>
+          ) : (
+            <>
+              <DetailRow label="目标市场">{s("reachRegion")}</DetailRow>
+              <DetailRow label="推广产品">{list("reachProducts")}</DetailRow>
+            </>
+          )}
+
+          <SectionHeader index="2/4" title={isDm ? "目标" : "寻找目标"} />
+          {isDm ? (
+            <>
+              <DetailRow label="目标数量">{task.total} 个目标账号（每个目标一个子任务）</DetailRow>
+              <DetailRow label="目标账号">
+                <div className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+                  {dmTargets.map((name) => (
+                    <div key={name} className="flex items-center gap-2">
+                      <img src={peerAvatarOf(name)} alt={name} className="h-6 w-6 shrink-0 rounded-full border" loading="lazy" />
+                      <span className="truncate text-xs">{name}</span>
+                      {peerHandleOf(name) !== name && (
+                        <span className="truncate text-[11px] text-muted-foreground">{peerHandleOf(name)}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </DetailRow>
+            </>
           ) : (
             <>
               <DetailRow label="寻找目标方式">{REACH_FIND_MODE_TEXT[findMode] ?? "—"}</DetailRow>
@@ -737,20 +762,7 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
             </>
           )}
 
-          {isDm && (
-            <>
-              <SectionHeader index={`3/${total}`} title="私信内容" />
-              <DetailRow label="发送语种">{s("scriptTargetLang")}</DetailRow>
-              <DetailRow label="私信原文">
-                <span className="whitespace-pre-wrap break-words">{dmOriginal}</span>
-              </DetailRow>
-              <DetailRow label="中文译文">
-                <span className="whitespace-pre-wrap break-words text-muted-foreground">{dmTranslation}</span>
-              </DetailRow>
-            </>
-          )}
-
-          <SectionHeader index={`${isDm ? 4 : 3}/${total}`} title="执行账号" />
+          <SectionHeader index="3/4" title="执行账号" />
           <DetailRow label="执行账号">
             {accountNames.length ? (
               <div className="flex flex-wrap gap-1.5">
@@ -764,10 +776,17 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
           </DetailRow>
           {!isDm && <DetailRow label="每账号每日上限">{s("reachDailyPerAccount")}</DetailRow>}
 
-          <SectionHeader index={`${total}/${total}`} title="执行方式" />
+          <SectionHeader index="4/4" title="执行方式" />
           <DetailRow label="执行方式">{isDm ? "立即执行" : "周期(每日)"}</DetailRow>
           {isDm ? (
-            <DetailRow label="执行时间">{s("executionTime")}</DetailRow>
+            <>
+              <DetailRow label="执行时间">{s("executionTime")}</DetailRow>
+              <DetailRow label="执行进度">
+                共 {task.total} 个 · 成功 <span className="text-success">{task.done}</span> · 失败{" "}
+                <span className={task.failed > 0 ? "text-destructive" : ""}>{task.failed}</span>
+                {dmFinished > 0 && <> · 成功率 {dmRate}</>}
+              </DetailRow>
+            </>
           ) : (
             <>
               <DetailRow label="开始时间">{startAt || "—"}</DetailRow>
