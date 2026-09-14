@@ -444,11 +444,25 @@ function TaskListPage() {
           </DialogHeader>
           {statsTask && (
             <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-3">
-                <StatBox label="总计" value={statsTask.total} />
-                <StatBox label="执行成功" value={statsTask.done} tone="success" />
-                <StatBox label="执行失败" value={statsTask.failed} tone="danger" />
-                <StatBox label="成功率" value={`${statsTask.total ? Math.round((statsTask.done / statsTask.total) * 100) : 0}%`} />
+              <div className="space-y-2">
+                <div className="grid grid-cols-4 gap-3">
+                  <StatBox label="总计" value={statsTask.total} />
+                  <StatBox label="执行成功" value={statsTask.done} tone="success" />
+                  <StatBox label="执行失败" value={statsTask.failed} tone="danger" />
+                  <StatBox
+                    label="成功率"
+                    value={statsTask.done + statsTask.failed
+                      ? `${Math.round((statsTask.done / (statsTask.done + statsTask.failed)) * 100)}%`
+                      : "—"}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  统计口径：子任务执行情况，成功 + 失败 + 进行中 = 总计（当前进行中
+                  <span className="mx-0.5 tabular-nums text-foreground">
+                    {Math.max(0, statsTask.total - statsTask.done - statsTask.failed)}
+                  </span>
+                  ）；成功率 = 成功 ÷ 已结束子任务
+                </p>
               </div>
               <Tabs defaultValue="account" className="rounded-lg border p-3">
                 <div className="mb-2 flex items-center justify-between">
@@ -1284,7 +1298,7 @@ function StatBox({ label, value, tone }: { label: string; value: string | number
   );
 }
 
-type DistRow = { label: string; success: number; failed: number };
+type DistRow = { label: string; success: number; failed: number; pending?: number };
 
 export type DistDimension = "account" | "action" | "subtask";
 export type DistSubject = "exec" | "target";
@@ -1302,10 +1316,17 @@ function isReachLike(t: TaskRow): boolean {
 }
 
 function execAccountLabels(t: TaskRow): string[] {
-  const ids = (t.draft?.["reachAccounts"] as string[] | undefined) ?? [];
-  const names = ids
-    .slice(0, 12)
-    .map((id) => findManagedAccountById(id)?.username ?? id);
+  // 账号 ID 去重；同名不同号的账号补上 ID 后缀，保证每个账号只占一行且可区分
+  const ids = Array.from(new Set((t.draft?.["reachAccounts"] as string[] | undefined) ?? [])).slice(0, 12);
+  const nameCount = new Map<string, number>();
+  for (const id of ids) {
+    const n = findManagedAccountById(id)?.username ?? id;
+    nameCount.set(n, (nameCount.get(n) ?? 0) + 1);
+  }
+  const names = ids.map((id) => {
+    const n = findManagedAccountById(id)?.username ?? id;
+    return (nameCount.get(n) ?? 0) > 1 ? `${n}（${id}）` : n;
+  });
   if (names.length) return names;
   if (t.sourceAccountId) {
     return [findManagedAccountById(t.sourceAccountId)?.username ?? t.sourceAccountId];
@@ -1343,7 +1364,8 @@ function subTaskRows(t: TaskRow): DistRow[] {
     const id = `${t.id}-${String(i + 1).padStart(3, "0")}`;
     const success = i < t.done ? 1 : 0;
     const failed = i >= t.done && i < t.done + t.failed ? 1 : 0;
-    return { label: `${id} · ${subTaskAction(t, i)}`, success, failed };
+    const pending = success === 0 && failed === 0 ? 1 : 0;
+    return { label: `${id} · ${subTaskAction(t, i)}`, success, failed, pending };
   });
 }
 
@@ -1406,7 +1428,8 @@ function DistList({ rows }: { rows: DistRow[] }) {
   return (
     <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
       {rows.map((r) => {
-        const total = r.success + r.failed;
+        const pending = r.pending ?? 0;
+        const total = r.success + r.failed + pending;
         const sPct = total ? (r.success / total) * 100 : 0;
         const fPct = total ? (r.failed / total) * 100 : 0;
         return (

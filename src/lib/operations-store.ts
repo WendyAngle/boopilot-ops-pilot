@@ -1110,7 +1110,8 @@ const initialTasks: TaskRow[] = ([
     name: "Facebook 日常养号 · 持续运行",
     subtype: "nurture",
     platforms: ["Facebook"],
-    total: 20, done: 132, failed: 4,
+    // 持续运行任务：total 为「截至当前已下发的子任务数」，成功 + 失败 + 进行中 = total
+    total: 140, done: 132, failed: 4,
     status: "running",
     description: "对 20 个 Facebook 种子账号开启持续养号，持续执行直到手动停止。",
     createdBy: "黄雪",
