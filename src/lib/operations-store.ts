@@ -148,7 +148,7 @@ export type TaskCategory = "nurture" | "coview" | "social-reach" | "dm" | "accou
 
 /** 下拉与筛选的固定顺序 */
 export const TASK_CATEGORY_ORDER: TaskCategory[] = [
-  "nurture", "coview", "social-reach", "dm", "account-ops",
+  "nurture", "coview", "dm", "social-reach", "account-ops",
 ];
 
 export const TASK_CATEGORY_LABEL: Record<TaskCategory, string> = {
