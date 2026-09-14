@@ -139,7 +139,31 @@ type SubTask = {
   status: SubStatus;
   estimated: string;
   actual: string;
+  /** 私信任务：对方社媒账号 handle */
+  peerHandle?: string;
+  /** 私信任务：对方头像 */
+  peerAvatar?: string;
+  /** 私信任务：发送的私信原文 */
+  dmText?: string;
+  /** 私信任务：私信中文译文 */
+  dmZh?: string;
 };
+
+/** 由目标昵称派生对方 handle（Tiktok 目标池本身即 handle） */
+function peerHandleOf(name: string): string {
+  if (name.startsWith("@")) return name;
+  return `@${name.toLowerCase().replace(/\s*\(\d+\)$/, "").replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "")}`;
+}
+function peerAvatarOf(name: string): string {
+  return `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}`;
+}
+/** 话术占位符替换：{联系人名} / {我的公司} / {我的姓名} */
+function fillScript(tpl: string, peer: string, company: string, sender: string): string {
+  return tpl
+    .replace(/\{联系人名\}/g, peer.replace(/^@/, ""))
+    .replace(/\{我的公司\}/g, company)
+    .replace(/\{我的姓名\}/g, sender);
+}
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 function fmtDateTime(d: Date): string {
