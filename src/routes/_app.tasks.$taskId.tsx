@@ -35,7 +35,7 @@ import {
 } from "@/lib/operations-store";
 import { useActivitySubtasks, ensureActivityTasksSeeded } from "@/lib/activity-tasks";
 import { ActivityTaskDetail } from "@/components/activity-task-detail";
-import { USERNAMES } from "@/lib/managed-account-mock";
+import { USERNAMES, PLATFORM_META, findManagedAccountById } from "@/lib/managed-account-mock";
 
 ensureActivityTasksSeeded();
 
@@ -139,7 +139,31 @@ type SubTask = {
   status: SubStatus;
   estimated: string;
   actual: string;
+  /** 私信任务：对方社媒账号 handle */
+  peerHandle?: string;
+  /** 私信任务：对方头像 */
+  peerAvatar?: string;
+  /** 私信任务：发送的私信原文 */
+  dmText?: string;
+  /** 私信任务：私信中文译文 */
+  dmZh?: string;
 };
+
+/** 由目标昵称派生对方 handle（Tiktok 目标池本身即 handle） */
+function peerHandleOf(name: string): string {
+  if (name.startsWith("@")) return name;
+  return `@${name.toLowerCase().replace(/\s*\(\d+\)$/, "").replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "")}`;
+}
+function peerAvatarOf(name: string): string {
+  return `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}`;
+}
+/** 话术占位符替换：{联系人名} / {我的公司} / {我的姓名} */
+function fillScript(tpl: string, peer: string, company: string, sender: string): string {
+  return tpl
+    .replace(/\{联系人名\}/g, peer.replace(/^@/, ""))
+    .replace(/\{我的公司\}/g, company)
+    .replace(/\{我的姓名\}/g, sender);
+}
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 function fmtDateTime(d: Date): string {
@@ -199,9 +223,18 @@ function buildSubTasks(t: TaskRow): SubTask[] {
     }
 
 
-    const base = USERNAMES[i % USERNAMES.length];
-    const round = Math.floor(i / USERNAMES.length);
-    const reachAccount = round === 0 ? base : `${base}-${round + 1}`;
+    // 执行账号：私信任务使用任务关联的真实托管账号（与账号列表一致）
+    const draft = (t.draft ?? {}) as Record<string, unknown>;
+    const dmAccountIds = Array.isArray(draft.reachAccounts) ? (draft.reachAccounts as string[]) : [];
+    let reachAccount: string;
+    if (isDm && dmAccountIds.length) {
+      const accId = dmAccountIds[i % dmAccountIds.length];
+      reachAccount = findManagedAccountById(accId)?.username ?? accId;
+    } else {
+      const base = USERNAMES[i % USERNAMES.length];
+      const round = Math.floor(i / USERNAMES.length);
+      reachAccount = round === 0 ? base : `${base}-${round + 1}`;
+    }
     let status: SubStatus;
     if (i < done) status = "success";
     else if (i < done + failed) status = "failed";
@@ -213,6 +246,10 @@ function buildSubTasks(t: TaskRow): SubTask[] {
     const actDate = new Date(estDate.getTime() + actVar * 1000);
     const estimated = fmtDateTime(estDate);
     const actual = (status === "pending" || status === "running") ? "-" : fmtDateTime(actDate);
+    // 私信内容：用任务自身话术模板填充目标昵称 / 公司 / 发送人
+    const scriptSend = typeof draft.scriptSend === "string" ? draft.scriptSend : "";
+    const scriptZh = typeof draft.scriptZh === "string" ? draft.scriptZh : "";
+    const company = t.tenantName ?? "BooPilot";
     list.push({
       id: `${t.id}-${String(i + 1).padStart(3, "0")}`,
       reachAccount,
@@ -222,6 +259,14 @@ function buildSubTasks(t: TaskRow): SubTask[] {
       status,
       estimated,
       actual,
+      ...(isDm
+        ? {
+          peerHandle: peerHandleOf(target),
+          peerAvatar: peerAvatarOf(target),
+          dmText: scriptSend ? fillScript(scriptSend, target, company, t.createdBy) : undefined,
+          dmZh: scriptZh ? fillScript(scriptZh, target, company, t.createdBy) : undefined,
+        }
+        : {}),
     });
   }
   return list;
@@ -290,6 +335,9 @@ function TaskDetailPage() {
     [rawSubtasks, abortedSubs],
   );
 
+  /** 私信任务：使用「触达会话」口径的专用列（目标账号 / 私信内容 / 执行账号 / 发送时间） */
+  const isDmTask = task?.category === "dm" && !task?.source;
+
   const [kw, setKw] = useState("");
   const [fPlatform, setFPlatform] = useState<"all" | Platform>("all");
   const [fAction, setFAction] = useState<"all" | string>("all");
@@ -300,7 +348,11 @@ function TaskDetailPage() {
     const k = kw.trim().toLowerCase();
     return subtasks.filter((s) => {
       if (k && !s.id.toLowerCase().includes(k) && !s.reachAccount.toLowerCase().includes(k)
-        && !s.action.toLowerCase().includes(k) && !s.platform.toLowerCase().includes(k)) return false;
+        && !s.action.toLowerCase().includes(k) && !s.platform.toLowerCase().includes(k)
+        && !s.target.toLowerCase().includes(k)
+        && !(s.peerHandle ?? "").toLowerCase().includes(k)
+        && !(s.dmText ?? "").toLowerCase().includes(k)
+        && !(s.dmZh ?? "").toLowerCase().includes(k)) return false;
       if (fPlatform !== "all" && s.platform !== fPlatform) return false;
       if (fAction !== "all" && s.action !== fAction) return false;
       if (fResult !== "all") {
@@ -553,7 +605,7 @@ function TaskDetailPage() {
             <div className="relative w-[300px]">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input value={kw} onChange={(e) => { setKw(e.target.value); setPage(1); }}
-                placeholder="搜索任务ID / 账号 / 动作 / 平台" className="h-8 pl-8 text-xs" />
+                placeholder={isDmTask ? "搜索子任务ID / 目标账号 / 执行账号 / 私信内容" : "搜索任务ID / 账号 / 动作 / 平台"} className="h-8 pl-8 text-xs" />
             </div>
             <Select value={fPlatform} onValueChange={(v) => { setFPlatform(v as typeof fPlatform); setPage(1); }}>
               <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="平台" /></SelectTrigger>
@@ -562,15 +614,17 @@ function TaskDetailPage() {
                 {platformOptions.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={fAction} onValueChange={(v) => { setFAction(v); setPage(1); }}>
-              <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="动作" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部动作</SelectItem>
-                {Array.from(new Set(subtasks.map((s) => s.action))).map((a) => (
-                  <SelectItem key={a} value={a}>{a}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!isDmTask && (
+              <Select value={fAction} onValueChange={(v) => { setFAction(v); setPage(1); }}>
+                <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="动作" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部动作</SelectItem>
+                  {Array.from(new Set(subtasks.map((s) => s.action))).map((a) => (
+                    <SelectItem key={a} value={a}>{a}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select value={fResult} onValueChange={(v) => { setFResult(v as typeof fResult); setPage(1); }}>
               <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="任务结果" /></SelectTrigger>
               <SelectContent>
@@ -613,22 +667,38 @@ function TaskDetailPage() {
                       aria-label="选择当前页可终止的子任务"
                     />
                   </TableHead>
-                  <TableHead className="min-w-[200px]">任务ID</TableHead>
-                  <TableHead className="min-w-[160px]">账号</TableHead>
-                  <TableHead className="w-[110px]">操作/动作</TableHead>
-                  <TableHead className="w-[120px]">目标</TableHead>
-                  <TableHead className="w-[130px]">平台</TableHead>
-                  <TableHead className="w-[110px]">任务结果</TableHead>
-                  <TableHead className="w-[110px]">执行状态</TableHead>
-                  <TableHead className="w-[170px]">预计执行时间</TableHead>
-                  <TableHead className="w-[170px]">实际执行时间</TableHead>
-                  <TableHead className="w-[160px] text-center pr-4">操作</TableHead>
+                  {isDmTask ? (
+                    <>
+                      <TableHead className="min-w-[190px]">子任务ID</TableHead>
+                      <TableHead className="min-w-[190px]">目标账号</TableHead>
+                      <TableHead className="w-[110px]">平台</TableHead>
+                      <TableHead className="min-w-[360px]">私信内容</TableHead>
+                      <TableHead className="min-w-[170px]">执行账号</TableHead>
+                      <TableHead className="w-[180px]">发送时间</TableHead>
+                      <TableHead className="w-[110px]">任务结果</TableHead>
+                      <TableHead className="w-[110px]">执行状态</TableHead>
+                      <TableHead className="w-[160px] text-center pr-4">操作</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead className="min-w-[200px]">任务ID</TableHead>
+                      <TableHead className="min-w-[160px]">账号</TableHead>
+                      <TableHead className="w-[110px]">操作/动作</TableHead>
+                      <TableHead className="w-[120px]">目标</TableHead>
+                      <TableHead className="w-[130px]">平台</TableHead>
+                      <TableHead className="w-[110px]">任务结果</TableHead>
+                      <TableHead className="w-[110px]">执行状态</TableHead>
+                      <TableHead className="w-[170px]">预计执行时间</TableHead>
+                      <TableHead className="w-[170px]">实际执行时间</TableHead>
+                      <TableHead className="w-[160px] text-center pr-4">操作</TableHead>
+                    </>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="h-32 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={isDmTask ? 10 : 11} className="h-32 text-center text-sm text-muted-foreground">
                       {subtasks.length === 0 ? "暂无子任务" : (
                         <span className="inline-flex items-center gap-2">
                           没有符合筛选条件的子任务
@@ -652,12 +722,81 @@ function TaskDetailPage() {
                         />
                       </TableCell>
                       <TableCell className="font-mono text-[11px] text-muted-foreground">{s.id}</TableCell>
-                      <TableCell className="text-sm">{s.reachAccount}</TableCell>
-                      <TableCell className="text-sm">{s.action}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{s.target}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("text-[10px] font-normal", PLATFORM_CHIP[s.platform])}>{s.platform}</Badge>
-                      </TableCell>
+                      {isDmTask ? (
+                        <>
+                          {/* 目标账号（对方社媒账号） */}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={s.peerAvatar}
+                                alt=""
+                                className="h-6 w-6 shrink-0 rounded-full border border-border/60 bg-background"
+                                loading="lazy"
+                              />
+                              <div className="min-w-0 leading-tight">
+                                <div className="truncate text-sm">{s.target}</div>
+                                {s.peerHandle && s.peerHandle !== s.target && (
+                                  <div className="truncate text-[11px] text-muted-foreground">{s.peerHandle}</div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn("text-[10px] font-normal", PLATFORM_CHIP[s.platform])}>{s.platform}</Badge>
+                          </TableCell>
+                          {/* 私信内容：原文 + 中文译文 */}
+                          <TableCell className="whitespace-normal">
+                            {s.dmText ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="max-w-[420px] space-y-0.5">
+                                    <div className="truncate text-xs text-foreground/90">{s.dmText}</div>
+                                    {s.dmZh && (
+                                      <div className="truncate text-[11px] text-muted-foreground">中文：{s.dmZh}</div>
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[460px] space-y-1 whitespace-pre-wrap break-words">
+                                  <div>{s.dmText}</div>
+                                  {s.dmZh && <div className="text-muted-foreground">中文：{s.dmZh}</div>}
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          {/* 执行账号（我方托管账号） */}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={cn(
+                                  "flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-semibold",
+                                  PLATFORM_META[s.platform]?.cls,
+                                )}
+                                title={s.platform}
+                              >
+                                {PLATFORM_META[s.platform]?.letter}
+                              </div>
+                              <span className="text-sm">{s.reachAccount}</span>
+                            </div>
+                          </TableCell>
+                          {/* 发送时间 */}
+                          <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">
+                            {s.actual !== "-" ? s.actual : (
+                              <span>{s.estimated}<span className="ml-1 font-sans text-[10px]">（预计）</span></span>
+                            )}
+                          </TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell className="text-sm">{s.reachAccount}</TableCell>
+                          <TableCell className="text-sm">{s.action}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{s.target}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn("text-[10px] font-normal", PLATFORM_CHIP[s.platform])}>{s.platform}</Badge>
+                          </TableCell>
+                        </>
+                      )}
                       <TableCell>
                         {showDash ? (
                           <span className="text-xs text-muted-foreground">-</span>
@@ -672,8 +811,12 @@ function TaskDetailPage() {
                           {EXEC_STATE_LABEL[es]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">{s.estimated}</TableCell>
-                      <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">{s.actual}</TableCell>
+                      {!isDmTask && (
+                        <>
+                          <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">{s.estimated}</TableCell>
+                          <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">{s.actual}</TableCell>
+                        </>
+                      )}
                       <TableCell className="pr-4">
                         <div className="flex items-center justify-center gap-1">
                           <Tooltip>
