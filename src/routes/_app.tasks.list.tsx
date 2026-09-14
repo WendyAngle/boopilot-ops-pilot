@@ -777,16 +777,7 @@ function ReachTaskDetailDialog({ task, onClose }: { task: TaskRow; onClose: () =
 
           <SectionHeader index="4/4" title="执行方式" />
           <DetailRow label="执行方式">{isDm ? "立即执行" : "周期(每日)"}</DetailRow>
-          {isDm ? (
-            <>
-              <DetailRow label="执行时间">{s("executionTime")}</DetailRow>
-              <DetailRow label="执行进度">
-                共 {task.total} 个 · 成功 <span className="text-success">{task.done}</span> · 失败{" "}
-                <span className={task.failed > 0 ? "text-destructive" : ""}>{task.failed}</span>
-                {dmFinished > 0 && <> · 成功率 {dmRate}</>}
-              </DetailRow>
-            </>
-          ) : (
+          {isDm ? null : (
             <>
               <DetailRow label="开始时间">{startAt || "—"}</DetailRow>
               <DetailRow label="结束时间">{task.endTime ?? "—"}</DetailRow>
