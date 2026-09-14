@@ -1302,10 +1302,10 @@ function isReachLike(t: TaskRow): boolean {
 }
 
 function execAccountLabels(t: TaskRow): string[] {
-  const ids = (t.draft?.["reachAccounts"] as string[] | undefined) ?? [];
-  const names = ids
-    .slice(0, 12)
-    .map((id) => findManagedAccountById(id)?.username ?? id);
+  const ids = Array.from(new Set((t.draft?.["reachAccounts"] as string[] | undefined) ?? []));
+  const names = Array.from(new Set(
+    ids.map((id) => findManagedAccountById(id)?.username ?? id),
+  )).slice(0, 12);
   if (names.length) return names;
   if (t.sourceAccountId) {
     return [findManagedAccountById(t.sourceAccountId)?.username ?? t.sourceAccountId];
