@@ -745,6 +745,8 @@ interface ReachSeed {
   createdAt: string;
   startTime: string;
   endTime?: string;
+  /** 私信任务：动作为「私信」，归入「私信任务」类型 */
+  dm?: boolean;
 }
 
 const REACH_SEED: ReachSeed[] = [
@@ -769,7 +771,7 @@ const REACH_SEED: ReachSeed[] = [
     createdAt: "2026-05-28 10:00:00", startTime: "2026-05-28 10:05:00", endTime: "2026-06-04 13:59:59",
   },
   {
-    platform: "Facebook", name: "Facebook 英国跨境物流潜客拓展", region: "英国",
+    platform: "Facebook", name: "Facebook 英国跨境物流潜客私信触达", region: "英国", dm: true,
     products: ["跨境物流服务"], keywords: ["freight forwarder", "cross border logistics", "warehouse uk"],
     findMode: "post", links: ["https://www.facebook.com/ukfreight/posts/1024578899"],
     activeWindow: "近一周", targetCap: 25, accounts: 2, lang: "en",
@@ -788,7 +790,7 @@ const REACH_SEED: ReachSeed[] = [
     createdAt: "2026-06-03 14:00:00", startTime: "2026-06-03 14:20:00",
   },
   {
-    platform: "Facebook", name: "Facebook 日本美妆分销商拓客", region: "日本",
+    platform: "Facebook", name: "Facebook 日本美妆分销商私信触达", region: "日本", dm: true,
     products: ["护肤精华", "美妆彩盘"], keywords: ["化粧品 卸", "スキンケア 仕入れ", "美容 代理店"],
     findMode: "group", links: ["https://www.facebook.com/groups/jp.beauty.wholesale"],
     activeWindow: "近两周", targetCap: 30, accounts: 3, lang: "ja",
@@ -817,7 +819,7 @@ const REACH_SEED: ReachSeed[] = [
     createdAt: "2026-06-02 15:30:00", startTime: "2026-06-02 15:40:00", endTime: "2026-06-03 13:59:59",
   },
   {
-    platform: "Facebook", name: "Facebook 韩国美妆买手拓客", region: "韩国",
+    platform: "Facebook", name: "Facebook 韩国美妆买手私信跟进", region: "韩国", dm: true,
     products: ["美妆彩盘"], keywords: ["뷰티 바이어", "화장품 도매", "beauty buyer"],
     findMode: "smart", activeWindow: "近一周", targetCap: 20, accounts: 2, lang: "en",
     scriptZh: "Hi {联系人名}，我们是彩妆工厂，支持小批量定制，方便看看我们的爆款清单吗？",
@@ -865,7 +867,7 @@ const REACH_SEED: ReachSeed[] = [
     createdAt: "2026-05-24 09:30:00", startTime: "2026-05-24 09:40:00", endTime: "2026-05-29 13:59:59",
   },
   {
-    platform: "Tiktok", name: "Tiktok 日本护肤内容达人拓客", region: "日本",
+    platform: "Tiktok", name: "Tiktok 日本护肤达人私信邀约", region: "日本", dm: true,
     products: ["护肤精华"], keywords: ["スキンケア", "美容垢", "コスメ紹介"],
     findMode: "smart", activeWindow: "近一个月", targetCap: 35, accounts: 3, lang: "ja",
     scriptZh: "Hi {联系人名}，我们是护肤品牌，想邀请你试用新品并合作内容。",
@@ -883,7 +885,7 @@ const REACH_SEED: ReachSeed[] = [
     createdAt: "2026-06-06 11:00:00", startTime: "2026-06-07 10:00:00",
   },
   {
-    platform: "Tiktok", name: "Tiktok 越南电商小店拓客", region: "越南",
+    platform: "Tiktok", name: "Tiktok 越南电商小店私信触达", region: "越南", dm: true,
     products: ["跨境物流服务"], keywords: ["tiktok shop", "bán hàng online", "dropshipping"],
     findMode: "post", links: ["https://www.tiktok.com/@shopvn/video/7385566778899001122", "https://www.tiktok.com/@logisticsvn/video/7386677889900112233"],
     activeWindow: "近一周", targetCap: 30, accounts: 3, lang: "vi",
@@ -930,7 +932,7 @@ const REACH_SEED: ReachSeed[] = [
     createdAt: "2026-06-05 16:00:00", startTime: "2026-06-05 16:10:00",
   },
   {
-    platform: "Tiktok", name: "Tiktok 全球好物达人常态拓客", region: "全球",
+    platform: "Tiktok", name: "Tiktok 全球好物达人常态私信", region: "全球", dm: true,
     products: ["护肤精华", "智能家居套装", "美妆彩盘"], keywords: ["tiktokmademebuyit", "product review", "unboxing"],
     findMode: "smart", activeWindow: "近三个月", targetCap: 60, accounts: 5, lang: "en",
     scriptZh: "Hi {联系人名}，我们有多条产品线在找达人合作，方便聊聊寄样与佣金吗？",
@@ -943,7 +945,7 @@ const REACH_SEED: ReachSeed[] = [
 function buildReachTasks(): TaskRow[] {
   return REACH_SEED.map((s, idx) => {
     const tenant = TASK_TENANTS[idx % Math.max(1, TASK_TENANTS.length)];
-    const action = s.platform === "Facebook" ? "加好友" : "关注";
+    const action = s.dm ? "私信" : s.platform === "Facebook" ? "加好友" : "关注";
     const findLabel = REACH_FIND_MODE_LABEL[s.findMode];
     return {
       id: `2046834500000${String(idx + 1).padStart(2, "0")}`,
@@ -954,7 +956,7 @@ function buildReachTasks(): TaskRow[] {
       done: s.done,
       failed: s.failed,
       status: s.status,
-      category: "social-reach",
+      category: s.dm ? "dm" : "social-reach",
       description: `在 ${s.platform} 面向${s.region}，以${findLabel}寻找「${s.keywords.join("、")}」相关目标账号，用 ${s.accounts} 个托管账号执行${action}触达，目标上限 ${s.targetCap} 个，每账号每日 ${REACH_DAILY_PER_ACCOUNT} 个。`,
       createdBy: s.operator,
       createdAt: s.createdAt,
