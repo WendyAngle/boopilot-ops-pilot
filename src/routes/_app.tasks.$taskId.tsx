@@ -614,15 +614,17 @@ function TaskDetailPage() {
                 {platformOptions.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={fAction} onValueChange={(v) => { setFAction(v); setPage(1); }}>
-              <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="动作" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部动作</SelectItem>
-                {Array.from(new Set(subtasks.map((s) => s.action))).map((a) => (
-                  <SelectItem key={a} value={a}>{a}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!isDmTask && (
+              <Select value={fAction} onValueChange={(v) => { setFAction(v); setPage(1); }}>
+                <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="动作" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部动作</SelectItem>
+                  {Array.from(new Set(subtasks.map((s) => s.action))).map((a) => (
+                    <SelectItem key={a} value={a}>{a}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select value={fResult} onValueChange={(v) => { setFResult(v as typeof fResult); setPage(1); }}>
               <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="任务结果" /></SelectTrigger>
               <SelectContent>
