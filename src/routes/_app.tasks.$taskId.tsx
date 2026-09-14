@@ -36,7 +36,7 @@ import {
 import { useActivitySubtasks, ensureActivityTasksSeeded } from "@/lib/activity-tasks";
 import { ActivityTaskDetail } from "@/components/activity-task-detail";
 import { USERNAMES, PLATFORM_META, findManagedAccountById } from "@/lib/managed-account-mock";
-import { DM_TARGET_ACCOUNTS, dmTargetAccount, fillDmScript } from "@/lib/dm-task-display";
+import { DM_TARGET_ACCOUNTS, dmTargetAccountList, peerAvatarOf, peerHandleOf, fillDmScript } from "@/lib/dm-task-display";
 
 ensureActivityTasksSeeded();
 
@@ -150,14 +150,6 @@ type SubTask = {
   dmZh?: string;
 };
 
-/** 由目标昵称派生对方 handle（Tiktok 目标池本身即 handle） */
-function peerHandleOf(name: string): string {
-  if (name.startsWith("@")) return name;
-  return `@${name.toLowerCase().replace(/\s*\(\d+\)$/, "").replace(/[^a-z0-9]+/g, ".").replace(/^\.|\.$/g, "")}`;
-}
-function peerAvatarOf(name: string): string {
-  return `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(name)}`;
-}
 const pad2 = (n: number) => String(n).padStart(2, "0");
 function fmtDateTime(d: Date): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
@@ -182,6 +174,9 @@ function buildSubTasks(t: TaskRow): SubTask[] {
   const running = t.status === "running" ? Math.min(2, total - done - failed) : 0;
   const finished = done + failed;
   const baseDate = parseDateTime(t.createdAt);
+  const isDmTaskAll = t.category === "dm";
+  // 私信任务目标账号清单：与任务列表详情弹窗共用同一确定性规则
+  const dmTargets = isDmTaskAll ? dmTargetAccountList(t, total) : null;
   for (let i = 0; i < total; i++) {
     const h = hash(`${t.id}|${i}`);
     const platform = t.platforms[h % t.platforms.length];
