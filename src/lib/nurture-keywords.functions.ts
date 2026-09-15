@@ -35,6 +35,8 @@ export const generateNurtureKeywords = createServerFn({ method: "POST" })
         interestKeywords: z.string().min(1),
         platform: z.string().optional(),
         markets: z.array(z.string()).optional(),
+        /** 搜索语句条数上限，默认 6，最大 10 */
+        maxSearchQueries: z.number().int().min(1).max(10).optional(),
       })
       .parse(data),
   )
@@ -57,7 +59,7 @@ export const generateNurtureKeywords = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: "google/gemini-3.7-flash",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: buildSystemPrompt(data.maxSearchQueries ?? 6) },
           { role: "user", content: userParts.join("\n") },
         ],
         response_format: { type: "json_object" },
@@ -91,7 +93,7 @@ export const generateNurtureKeywords = createServerFn({ method: "POST" })
         ? v
             .map((x) => String(x).trim())
             .filter((s) => s && isEnglishOnly(s))
-            .slice(0, 8)
+            .slice(0, 10)
         : [];
 
     // 模型偶尔会把 persona 输出为对象/数组，这里兜底压缩为一句可读文本

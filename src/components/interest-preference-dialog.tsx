@@ -94,6 +94,7 @@ export function InterestPreferenceDialog({
           interestKeywords: kw,
           platform: account?.platform,
           markets: account?.country ? [account.country] : undefined,
+          maxSearchQueries: 10,
         },
       });
       setGroups((gs) =>
