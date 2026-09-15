@@ -60,9 +60,9 @@ export function InterestPreferenceDialog({
 
   const makeGroup = (seed = false): PrefGroup => ({
     id: `pg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    interestKeywords: seed ? "LED screen；digital devices；knitwear" : "",
+    interestKeywords: seed ? "Listening to Music；Traveling；Video games" : "",
     search: seed,
-    keywords: seed ? "LED screen" : "",
+    keywords: "",
     like: seed,
     likeMin: 0,
     likeMax: 15,
@@ -94,6 +94,7 @@ export function InterestPreferenceDialog({
           interestKeywords: kw,
           platform: account?.platform,
           markets: account?.country ? [account.country] : undefined,
+          maxSearchQueries: 10,
         },
       });
       setGroups((gs) =>

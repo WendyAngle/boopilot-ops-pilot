@@ -12,15 +12,16 @@ export interface NurtureKeywordResult {
   negativeKeywords: string[];
 }
 
-const SYSTEM_PROMPT = [
-  "你是社媒运营专家，负责根据用户输入的兴趣关键词（产品品类）与目标市场，扩展生成社媒养号任务可用的搜索关键词方案。",
-  "生成规则：",
-  "1. 根据传入的产品品类、目标市场进行适配（语言、地区表达习惯）。",
-  "2. 输出必须是可直接用于社媒检索的语句，禁止营销文案。",
-  "3. 不得编造用户未提供的产品信息，保持输出简洁。",
-  "4. 固定输出以下四个模块：",
-  "   - persona: 目标客户画像（必须是纯文本字符串，一句话中文概括，禁止输出对象或数组）",
-  "   - searchQueries: 搜索语句数组（3-6 条，必须全部为英文）",
+const buildSystemPrompt = (maxQueries: number) =>
+  [
+    "你是社媒运营专家，负责根据用户输入的兴趣关键词（产品品类）与目标市场，扩展生成社媒养号任务可用的搜索关键词方案。",
+    "生成规则：",
+    "1. 根据传入的产品品类、目标市场进行适配（语言、地区表达习惯）。",
+    "2. 输出必须是可直接用于社媒检索的语句，禁止营销文案。",
+    "3. 不得编造用户未提供的产品信息，保持输出简洁。",
+    "4. 固定输出以下四个模块：",
+    "   - persona: 目标客户画像（必须是纯文本字符串，一句话中文概括，禁止输出对象或数组）",
+    `   - searchQueries: 搜索语句数组（3-${maxQueries} 条，不得超过 ${maxQueries} 条，必须全部为英文）`,
   "   - hashtags: 话题标签数组（3-6 个，必须全部为英文，不含 # 号）",
   "   - negativeKeywords: 负向排除词数组（2-5 个，必须全部为英文，用于排除无关/低质内容）",
   "5. 语言要求（强制）：searchQueries、hashtags、negativeKeywords 只能使用英文（英文字母、数字与空格），严禁出现日文、韩文、中文、俄文、阿拉伯文等任何非英文字符；即使目标市场为非英语国家，也必须输出英文关键词。",
@@ -34,6 +35,8 @@ export const generateNurtureKeywords = createServerFn({ method: "POST" })
         interestKeywords: z.string().min(1),
         platform: z.string().optional(),
         markets: z.array(z.string()).optional(),
+        /** 搜索语句条数上限，默认 6，最大 10 */
+        maxSearchQueries: z.number().int().min(1).max(10).optional(),
       })
       .parse(data),
   )
@@ -56,7 +59,7 @@ export const generateNurtureKeywords = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: "google/gemini-3.7-flash",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: buildSystemPrompt(data.maxSearchQueries ?? 6) },
           { role: "user", content: userParts.join("\n") },
         ],
         response_format: { type: "json_object" },
@@ -90,7 +93,7 @@ export const generateNurtureKeywords = createServerFn({ method: "POST" })
         ? v
             .map((x) => String(x).trim())
             .filter((s) => s && isEnglishOnly(s))
-            .slice(0, 8)
+            .slice(0, 10)
         : [];
 
     // 模型偶尔会把 persona 输出为对象/数组，这里兜底压缩为一句可读文本
