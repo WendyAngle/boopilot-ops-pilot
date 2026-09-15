@@ -62,7 +62,7 @@ export function InterestPreferenceDialog({
     id: `pg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     interestKeywords: seed ? "Listening to Music；Traveling；Video games" : "",
     search: seed,
-    keywords: seed ? "LED screen" : "",
+    keywords: "",
     like: seed,
     likeMin: 0,
     likeMax: 15,
