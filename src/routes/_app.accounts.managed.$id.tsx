@@ -840,7 +840,7 @@ function CredentialCard({ account, derived }: { account: ManagedAccount; derived
                 ),
                 span: 2,
               },
-              { label: "2FA密钥", value: <Mono>{cred.totp}</Mono> },
+              { label: "2FA密钥", value: <TotpField secret={cred.totp} />, span: 2 },
               ...(cred.pinCode
                 ? [{
                     label: "PIN码",
