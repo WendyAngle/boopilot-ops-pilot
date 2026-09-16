@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -840,7 +840,7 @@ function CredentialCard({ account, derived }: { account: ManagedAccount; derived
                 ),
                 span: 2,
               },
-              { label: "2FA密钥", value: <Mono>{cred.totp}</Mono> },
+              { label: "2FA密钥", value: <TotpField secret={cred.totp} />, span: 2 },
               ...(cred.pinCode
                 ? [{
                     label: "PIN码",
@@ -1448,6 +1448,48 @@ function Mono({ children, className }: { children: React.ReactNode; className?: 
     <span className={cn("font-mono text-[13px] tabular-nums text-foreground", className)}>
       {children}
     </span>
+  );
+}
+
+/** 2FA 密钥 + 6 位动态验证码（mock：按密钥与 30 秒时间窗确定性生成） */
+function totpCodeOf(secret: string, step: number): string {
+  let h = 2166136261 ^ step;
+  for (let i = 0; i < secret.length; i++) {
+    h ^= secret.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  h = (h ^ (h >>> 15)) >>> 0;
+  return String(h % 1000000).padStart(6, "0");
+}
+
+function TotpField({ secret }: { secret: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const sec = Math.floor(now / 1000);
+  const step = Math.floor(sec / 30);
+  const remain = 30 - (sec % 30);
+  const code = totpCodeOf(secret, step);
+
+  return (
+    <div className="space-y-2">
+      <span className="flex items-center gap-2">
+        <Mono>{secret}</Mono>
+        <CopyBtn text={secret} />
+      </span>
+      <div className="flex items-center gap-2 rounded-md border bg-primary/5 px-3 py-2">
+        <span className="text-xs text-primary">当前验证码</span>
+        <span className="font-mono text-base font-semibold tracking-[0.3em] text-foreground">
+          {code}
+        </span>
+        <span className="text-xs text-muted-foreground">{remain} 秒后刷新</span>
+        <span className="ml-auto">
+          <CopyBtn text={code} />
+        </span>
+      </div>
+    </div>
   );
 }
 
