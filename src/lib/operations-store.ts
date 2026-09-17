@@ -998,6 +998,219 @@ function buildReachTasks(): TaskRow[] {
   });
 }
 
+/* ---------- Twitter/X 日常养号模板创建的任务（覆盖全部状态与结果） ---------- */
+
+type XNurtureSeed = {
+  id: string;
+  name: string;
+  total: number; done: number; failed: number;
+  status: TaskStatus;
+  aborted?: boolean;
+  accounts: number;
+  createdAt: string;
+  endTime?: string;
+  operator: string;
+  startTime: string;
+  window: [string, string];
+  duration: number;
+  forever: boolean;
+  session: number;
+  description: string;
+  groups: {
+    interests: string;
+    like: [number, number];
+    follow: [number, number];
+    comment: [number, number];
+    sentiment: string;
+    style: string;
+    keywords: string;
+  }[];
+};
+
+const X_NURTURE_SEED: XNurtureSeed[] = [
+  {
+    id: "204683410000101",
+    name: "Twitter/X 科技话题养号",
+    total: 12, done: 12, failed: 0, status: "success",
+    accounts: 6,
+    createdAt: "2026-06-02 09:15:20",
+    endTime: "2026-06-09 18:42:10",
+    operator: "黄雪",
+    startTime: "2026-06-02 09:30",
+    window: ["09:30", "18:30"],
+    duration: 7, forever: false, session: 30,
+    description: "对 6 个 Twitter/X 账号执行 7 天科技话题养号，每日点赞、关注与少量评论。",
+    groups: [{
+      interests: "technology；AI tools；startup",
+      like: [50, 80], follow: [10, 20], comment: [20, 35],
+      sentiment: "positive", style: "casual",
+      keywords: "AI tools review；tech news today；startup founders",
+    }],
+  },
+  {
+    id: "204683410000102",
+    name: "Twitter/X 出海品牌养号",
+    total: 18, done: 14, failed: 4, status: "partial",
+    accounts: 9,
+    createdAt: "2026-06-05 10:05:00",
+    endTime: "2026-06-19 20:11:36",
+    operator: "陈立",
+    startTime: "2026-06-05 10:30",
+    window: ["10:30", "21:00"],
+    duration: 14, forever: false, session: 40,
+    description: "对 9 个 Twitter/X 品牌账号执行 14 天养号，部分账号因平台限流未完成。",
+    groups: [
+      {
+        interests: "cross-border ecommerce；brand marketing",
+        like: [40, 70], follow: [8, 18], comment: [15, 30],
+        sentiment: "positive", style: "professional",
+        keywords: "dtc brand growth；ecommerce tips；shopify store",
+      },
+      {
+        interests: "consumer electronics；gadgets",
+        like: [30, 55], follow: [5, 12], comment: [10, 20],
+        sentiment: "neutral", style: "question",
+        keywords: "gadget unboxing；smart home devices；tech deals",
+      },
+    ],
+  },
+  {
+    id: "204683410000103",
+    name: "Twitter/X 新号冷启动养号",
+    total: 8, done: 0, failed: 8, status: "failed",
+    accounts: 4,
+    createdAt: "2026-06-11 08:20:44",
+    endTime: "2026-06-11 09:02:15",
+    operator: "陈立",
+    startTime: "2026-06-11 08:30",
+    window: ["08:30", "12:00"],
+    duration: 3, forever: false, session: 20,
+    description: "4 个新注册 Twitter/X 账号冷启动养号，账号登录态集中失效导致全部失败。",
+    groups: [{
+      interests: "sports；football；nba",
+      like: [20, 40], follow: [3, 8], comment: [5, 12],
+      sentiment: "positive", style: "casual",
+      keywords: "match highlights；nba tonight；football transfer",
+    }],
+  },
+  {
+    id: "204683410000104",
+    name: "Twitter/X 日常养号 · 持续运行",
+    // 持续运行任务：total 为「截至当前已下发的子任务数」，成功 + 失败 + 进行中 = total
+    total: 96, done: 88, failed: 3, status: "running",
+    accounts: 10,
+    createdAt: "2026-06-01 08:00:00",
+    operator: "黄雪",
+    startTime: "2026-06-01 08:00",
+    window: ["08:00", "23:00"],
+    duration: 0, forever: true, session: 30,
+    description: "对 10 个 Twitter/X 账号开启持续养号，持续执行直到手动停止。",
+    groups: [
+      {
+        interests: "travel；photography",
+        like: [45, 75], follow: [10, 20], comment: [15, 30],
+        sentiment: "positive", style: "casual",
+        keywords: "travel photography；hidden gems；city guide",
+      },
+      {
+        interests: "coffee；lifestyle",
+        like: [30, 50], follow: [5, 10], comment: [8, 18],
+        sentiment: "neutral", style: "question",
+        keywords: "coffee brewing；slow living；morning routine",
+      },
+    ],
+  },
+  {
+    id: "204683410000105",
+    name: "Twitter/X 财经话题养号",
+    total: 15, done: 0, failed: 0, status: "pending",
+    accounts: 5,
+    createdAt: "2026-06-14 16:40:02",
+    operator: "林可",
+    startTime: "2026-06-20 09:00",
+    window: ["09:00", "18:00"],
+    duration: 10, forever: false, session: 35,
+    description: "对 5 个 Twitter/X 账号安排 10 天财经话题养号，定时任务尚未开始。",
+    groups: [{
+      interests: "finance；crypto；investing",
+      like: [35, 60], follow: [6, 14], comment: [10, 22],
+      sentiment: "neutral", style: "professional",
+      keywords: "market outlook；crypto news；index investing",
+    }],
+  },
+  {
+    id: "204683410000106",
+    name: "Twitter/X 夜间轻互动养号",
+    total: 20, done: 9, failed: 2, status: "partial", aborted: true,
+    accounts: 7,
+    createdAt: "2026-06-08 21:10:30",
+    endTime: "2026-06-12 01:05:18",
+    operator: "林可",
+    startTime: "2026-06-08 21:30",
+    window: ["21:30", "01:30"],
+    duration: 7, forever: false, session: 25,
+    description: "对 7 个 Twitter/X 账号执行夜间轻互动养号，运行中被人工终止，剩余子任务未执行。",
+    groups: [{
+      interests: "gaming；esports",
+      like: [25, 45], follow: [4, 10], comment: [6, 15],
+      sentiment: "positive", style: "enthusiastic",
+      keywords: "esports highlights；game release；stream clips",
+    }],
+  },
+];
+
+function buildXNurtureTasks(): TaskRow[] {
+  return X_NURTURE_SEED.map((s) => ({
+    id: s.id,
+    name: s.name,
+    subtype: "nurture",
+    platforms: ["Twitter/X"],
+    total: s.total, done: s.done, failed: s.failed,
+    status: s.status,
+    aborted: s.aborted,
+    category: "nurture",
+    description: s.description,
+    createdBy: s.operator,
+    createdAt: s.createdAt,
+    endTime: s.endTime,
+    fromTemplate: "Twitter/X 日常养号",
+    draft: {
+      name: s.name,
+      platforms: ["Twitter/X"],
+      targetMode: "keyword",
+      targetKeyword: s.groups[0].interests,
+      targetUrl: "",
+      reachTags: ["主账号", "高活跃"],
+      reachAccounts: managedIdsForPlatform("Twitter/X", s.accounts),
+      postTags: [],
+      postIds: [],
+      execMode: "recurring",
+      recurStartDate: s.startTime.slice(0, 10),
+      recurStartTime: s.startTime.slice(11, 16),
+      recurFreq: "daily",
+      recurTimeStart: s.window[0],
+      recurTimeEnd: s.window[1],
+      sessionDuration: s.session,
+      sessionDurationUnit: "min",
+      recurDuration: s.duration,
+      recurForever: s.forever,
+      nurtureGroups: s.groups.map((g, gi) => ({
+        id: `ng_x_${s.id}_${gi + 1}`,
+        nurtureInterestKeywords: g.interests,
+        nurtureLike: true, nurtureLikeMin: g.like[0], nurtureLikeMax: g.like[1],
+        nurtureFollow: g.follow[1] > 0, nurtureFollowMin: g.follow[0], nurtureFollowMax: g.follow[1],
+        nurtureComment: g.comment[1] > 0, nurtureCommentMin: g.comment[0], nurtureCommentMax: g.comment[1],
+        nurtureCommentEmoji: true,
+        nurtureCommentTopic: "",
+        nurtureCommentSentiment: g.sentiment,
+        nurtureCommentStyle: g.style,
+        nurtureSearch: true, nurtureKeywordOn: true,
+        nurtureKeywords: g.keywords,
+      })),
+    },
+  } as TaskRow));
+}
+
 const initialTasks: TaskRow[] = ([
   {
     id: "204683410000001",
@@ -1169,6 +1382,7 @@ const initialTasks: TaskRow[] = ([
       ],
     },
   },
+  ...buildXNurtureTasks(),
   ...buildReachTasks(),
   ...buildCoviewTasks(),
   ...buildContentOpsTasks(),
