@@ -1382,6 +1382,7 @@ const initialTasks: TaskRow[] = ([
       ],
     },
   },
+  ...buildXNurtureTasks(),
   ...buildReachTasks(),
   ...buildCoviewTasks(),
   ...buildContentOpsTasks(),
