@@ -992,7 +992,9 @@ function FriendsPage() {
                   )}
 
                   {/* 内部备注 */}
-                  {(active.status !== "pending" || active.note) && (
+                  {(isOutgoing(active) ||
+                    active.status !== "pending" ||
+                    active.note) && (
                     <div className="rounded-md border border-dashed p-3">
                       <div className="mb-1.5 flex items-center justify-between">
                         <span className="text-[11px] font-medium text-muted-foreground">
