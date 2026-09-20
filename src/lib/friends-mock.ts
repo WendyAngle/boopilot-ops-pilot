@@ -22,16 +22,22 @@ export type OutgoingStatus =
   | "waiting" // 等待对方处理
   | "accepted" // 对方已通过
   | "declined" // 对方已拒绝
+  | "withdrawing" // 撤回指令已下发，真机执行中
   | "withdrawn" // 我方已撤回
-  | "expired"; // 超 30 天未响应，视为失效
+  | "expired"; // 超 30 天未响应（我方老化规则）
 
 export const OUTGOING_STATUS_LABEL: Record<OutgoingStatus, string> = {
   waiting: "等待对方处理",
   accepted: "对方已通过",
   declined: "对方已拒绝",
+  withdrawing: "撤回中",
   withdrawn: "已撤回",
   expired: "长期未响应",
 };
+
+/** 单账号每日主动发起好友申请上限（风控口径） */
+export const DAILY_OUTGOING_LIMIT = 20;
+
 
 /** 我方发起申请的来源 */
 export type OutgoingOrigin = "task" | "manual" | "recommend" | "profile_visit";
