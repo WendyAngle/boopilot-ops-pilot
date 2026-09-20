@@ -240,9 +240,54 @@ function FriendsPage() {
           return (b.decidedAt ?? "").localeCompare(a.decidedAt ?? "");
         });
     }
-    return requests
-      .filter((r) => r.accountId === activeAccountId && r.status === tab)
-      .filter(matchKw);
+    const mine = requests.filter(
+      (r) => r.accountId === activeAccountId && matchKw(r),
+    );
+    if (tab === "incoming") {
+      // 收到的申请：待处理优先，其次按时间倒序
+      const order: Record<FriendStatus, number> = {
+        pending: 0,
+        accepted: 1,
+        rejected: 2,
+      };
+      return mine
+        .filter(isIncoming)
+        .sort(
+          (a, b) =>
+            order[a.status] - order[b.status] ||
+            (b.requestedAt ?? "").localeCompare(a.requestedAt ?? ""),
+        );
+    }
+    if (tab === "outgoing") {
+      // 我发起的申请：等待中 / 长期未响应优先
+      const order: Record<OutgoingStatus, number> = {
+        expired: 0,
+        waiting: 1,
+        accepted: 2,
+        declined: 3,
+        withdrawn: 4,
+      };
+      return mine
+        .filter(isOutgoing)
+        .sort(
+          (a, b) =>
+            order[a.outgoingStatus ?? "waiting"] -
+              order[b.outgoingStatus ?? "waiting"] ||
+            (b.requestedAt ?? "").localeCompare(a.requestedAt ?? ""),
+        );
+    }
+    // 好友列表：双向已成为好友
+    return mine
+      .filter(
+        (r) =>
+          (isIncoming(r) && r.status === "accepted") ||
+          (isOutgoing(r) && r.outgoingStatus === "accepted"),
+      )
+      .sort((a, b) =>
+        (b.lastInteractAt ?? b.decidedAt ?? "").localeCompare(
+          a.lastInteractAt ?? a.decidedAt ?? "",
+        ),
+      );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requests, activeAccountId, tab, keyword, reappMap]);
 
