@@ -30,6 +30,9 @@ import { useTenantScope } from "@/lib/tenant-scope";
 ensureActivityTasksSeeded();
 
 export const Route = createFileRoute("/_app/accounts/messages")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    peer: typeof search.peer === "string" ? search.peer : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "私信管理 — BooPilot" },
@@ -42,14 +45,20 @@ export const Route = createFileRoute("/_app/accounts/messages")({
 });
 
 type ScopeKey = "current" | "all";
-type FilterKey = "all" | "starred";
-type ReadFilterKey = "all" | "unread" | "read";
+type ListFilterKey = "all" | "todo" | "unread" | "starred";
 
-const READ_FILTERS: { key: ReadFilterKey; label: string }[] = [
+const LIST_FILTERS: { key: ListFilterKey; label: string }[] = [
   { key: "all", label: "全部" },
+  { key: "todo", label: "待我回复" },
   { key: "unread", label: "未读" },
-  { key: "read", label: "已读" },
+  { key: "starred", label: "关注" },
 ];
+
+/** 待我回复：最后一条是对方发来的消息 */
+function isTodoConv(c: Conversation) {
+  return c.messages[c.messages.length - 1]?.direction === "in";
+}
+
 
 function MessagesPage() {
   const [tenantScope] = useTenantScope();
