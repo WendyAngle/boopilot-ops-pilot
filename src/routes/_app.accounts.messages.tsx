@@ -42,6 +42,13 @@ export const Route = createFileRoute("/_app/accounts/messages")({
 
 type ScopeKey = "current" | "all";
 type FilterKey = "all" | "starred";
+type ReadFilterKey = "all" | "unread" | "read";
+
+const READ_FILTERS: { key: ReadFilterKey; label: string }[] = [
+  { key: "all", label: "全部" },
+  { key: "unread", label: "未读" },
+  { key: "read", label: "已读" },
+];
 
 function MessagesPage() {
   const { accounts, conversations: initialConvs } = useMemo(() => getInboxData(), []);
@@ -51,6 +58,7 @@ function MessagesPage() {
   const [keyword, setKeyword] = useState("");
   const [scope, setScope] = useState<ScopeKey>("current");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [readFilter, setReadFilter] = useState<ReadFilterKey>("all");
 
   const isAllScope = scope === "all";
 
@@ -72,11 +80,23 @@ function MessagesPage() {
     () => scopedConvs.filter((c) => c.starred).length,
     [scopedConvs],
   );
+  // 已读 / 未读会话数（基于当前标星筛选后的范围）
+  const readScopedConvs = useMemo(
+    () => scopedConvs.filter((c) => (filter === "starred" ? c.starred : true)),
+    [scopedConvs, filter],
+  );
+  const unreadConvCount = useMemo(
+    () => readScopedConvs.filter((c) => c.unread > 0).length,
+    [readScopedConvs],
+  );
+  const readConvCount = readScopedConvs.length - unreadConvCount;
 
   const accountConvs = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    return scopedConvs
-      .filter((c) => (filter === "starred" ? c.starred : true))
+    return readScopedConvs
+      .filter((c) =>
+        readFilter === "unread" ? c.unread > 0 : readFilter === "read" ? c.unread === 0 : true,
+      )
       .filter((c) =>
         kw
           ? c.peerName.toLowerCase().includes(kw) ||
@@ -85,7 +105,7 @@ function MessagesPage() {
           : true,
       )
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  }, [scopedConvs, keyword, filter]);
+  }, [readScopedConvs, keyword, readFilter]);
 
   // 默认选中该账号的第一条会话
   useEffect(() => {
@@ -331,11 +351,38 @@ function MessagesPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>共 {accountConvs.length} 个会话</span>
-                {isAllScope && (
-                  <span className="rounded bg-muted px-1.5 py-0.5">跨账号视图</span>
-                )}
+              <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                <span className="shrink-0">共 {accountConvs.length} 个会话</span>
+                <div className="flex items-center gap-2">
+                  {isAllScope && (
+                    <span className="rounded bg-muted px-1.5 py-0.5">跨账号视图</span>
+                  )}
+                  <div className="inline-flex items-center rounded-md border text-[11px]">
+                    {READ_FILTERS.map((f, i) => (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setReadFilter(f.key)}
+                        className={cn(
+                          "px-2 py-0.5 transition-colors",
+                          i === 0 && "rounded-l-md",
+                          i === READ_FILTERS.length - 1 && "rounded-r-md",
+                          i > 0 && "border-l",
+                          readFilter === f.key
+                            ? "bg-accent text-foreground"
+                            : "text-muted-foreground hover:bg-accent/50",
+                        )}
+                      >
+                        {f.label}
+                        {f.key !== "all" && (
+                          <span className="ml-1 tabular-nums">
+                            {f.key === "unread" ? unreadConvCount : readConvCount}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
             <ScrollArea className="flex-1">
@@ -360,11 +407,15 @@ function MessagesPage() {
                 {accountConvs.length === 0 && (
                   <div className="flex flex-col items-center gap-2 px-2 py-10 text-center text-xs text-muted-foreground">
                     <MessageSquare className="h-6 w-6 opacity-50" />
-                    {filter === "starred"
-                      ? isAllScope
-                        ? "暂无标星会话，点击会话卡片右上角的星标可加入"
-                        : "该账号下暂无标星会话"
-                      : "暂无私信会话"}
+                    {readFilter === "unread"
+                      ? "暂无未读会话"
+                      : readFilter === "read"
+                        ? "暂无已读会话"
+                        : filter === "starred"
+                          ? isAllScope
+                            ? "暂无标星会话，点击会话卡片右上角的星标可加入"
+                            : "该账号下暂无标星会话"
+                          : "暂无私信会话"}
                   </div>
                 )}
               </div>
