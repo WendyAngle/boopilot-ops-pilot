@@ -922,7 +922,53 @@ function FriendsPage() {
 
               {/* 底部操作栏 */}
               <div className="flex items-center justify-end gap-2 border-t bg-muted/30 px-4 py-3">
-                {active.status === "pending" && (
+                {isOutgoing(active) && (
+                  <>
+                    {(active.outgoingStatus === "waiting" ||
+                      active.outgoingStatus === "expired") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={withdrawOutgoing}
+                        className="gap-1.5"
+                      >
+                        <UserX className="h-3.5 w-3.5" />
+                        撤回申请
+                      </Button>
+                    )}
+                    {(active.outgoingStatus === "declined" ||
+                      active.outgoingStatus === "withdrawn" ||
+                      active.outgoingStatus === "expired") && (
+                      <Button size="sm" onClick={resendOutgoing} className="gap-1.5">
+                        <UserPlus className="h-3.5 w-3.5" />
+                        重新发起申请
+                      </Button>
+                    )}
+                    {active.outgoingStatus === "accepted" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={icebreak}
+                          className="gap-1.5"
+                        >
+                          <MessageSquareText className="h-3.5 w-3.5" />
+                          发私信破冰
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRemoveOpen(true)}
+                          className="gap-1.5 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          解除好友
+                        </Button>
+                      </>
+                    )}
+                  </>
+                )}
+                {isIncoming(active) && active.status === "pending" && (
                   <>
                     <Button
                       variant="outline"
