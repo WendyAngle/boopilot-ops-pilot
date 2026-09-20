@@ -102,6 +102,24 @@ export interface FriendRequest {
   publicReasonText?: string;
   /** 已拒绝后是否加入「持续关注」名单：对方若再次申请将高亮提醒 */
   watchlisted?: boolean;
+
+  // ===== 方向相关（outgoing = 我方主动申请对方） =====
+  /** 方向，缺省视为 incoming */
+  direction: FriendDirection;
+  /** outgoing 专用：我方申请的当前状态 */
+  outgoingStatus?: OutgoingStatus;
+  /** outgoing 专用：发起来源 */
+  origin?: OutgoingOrigin;
+  /** outgoing 专用：来源任务名（origin = task 时） */
+  sourceTaskName?: string;
+  /** outgoing 专用：对方响应时间（通过/拒绝） */
+  respondedAt?: string;
+  /** outgoing 专用：我方撤回时间 */
+  withdrawnAt?: string;
+  /** outgoing 专用：申请附言中文原文 */
+  greetingZh?: string;
+  /** outgoing 专用：申请附言实际发送译文 */
+  greetingText?: string;
 }
 
 const PEER_POOL: Array<{
