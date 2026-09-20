@@ -703,12 +703,12 @@ function FriendsPage() {
               {listItems.length === 0 && (
                 <div className="px-3 py-12 text-center text-xs text-muted-foreground">
                   暂无
-                  {tab === "pending"
-                    ? "待处理申请"
-                    : tab === "accepted"
-                      ? "好友"
-                      : tab === "rejected"
-                        ? "已拒绝记录"
+                  {tab === "incoming"
+                    ? "收到的好友申请"
+                    : tab === "outgoing"
+                      ? "我方发起的申请"
+                      : tab === "friends"
+                        ? "好友"
                         : "持续关注对象"}
                 </div>
               )}
