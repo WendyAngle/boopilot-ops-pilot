@@ -76,10 +76,11 @@ function MessagesPage() {
     setActiveAccountId(accounts[0]?.id ?? "");
     setActiveConvId("");
   }, [initialConvs, accounts]);
+  const { peer } = Route.useSearch();
   const [keyword, setKeyword] = useState("");
   const [scope, setScope] = useState<ScopeKey>("current");
-  const [filter, setFilter] = useState<FilterKey>("all");
-  const [readFilter, setReadFilter] = useState<ReadFilterKey>("all");
+  const [listFilter, setListFilter] = useState<ListFilterKey>("all");
+
 
   const isAllScope = scope === "all";
 
@@ -92,31 +93,32 @@ function MessagesPage() {
     return map;
   }, [conversations]);
 
-  // 计数：当前作用范围下的 全部 / 标星
+  // 计数：当前作用范围下的各筛选项
   const scopedConvs = useMemo(
     () => (isAllScope ? conversations : conversations.filter((c) => c.accountId === activeAccountId)),
     [conversations, isAllScope, activeAccountId],
   );
-  const starredCount = useMemo(
-    () => scopedConvs.filter((c) => c.starred).length,
+  const filterCounts = useMemo(
+    () => ({
+      all: scopedConvs.length,
+      todo: scopedConvs.filter(isTodoConv).length,
+      unread: scopedConvs.filter((c) => c.unread > 0).length,
+      starred: scopedConvs.filter((c) => c.starred).length,
+    }),
     [scopedConvs],
   );
-  // 已读 / 未读会话数（基于当前标星筛选后的范围）
-  const readScopedConvs = useMemo(
-    () => scopedConvs.filter((c) => (filter === "starred" ? c.starred : true)),
-    [scopedConvs, filter],
-  );
-  const unreadConvCount = useMemo(
-    () => readScopedConvs.filter((c) => c.unread > 0).length,
-    [readScopedConvs],
-  );
-  const readConvCount = readScopedConvs.length - unreadConvCount;
 
   const accountConvs = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    return readScopedConvs
+    return scopedConvs
       .filter((c) =>
-        readFilter === "unread" ? c.unread > 0 : readFilter === "read" ? c.unread === 0 : true,
+        listFilter === "todo"
+          ? isTodoConv(c)
+          : listFilter === "unread"
+            ? c.unread > 0
+            : listFilter === "starred"
+              ? c.starred
+              : true,
       )
       .filter((c) =>
         kw
@@ -126,7 +128,8 @@ function MessagesPage() {
           : true,
       )
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  }, [readScopedConvs, keyword, readFilter]);
+  }, [scopedConvs, keyword, listFilter]);
+
 
   // 默认选中该账号的第一条会话
   useEffect(() => {
