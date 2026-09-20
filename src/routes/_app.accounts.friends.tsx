@@ -574,27 +574,27 @@ function FriendsPage() {
           <div className="border-b p-2">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
               <TabsList className="grid w-full grid-cols-4 gap-0.5">
-                <TabsTrigger value="pending" className="gap-1 px-1.5 text-xs">
-                  待处理
-                  {countsForActive.pending > 0 && (
+                <TabsTrigger value="incoming" className="gap-1 px-1.5 text-xs">
+                  收到的
+                  {countsForActive.incomingPending > 0 && (
                     <Badge
                       variant="destructive"
                       className="h-4 min-w-4 px-1 text-[10px]"
                     >
-                      {countsForActive.pending}
+                      {countsForActive.incomingPending}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="accepted" className="gap-1 px-1.5 text-xs">
-                  好友
+                <TabsTrigger value="outgoing" className="gap-1 px-1.5 text-xs">
+                  我发起的
                   <span className="text-[10px] text-muted-foreground">
-                    {countsForActive.accepted}
+                    {countsForActive.outgoing}
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="rejected" className="gap-1 px-1.5 text-xs">
-                  已拒绝
+                <TabsTrigger value="friends" className="gap-1 px-1.5 text-xs">
+                  好友
                   <span className="text-[10px] text-muted-foreground">
-                    {countsForActive.rejected}
+                    {countsForActive.friends}
                   </span>
                 </TabsTrigger>
                 <TabsTrigger value="watchlist" className="gap-1 px-1.5 text-xs">
