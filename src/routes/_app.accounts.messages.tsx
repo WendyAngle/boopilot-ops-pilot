@@ -51,10 +51,21 @@ const READ_FILTERS: { key: ReadFilterKey; label: string }[] = [
 ];
 
 function MessagesPage() {
-  const { accounts, conversations: initialConvs } = useMemo(() => getInboxData(), []);
+  const [tenantScope] = useTenantScope();
+  const { accounts, conversations: initialConvs } = useMemo(
+    () => getInboxData(),
+    [tenantScope],
+  );
   const [conversations, setConversations] = useState(initialConvs);
   const [activeAccountId, setActiveAccountId] = useState<string>(accounts[0]?.id ?? "");
   const [activeConvId, setActiveConvId] = useState<string>("");
+
+  // 切换租户时重置为该租户下的数据与选中项
+  useEffect(() => {
+    setConversations(initialConvs);
+    setActiveAccountId(accounts[0]?.id ?? "");
+    setActiveConvId("");
+  }, [initialConvs, accounts]);
   const [keyword, setKeyword] = useState("");
   const [scope, setScope] = useState<ScopeKey>("current");
   const [filter, setFilter] = useState<FilterKey>("all");
