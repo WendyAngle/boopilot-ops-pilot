@@ -168,6 +168,17 @@ function FriendsPage() {
   // 全局再次申请数量（用于顶部横幅）
   const reappGlobal = reappMap.size;
 
+  // 账号维度「待跟进」计数：我方发起后长期未响应，需要撤回或重新发起
+  const followUpByAccount = useMemo(() => {
+    const map = new Map<string, number>();
+    requests.forEach((r) => {
+      if (isOutgoing(r) && r.outgoingStatus === "expired") {
+        map.set(r.accountId, (map.get(r.accountId) ?? 0) + 1);
+      }
+    });
+    return map;
+  }, [requests]);
+
   const countsForActive = useMemo(() => {
     const c = {
       incoming: 0,
@@ -178,12 +189,15 @@ function FriendsPage() {
       outgoingResponded: 0,
       friends: 0,
       watchlist: 0,
+      sentToday: 0,
     };
     requests
       .filter((r) => r.accountId === activeAccountId)
       .forEach((r) => {
+        if (r.watchlisted) c.watchlist++;
         if (isOutgoing(r)) {
           c.outgoing++;
+          if (r.requestedAt.startsWith(todayStr())) c.sentToday++;
           if (r.outgoingStatus === "waiting" || r.outgoingStatus === "expired") {
             c.outgoingWaiting++;
           }
@@ -198,7 +212,6 @@ function FriendsPage() {
         c.incoming++;
         if (r.status === "pending") c.incomingPending++;
         if (r.status === "accepted") c.friends++;
-        if (r.status === "rejected" && r.watchlisted) c.watchlist++;
       });
     return c;
   }, [requests, activeAccountId]);
@@ -210,6 +223,9 @@ function FriendsPage() {
             100,
         )
       : null;
+
+  const limitReached = countsForActive.sentToday >= DAILY_OUTGOING_LIMIT;
+
 
   // 计算某条 rejected+watchlisted 的紧迫度
   const urgencyOf = (r: FriendRequest): "reapplied" | "overdue" | "watching" => {
