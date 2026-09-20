@@ -454,7 +454,7 @@ function FriendsPage() {
     if (first.accountId !== activeAccountId) {
       setActiveAccountId(first.accountId);
     }
-    setTab("pending");
+    setTab("incoming");
     setActiveId(first.id);
   };
 
