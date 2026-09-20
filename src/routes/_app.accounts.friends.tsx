@@ -66,6 +66,9 @@ import { useTenantScope } from "@/lib/tenant-scope";
 ensureActivityTasksSeeded();
 
 export const Route = createFileRoute("/_app/accounts/friends")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    peer: typeof search.peer === "string" ? search.peer : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "好友管理 — BooPilot" },
@@ -91,6 +94,13 @@ function daysSince(dt: string): number {
   if (Number.isNaN(t)) return 0;
   return Math.max(0, Math.floor((Date.now() - t) / 86400000));
 }
+
+function todayStr(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 
 function FriendsPage() {
   const [tenantScope] = useTenantScope();
