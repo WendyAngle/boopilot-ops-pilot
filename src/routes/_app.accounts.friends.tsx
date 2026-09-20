@@ -414,6 +414,33 @@ function FriendsPage() {
     );
   };
 
+  // ===== 我方发起的申请：撤回 / 重新发起 / 破冰私信 =====
+  const withdrawOutgoing = () => {
+    if (!active) return;
+    patch(active.id, { outgoingStatus: "withdrawn", withdrawnAt: now() });
+    toast.success("已撤回好友申请");
+  };
+
+  const resendOutgoing = () => {
+    if (!active || !activeAccount) return;
+    patch(active.id, {
+      outgoingStatus: "waiting",
+      requestedAt: now(),
+      withdrawnAt: undefined,
+      respondedAt: undefined,
+    });
+    toast.success(
+      `已重新发起：「${activeAccount.username}」向「${active.peerName}」再次发送好友申请`,
+    );
+  };
+
+  const icebreak = () => {
+    if (!active || !activeAccount) return;
+    toast.success(
+      `已生成破冰私信任务：由「${activeAccount.username}」向「${active.peerName}」发送开场私信`,
+    );
+  };
+
   const removeFriend = () => {
     if (!active) return;
     setRequests((prev) => prev.filter((r) => r.id !== active.id));
