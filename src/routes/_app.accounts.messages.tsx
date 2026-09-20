@@ -80,11 +80,23 @@ function MessagesPage() {
     () => scopedConvs.filter((c) => c.starred).length,
     [scopedConvs],
   );
+  // 已读 / 未读会话数（基于当前标星筛选后的范围）
+  const readScopedConvs = useMemo(
+    () => scopedConvs.filter((c) => (filter === "starred" ? c.starred : true)),
+    [scopedConvs, filter],
+  );
+  const unreadConvCount = useMemo(
+    () => readScopedConvs.filter((c) => c.unread > 0).length,
+    [readScopedConvs],
+  );
+  const readConvCount = readScopedConvs.length - unreadConvCount;
 
   const accountConvs = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    return scopedConvs
-      .filter((c) => (filter === "starred" ? c.starred : true))
+    return readScopedConvs
+      .filter((c) =>
+        readFilter === "unread" ? c.unread > 0 : readFilter === "read" ? c.unread === 0 : true,
+      )
       .filter((c) =>
         kw
           ? c.peerName.toLowerCase().includes(kw) ||
@@ -93,7 +105,7 @@ function MessagesPage() {
           : true,
       )
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  }, [scopedConvs, keyword, filter]);
+  }, [readScopedConvs, keyword, readFilter]);
 
   // 默认选中该账号的第一条会话
   useEffect(() => {
