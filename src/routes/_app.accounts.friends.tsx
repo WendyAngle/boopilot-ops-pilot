@@ -227,14 +227,19 @@ function FriendsPage() {
   const limitReached = countsForActive.sentToday >= DAILY_OUTGOING_LIMIT;
 
 
-  // 计算某条 rejected+watchlisted 的紧迫度
+  // 计算关注对象的紧迫度
   const urgencyOf = (r: FriendRequest): "reapplied" | "overdue" | "watching" => {
     const k = `${r.accountId}::${r.peerHandle}`;
-    if (reappMap.has(k)) return "reapplied";
-    const days = daysSince(r.decidedAt ?? r.requestedAt);
-    if (days > 30) return "overdue";
+    if (isIncoming(r) && r.status === "rejected" && reappMap.has(k)) {
+      return "reapplied";
+    }
+    if (isOutgoing(r) && r.outgoingStatus === "expired") return "overdue";
+    if (isIncoming(r) && r.status === "rejected") {
+      return daysSince(r.decidedAt ?? r.requestedAt) > 30 ? "overdue" : "watching";
+    }
     return "watching";
   };
+
 
   const listItems = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
@@ -253,13 +258,8 @@ function FriendsPage() {
         watching: 2,
       };
       return requests
-        .filter(
-          (r) =>
-            r.accountId === activeAccountId &&
-            isIncoming(r) &&
-            r.status === "rejected" &&
-            r.watchlisted,
-        )
+        .filter((r) => r.accountId === activeAccountId && r.watchlisted)
+
         .filter(matchKw)
         .sort((a, b) => {
           const ua = urgencyOf(a);
@@ -291,10 +291,12 @@ function FriendsPage() {
       const order: Record<OutgoingStatus, number> = {
         expired: 0,
         waiting: 1,
-        accepted: 2,
-        declined: 3,
-        withdrawn: 4,
+        withdrawing: 2,
+        accepted: 3,
+        declined: 4,
+        withdrawn: 5,
       };
+
       return mine
         .filter(isOutgoing)
         .sort(
