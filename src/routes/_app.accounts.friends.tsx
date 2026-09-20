@@ -214,7 +214,9 @@ function FriendsPage() {
       kw
         ? r.peerName.toLowerCase().includes(kw) ||
           r.peerHandle.toLowerCase().includes(kw) ||
-          (r.requestText ?? "").toLowerCase().includes(kw)
+          (r.requestText ?? "").toLowerCase().includes(kw) ||
+          (r.greetingZh ?? "").toLowerCase().includes(kw) ||
+          (r.sourceTaskName ?? "").toLowerCase().includes(kw)
         : true;
     if (tab === "watchlist") {
       const order: Record<"reapplied" | "overdue" | "watching", number> = {
