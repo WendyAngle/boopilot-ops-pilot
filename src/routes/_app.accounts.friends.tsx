@@ -1144,38 +1144,99 @@ function FriendsPage() {
 
               {/* 底部操作栏 */}
               <div className="flex items-center justify-end gap-2 border-t bg-muted/30 px-4 py-3">
+                {!(isIncoming(active) && active.status === "rejected") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleWatchlist}
+                    className="mr-auto gap-1.5"
+                  >
+                    {active.watchlisted ? (
+                      <>
+                        <BellRing className="h-3.5 w-3.5 text-primary" />
+                        已关注
+                      </>
+                    ) : (
+                      <>
+                        <Bell className="h-3.5 w-3.5" />
+                        关注
+                      </>
+                    )}
+                  </Button>
+                )}
                 {isOutgoing(active) && (
                   <>
-                    {(active.outgoingStatus === "waiting" ||
-                      active.outgoingStatus === "expired") && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={withdrawOutgoing}
-                        className="gap-1.5"
-                      >
-                        <UserX className="h-3.5 w-3.5" />
-                        撤回申请
-                      </Button>
+                    {active.outgoingStatus !== "accepted" && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={
+                                active.outgoingStatus !== "waiting" &&
+                                active.outgoingStatus !== "expired"
+                              }
+                              onClick={withdrawOutgoing}
+                              className="gap-1.5"
+                            >
+                              <UserX className="h-3.5 w-3.5" />
+                              {active.outgoingStatus === "withdrawing"
+                                ? "撤回中…"
+                                : "撤回申请"}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {active.outgoingStatus === "withdrawing"
+                            ? "托管设备正在执行撤回，完成后状态变为「已撤回」"
+                            : active.outgoingStatus === "declined"
+                              ? "对方已处理该申请，无法撤回"
+                              : active.outgoingStatus === "withdrawn"
+                                ? "该申请已撤回"
+                                : "仅等待对方处理期间可撤回，撤回对对方静默无通知"}
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                     {(active.outgoingStatus === "declined" ||
                       active.outgoingStatus === "withdrawn" ||
                       active.outgoingStatus === "expired") && (
-                      <Button size="sm" onClick={resendOutgoing} className="gap-1.5">
-                        <UserPlus className="h-3.5 w-3.5" />
-                        重新发起申请
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              size="sm"
+                              disabled={limitReached}
+                              onClick={resendOutgoing}
+                              className="gap-1.5"
+                            >
+                              <UserPlus className="h-3.5 w-3.5" />
+                              重新发起申请
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {limitReached
+                            ? `该账号今日发起已达上限（${DAILY_OUTGOING_LIMIT} 条）`
+                            : "由托管设备重新向对方发送好友申请"}
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                     {active.outgoingStatus === "accepted" && (
                       <>
                         <Button
+                          asChild
                           variant="outline"
                           size="sm"
-                          onClick={icebreak}
                           className="gap-1.5"
                         >
-                          <MessageSquareText className="h-3.5 w-3.5" />
-                          发私信破冰
+                          <Link
+                            to="/accounts/messages"
+                            search={{ peer: active.peerHandle }}
+                          >
+                            <MessageSquareText className="h-3.5 w-3.5" />
+                            发私信破冰
+                          </Link>
                         </Button>
                         <Button
                           variant="outline"
@@ -1190,6 +1251,7 @@ function FriendsPage() {
                     )}
                   </>
                 )}
+
                 {isIncoming(active) && active.status === "pending" && (
                   <>
                     <Button
