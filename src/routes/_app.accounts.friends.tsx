@@ -720,7 +720,8 @@ function FriendsPage() {
                   </span>
                 </TabsTrigger>
                 <TabsTrigger value="watchlist" className="gap-1 px-1.5 text-xs">
-                  持续关注
+                  关注
+
                   {countsForActive.watchlist > 0 && (
                     <span className="text-[10px] text-muted-foreground">
                       {countsForActive.watchlist}
@@ -831,7 +832,7 @@ function FriendsPage() {
                       ? "我方发起的申请"
                       : tab === "friends"
                         ? "好友"
-                        : "持续关注对象"}
+                        : "关注对象"}
                 </div>
               )}
             </div>
@@ -1093,8 +1094,9 @@ function FriendsPage() {
                       {active.watchlisted && (
                         <div className="flex items-center gap-1.5 text-xs text-primary">
                           <BellRing className="h-3.5 w-3.5" />
-                          已加入持续关注，对方再次申请将高亮提醒
+                          已加入关注，对方再次申请将高亮提醒
                         </div>
+
                       )}
                       {active.publicReasonZh && (
                         <div className="rounded-md border p-3">
