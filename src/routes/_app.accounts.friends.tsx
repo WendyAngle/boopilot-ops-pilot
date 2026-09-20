@@ -611,6 +611,7 @@ function FriendsPage() {
               {accounts.map((a) => {
                 const meta = platformMeta(a.platform);
                 const pend = pendingByAccount.get(a.id) ?? 0;
+                const follow = followUpByAccount.get(a.id) ?? 0;
                 const isActive = a.id === activeAccountId;
                 return (
                   <button
@@ -644,14 +645,40 @@ function FriendsPage() {
                         {a.platformId}
                       </div>
                     </div>
-                    {pend > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-5 shrink-0 px-1.5 text-[10px]"
-                      >
-                        {pend}
-                      </Badge>
-                    )}
+                    <div className="flex shrink-0 items-center gap-1">
+                      {pend > 0 && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="destructive"
+                              className="h-5 min-w-5 px-1.5 text-[10px]"
+                            >
+                              {pend}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>{pend} 条收到的申请待我处理</TooltipContent>
+                        </Tooltip>
+                      )}
+                      {follow > 0 && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="h-5 min-w-5 px-1.5 text-[10px] font-normal text-muted-foreground"
+                            >
+                              {follow}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {follow} 条我方发起的申请长期未响应，待跟进
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+
                   </button>
                 );
               })}
