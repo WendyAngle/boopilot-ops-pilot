@@ -360,43 +360,35 @@ function MessagesPage() {
           {/* Column 2: Conversations */}
           <div className="flex min-h-0 flex-col border-r">
             <div className="border-b p-2.5 space-y-2">
-              {/* 筛选 Tabs + 范围切换 */}
+              {/* 统一筛选：全部 / 待我回复 / 未读 / 关注 + 范围切换 */}
               <div className="flex items-center justify-between gap-2">
                 <div className="inline-flex items-center rounded-md bg-muted p-0.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setFilter("all")}
-                    className={cn(
-                      "flex items-center gap-1 rounded px-2 py-0.5 transition-colors",
-                      filter === "all"
-                        ? "bg-background shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    全部
-                    <span className="text-[10px] text-muted-foreground">
-                      {scopedConvs.length}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilter("starred")}
-                    className={cn(
-                      "flex items-center gap-1 rounded px-2 py-0.5 transition-colors",
-                      filter === "starred"
-                        ? "bg-background text-amber-700 shadow-sm dark:text-amber-300"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <Star
-                      className="h-3 w-3"
-                      fill={filter === "starred" ? "currentColor" : "none"}
-                    />
-                    标星
-                    <span className="text-[10px] text-muted-foreground">
-                      {starredCount}
-                    </span>
-                  </button>
+                  {LIST_FILTERS.map((f) => {
+                    const on = listFilter === f.key;
+                    return (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setListFilter(f.key)}
+                        className={cn(
+                          "flex items-center gap-1 rounded px-2 py-0.5 transition-colors",
+                          on
+                            ? f.key === "starred"
+                              ? "bg-background text-amber-700 shadow-sm dark:text-amber-300"
+                              : "bg-background shadow-sm"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {f.key === "starred" && (
+                          <Star className="h-3 w-3" fill={on ? "currentColor" : "none"} />
+                        )}
+                        {f.label}
+                        <span className="text-[10px] tabular-nums text-muted-foreground">
+                          {filterCounts[f.key]}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="inline-flex items-center rounded-md border text-[11px]">
                   <button
@@ -442,34 +434,23 @@ function MessagesPage() {
                   {isAllScope && (
                     <span className="rounded bg-muted px-1.5 py-0.5">跨账号视图</span>
                   )}
-                  <div className="inline-flex items-center rounded-md border text-[11px]">
-                    {READ_FILTERS.map((f, i) => (
-                      <button
-                        key={f.key}
-                        type="button"
-                        onClick={() => setReadFilter(f.key)}
-                        className={cn(
-                          "px-2 py-0.5 transition-colors",
-                          i === 0 && "rounded-l-md",
-                          i === READ_FILTERS.length - 1 && "rounded-r-md",
-                          i > 0 && "border-l",
-                          readFilter === f.key
-                            ? "bg-accent text-foreground"
-                            : "text-muted-foreground hover:bg-accent/50",
-                        )}
-                      >
-                        {f.label}
-                        {f.key !== "all" && (
-                          <span className="ml-1 tabular-nums">
-                            {f.key === "unread" ? unreadConvCount : readConvCount}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={markAllRead}
+                    disabled={filterCounts.unread === 0}
+                    className={cn(
+                      "rounded-md border px-2 py-0.5 transition-colors",
+                      filterCounts.unread === 0
+                        ? "cursor-not-allowed opacity-50"
+                        : "hover:bg-accent/50 hover:text-foreground",
+                    )}
+                  >
+                    全部标为已读
+                  </button>
                 </div>
               </div>
             </div>
+
             <ScrollArea className="flex-1">
               <div className="p-1.5">
                 {accountConvs.map((c) => {
