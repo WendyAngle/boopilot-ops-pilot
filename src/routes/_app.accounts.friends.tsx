@@ -1218,22 +1218,62 @@ function UrgencyBadge({
   );
 }
 
-function StatusBadge({ status }: { status: FriendStatus }) {
+function StatusBadge({
+  status,
+  compact,
+}: {
+  status: FriendStatus;
+  compact?: boolean;
+}) {
+  const cls = compact ? "h-4 px-1 text-[10px] font-normal" : "";
   if (status === "pending")
     return (
-      <Badge className="border-warning/30 bg-warning/10 text-warning" variant="outline">
+      <Badge
+        className={cn("border-warning/30 bg-warning/10 text-warning", cls)}
+        variant="outline"
+      >
         待处理
       </Badge>
     );
   if (status === "accepted")
     return (
-      <Badge className="border-success/30 bg-success/10 text-success" variant="outline">
+      <Badge
+        className={cn("border-success/30 bg-success/10 text-success", cls)}
+        variant="outline"
+      >
         好友
       </Badge>
     );
   return (
-    <Badge className="border-muted text-muted-foreground" variant="outline">
+    <Badge
+      className={cn("border-muted text-muted-foreground", cls)}
+      variant="outline"
+    >
       已拒绝
+    </Badge>
+  );
+}
+
+function OutgoingStatusBadge({
+  status,
+  compact = true,
+}: {
+  status: OutgoingStatus;
+  compact?: boolean;
+}) {
+  const map: Record<OutgoingStatus, string> = {
+    waiting: "border-warning/30 bg-warning/10 text-warning",
+    accepted: "border-success/30 bg-success/10 text-success",
+    declined: "border-destructive/30 bg-destructive/10 text-destructive",
+    withdrawn: "border-muted text-muted-foreground",
+    expired: "border-primary/30 bg-primary/10 text-primary",
+  };
+  return (
+    <Badge
+      variant="outline"
+      className={cn(map[status], compact && "h-4 px-1 text-[10px] font-normal")}
+    >
+      {OUTGOING_STATUS_LABEL[status]}
     </Badge>
   );
 }
