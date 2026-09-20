@@ -58,6 +58,7 @@ import {
 } from "@/lib/friends-mock";
 import { useTasks } from "@/lib/operations-store";
 import { ensureActivityTasksSeeded, recordActivity } from "@/lib/activity-tasks";
+import { useTenantScope } from "@/lib/tenant-scope";
 
 ensureActivityTasksSeeded();
 
@@ -89,11 +90,22 @@ function daysSince(dt: string): number {
 }
 
 function FriendsPage() {
-  const { accounts, requests: initial } = useMemo(() => getFriendData(), []);
+  const [tenantScope] = useTenantScope();
+  const { accounts, requests: initial } = useMemo(
+    () => getFriendData(),
+    [tenantScope],
+  );
   const [requests, setRequests] = useState<FriendRequest[]>(initial);
   const [activeAccountId, setActiveAccountId] = useState(accounts[0]?.id ?? "");
   const [tab, setTab] = useState<TabKey>("pending");
   const [activeId, setActiveId] = useState<string>("");
+
+  // 切换租户时重置为该租户下的数据与选中项
+  useEffect(() => {
+    setRequests(initial);
+    setActiveAccountId(accounts[0]?.id ?? "");
+    setActiveId("");
+  }, [initial, accounts]);
   const [keyword, setKeyword] = useState("");
 
   // 账号维度待处理计数
