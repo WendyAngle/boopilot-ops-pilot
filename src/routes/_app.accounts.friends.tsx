@@ -436,25 +436,49 @@ function FriendsPage() {
     if (!active) return;
     const next = !active.watchlisted;
     patch(active.id, { watchlisted: next });
-    toast.success(next ? "已加入持续关注：对方再次申请将高亮提醒" : "已移出持续关注");
+    toast.success(next ? "已加入关注，将在「关注」分类中跟进" : "已取消关注");
   };
 
   const invitePeer = () => {
     if (!active || !activeAccount) return;
+    if (limitReached) {
+      toast.error(
+        `「${activeAccount.username}」今日发起的好友申请已达上限（${DAILY_OUTGOING_LIMIT} 条），请明天再试`,
+      );
+      return;
+    }
     toast.success(
       `已生成主动添加任务：将由「${activeAccount.username}」向「${active.peerName}」发起好友邀请`,
     );
   };
 
-  // ===== 我方发起的申请：撤回 / 重新发起 / 破冰私信 =====
+  // ===== 我方发起的申请：撤回（两态） / 重新发起 / 破冰私信 =====
   const withdrawOutgoing = () => {
     if (!active) return;
-    patch(active.id, { outgoingStatus: "withdrawn", withdrawnAt: now() });
-    toast.success("已撤回好友申请");
+    const id = active.id;
+    const peerName = active.peerName;
+    patch(id, { outgoingStatus: "withdrawing" });
+    toast.info(`撤回指令已下发，正在由托管设备执行…（对方：${peerName}）`);
+    setTimeout(() => {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id && r.outgoingStatus === "withdrawing"
+            ? { ...r, outgoingStatus: "withdrawn", withdrawnAt: now() }
+            : r,
+        ),
+      );
+      toast.success(`已撤回对「${peerName}」的好友申请`);
+    }, 2200);
   };
 
   const resendOutgoing = () => {
     if (!active || !activeAccount) return;
+    if (limitReached) {
+      toast.error(
+        `「${activeAccount.username}」今日发起的好友申请已达上限（${DAILY_OUTGOING_LIMIT} 条），请明天再试`,
+      );
+      return;
+    }
     patch(active.id, {
       outgoingStatus: "waiting",
       requestedAt: now(),
@@ -463,13 +487,6 @@ function FriendsPage() {
     });
     toast.success(
       `已重新发起：「${activeAccount.username}」向「${active.peerName}」再次发送好友申请`,
-    );
-  };
-
-  const icebreak = () => {
-    if (!active || !activeAccount) return;
-    toast.success(
-      `已生成破冰私信任务：由「${activeAccount.username}」向「${active.peerName}」发送开场私信`,
     );
   };
 
@@ -489,6 +506,31 @@ function FriendsPage() {
     setTab("incoming");
     setActiveId(first.id);
   };
+
+  // 从私信管理跳转过来：定位到该联系人的好友记录
+  useEffect(() => {
+    if (!peer) return;
+    const target = requests.find(
+      (r) => r.peerHandle.toLowerCase() === peer.toLowerCase(),
+    );
+    if (!target) {
+      toast.info(`「${peer}」暂无好友关系记录`);
+      return;
+    }
+    setActiveAccountId(target.accountId);
+    setTab(
+      isOutgoing(target)
+        ? target.outgoingStatus === "accepted"
+          ? "friends"
+          : "outgoing"
+        : target.status === "accepted"
+          ? "friends"
+          : "incoming",
+    );
+    setActiveId(target.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peer, requests.length]);
+
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-3">
