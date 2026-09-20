@@ -80,7 +80,7 @@ export const Route = createFileRoute("/_app/accounts/friends")({
   component: FriendsPage,
 });
 
-type TabKey = FriendStatus | "watchlist";
+type TabKey = "incoming" | "outgoing" | "friends" | "watchlist";
 
 function daysSince(dt: string): number {
   // "YYYY-MM-DD HH:mm"
@@ -97,7 +97,7 @@ function FriendsPage() {
   );
   const [requests, setRequests] = useState<FriendRequest[]>(initial);
   const [activeAccountId, setActiveAccountId] = useState(accounts[0]?.id ?? "");
-  const [tab, setTab] = useState<TabKey>("pending");
+  const [tab, setTab] = useState<TabKey>("incoming");
   const [activeId, setActiveId] = useState<string>("");
 
   // 切换租户时重置为该租户下的数据与选中项
