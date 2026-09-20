@@ -42,6 +42,13 @@ export const Route = createFileRoute("/_app/accounts/messages")({
 
 type ScopeKey = "current" | "all";
 type FilterKey = "all" | "starred";
+type ReadFilterKey = "all" | "unread" | "read";
+
+const READ_FILTERS: { key: ReadFilterKey; label: string }[] = [
+  { key: "all", label: "全部" },
+  { key: "unread", label: "未读" },
+  { key: "read", label: "已读" },
+];
 
 function MessagesPage() {
   const { accounts, conversations: initialConvs } = useMemo(() => getInboxData(), []);
@@ -51,6 +58,7 @@ function MessagesPage() {
   const [keyword, setKeyword] = useState("");
   const [scope, setScope] = useState<ScopeKey>("current");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [readFilter, setReadFilter] = useState<ReadFilterKey>("all");
 
   const isAllScope = scope === "all";
 
