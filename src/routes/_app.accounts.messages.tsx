@@ -331,11 +331,38 @@ function MessagesPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>共 {accountConvs.length} 个会话</span>
-                {isAllScope && (
-                  <span className="rounded bg-muted px-1.5 py-0.5">跨账号视图</span>
-                )}
+              <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                <span className="shrink-0">共 {accountConvs.length} 个会话</span>
+                <div className="flex items-center gap-2">
+                  {isAllScope && (
+                    <span className="rounded bg-muted px-1.5 py-0.5">跨账号视图</span>
+                  )}
+                  <div className="inline-flex items-center rounded-md border text-[11px]">
+                    {READ_FILTERS.map((f, i) => (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setReadFilter(f.key)}
+                        className={cn(
+                          "px-2 py-0.5 transition-colors",
+                          i === 0 && "rounded-l-md",
+                          i === READ_FILTERS.length - 1 && "rounded-r-md",
+                          i > 0 && "border-l",
+                          readFilter === f.key
+                            ? "bg-accent text-foreground"
+                            : "text-muted-foreground hover:bg-accent/50",
+                        )}
+                      >
+                        {f.label}
+                        {f.key !== "all" && (
+                          <span className="ml-1 tabular-nums">
+                            {f.key === "unread" ? unreadConvCount : readConvCount}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
             <ScrollArea className="flex-1">
