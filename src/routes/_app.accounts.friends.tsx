@@ -111,11 +111,14 @@ function FriendsPage() {
   }, [initial, accounts]);
   const [keyword, setKeyword] = useState("");
 
-  // 账号维度待处理计数
+  const isIncoming = (r: FriendRequest) => r.direction !== "outgoing";
+  const isOutgoing = (r: FriendRequest) => r.direction === "outgoing";
+
+  // 账号维度待处理计数（只统计需要人工处理的「收到的申请」）
   const pendingByAccount = useMemo(() => {
     const map = new Map<string, number>();
     requests.forEach((r) => {
-      if (r.status === "pending") {
+      if (isIncoming(r) && r.status === "pending") {
         map.set(r.accountId, (map.get(r.accountId) ?? 0) + 1);
       }
     });
@@ -125,13 +128,14 @@ function FriendsPage() {
   // 「再次申请」映射：key = accountId::peerHandle
   // 只有当同一账号下，该 peer 既有 pending 又有 rejected+watchlisted 时才算「再次申请」
   const reappMap = useMemo(() => {
+    const incoming = requests.filter(isIncoming);
     const pendingKeys = new Set(
-      requests
+      incoming
         .filter((r) => r.status === "pending")
         .map((r) => `${r.accountId}::${r.peerHandle}`),
     );
     const map = new Map<string, FriendRequest>(); // key -> pending 申请
-    requests.forEach((r) => {
+    incoming.forEach((r) => {
       const k = `${r.accountId}::${r.peerHandle}`;
       if (r.status === "pending" && pendingKeys.has(k)) {
         map.set(k, r);
@@ -139,7 +143,7 @@ function FriendsPage() {
     });
     // 仅保留同时存在 watchlisted rejected 的
     const result = new Map<string, FriendRequest>();
-    requests.forEach((r) => {
+    incoming.forEach((r) => {
       if (r.status === "rejected" && r.watchlisted) {
         const k = `${r.accountId}::${r.peerHandle}`;
         const p = map.get(k);
@@ -153,15 +157,47 @@ function FriendsPage() {
   const reappGlobal = reappMap.size;
 
   const countsForActive = useMemo(() => {
-    const c = { pending: 0, accepted: 0, rejected: 0, watchlist: 0 };
+    const c = {
+      incoming: 0,
+      incomingPending: 0,
+      outgoing: 0,
+      outgoingWaiting: 0,
+      outgoingAccepted: 0,
+      outgoingResponded: 0,
+      friends: 0,
+      watchlist: 0,
+    };
     requests
       .filter((r) => r.accountId === activeAccountId)
       .forEach((r) => {
-        c[r.status]++;
+        if (isOutgoing(r)) {
+          c.outgoing++;
+          if (r.outgoingStatus === "waiting" || r.outgoingStatus === "expired") {
+            c.outgoingWaiting++;
+          }
+          if (r.outgoingStatus === "accepted") {
+            c.outgoingAccepted++;
+            c.outgoingResponded++;
+            c.friends++;
+          }
+          if (r.outgoingStatus === "declined") c.outgoingResponded++;
+          return;
+        }
+        c.incoming++;
+        if (r.status === "pending") c.incomingPending++;
+        if (r.status === "accepted") c.friends++;
         if (r.status === "rejected" && r.watchlisted) c.watchlist++;
       });
     return c;
   }, [requests, activeAccountId]);
+
+  const acceptRate =
+    countsForActive.outgoingResponded > 0
+      ? Math.round(
+          (countsForActive.outgoingAccepted / countsForActive.outgoingResponded) *
+            100,
+        )
+      : null;
 
   // 计算某条 rejected+watchlisted 的紧迫度
   const urgencyOf = (r: FriendRequest): "reapplied" | "overdue" | "watching" => {
