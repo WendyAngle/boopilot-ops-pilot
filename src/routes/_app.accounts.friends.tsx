@@ -53,8 +53,11 @@ import {
   translateZhTo,
   LANG_LABEL,
   SOURCE_LABEL,
+  OUTGOING_STATUS_LABEL,
+  OUTGOING_ORIGIN_LABEL,
   type FriendRequest,
   type FriendStatus,
+  type OutgoingStatus,
 } from "@/lib/friends-mock";
 import { useTasks } from "@/lib/operations-store";
 import { ensureActivityTasksSeeded, recordActivity } from "@/lib/activity-tasks";
