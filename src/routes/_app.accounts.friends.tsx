@@ -781,26 +781,114 @@ function FriendsPage() {
               <ScrollArea className="flex-1">
                 <div className="space-y-4 p-4">
                   {/* 元信息 */}
-                  <div className="grid grid-cols-3 gap-3 text-xs">
-                    <MetaCell
-                      icon={<Users className="h-3.5 w-3.5" />}
-                      label="共同好友"
-                      value={String(active.mutualFriends)}
-                    />
-                    <MetaCell
-                      icon={<Sparkles className="h-3.5 w-3.5" />}
-                      label="来源"
-                      value={SOURCE_LABEL[active.source]}
-                    />
-                    <MetaCell
-                      icon={<MessageSquareText className="h-3.5 w-3.5" />}
-                      label="申请时间"
-                      value={active.requestedAt}
-                    />
-                  </div>
+                  {isOutgoing(active) ? (
+                    <>
+                      <div className="grid grid-cols-3 gap-3 text-xs">
+                        <MetaCell
+                          icon={<Users className="h-3.5 w-3.5" />}
+                          label="共同好友"
+                          value={String(active.mutualFriends)}
+                        />
+                        <MetaCell
+                          icon={<Sparkles className="h-3.5 w-3.5" />}
+                          label="发起来源"
+                          value={
+                            OUTGOING_ORIGIN_LABEL[active.origin ?? "manual"]
+                          }
+                        />
+                        <MetaCell
+                          icon={<MessageSquareText className="h-3.5 w-3.5" />}
+                          label="发起时间"
+                          value={active.requestedAt}
+                        />
+                      </div>
+                      {active.origin === "task" && active.sourceTaskName && (
+                        <MetaLine
+                          label="来源任务"
+                          value={active.sourceTaskName}
+                        />
+                      )}
+                      {active.outgoingStatus === "waiting" && (
+                        <MetaLine
+                          label="等待时长"
+                          value={`已等待 ${daysSince(active.requestedAt)} 天`}
+                        />
+                      )}
+                      {active.outgoingStatus === "expired" && (
+                        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                          <Info className="mt-0.5 h-3.5 w-3.5 flex-none" />
+                          <div className="leading-relaxed">
+                            已发起 {daysSince(active.requestedAt)} 天仍未响应，建议撤回后择机重新发起，避免占用平台待处理申请额度。
+                          </div>
+                        </div>
+                      )}
+                      {active.respondedAt && (
+                        <MetaLine
+                          label={
+                            active.outgoingStatus === "accepted"
+                              ? "对方通过时间"
+                              : "对方拒绝时间"
+                          }
+                          value={active.respondedAt}
+                        />
+                      )}
+                      {active.withdrawnAt && (
+                        <MetaLine label="撤回时间" value={active.withdrawnAt} />
+                      )}
+                      {active.outgoingStatus === "accepted" &&
+                        active.lastInteractAt && (
+                          <MetaLine
+                            label="最近互动"
+                            value={active.lastInteractAt}
+                          />
+                        )}
+                      {active.greetingZh && (
+                        <div className="rounded-md border bg-muted/30 p-3">
+                          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                            <MessageSquareText className="h-3 w-3" />
+                            申请附言（中文原文）
+                          </div>
+                          <div className="text-sm leading-relaxed">
+                            {active.greetingZh}
+                          </div>
+                          {active.greetingText &&
+                            active.greetingText !== active.greetingZh && (
+                              <>
+                                <Separator className="my-2" />
+                                <div className="mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                  <Languages className="h-3 w-3" />
+                                  实际发送 · {LANG_LABEL[active.peerLang]}
+                                </div>
+                                <div className="text-sm leading-relaxed text-muted-foreground">
+                                  {active.greetingText}
+                                </div>
+                              </>
+                            )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <MetaCell
+                        icon={<Users className="h-3.5 w-3.5" />}
+                        label="共同好友"
+                        value={String(active.mutualFriends)}
+                      />
+                      <MetaCell
+                        icon={<Sparkles className="h-3.5 w-3.5" />}
+                        label="来源"
+                        value={SOURCE_LABEL[active.source]}
+                      />
+                      <MetaCell
+                        icon={<MessageSquareText className="h-3.5 w-3.5" />}
+                        label="申请时间"
+                        value={active.requestedAt}
+                      />
+                    </div>
+                  )}
 
                   {/* 申请留言 */}
-                  {active.requestText && (
+                  {isIncoming(active) && active.requestText && (
                     <div className="rounded-md border bg-muted/30 p-3">
                       <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
                         <MessageSquareText className="h-3 w-3" />
