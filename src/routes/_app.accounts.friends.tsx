@@ -661,8 +661,22 @@ function FriendsPage() {
                           <span className="text-[10px] text-muted-foreground">
                             拒绝已 {days} 天
                           </span>
+                        ) : isOutgoing(r) ? (
+                          <>
+                            <OutgoingStatusBadge
+                              status={r.outgoingStatus ?? "waiting"}
+                            />
+                            <span className="truncate text-[10px] text-muted-foreground">
+                              {r.origin === "task" && r.sourceTaskName
+                                ? r.sourceTaskName
+                                : OUTGOING_ORIGIN_LABEL[r.origin ?? "manual"]}
+                            </span>
+                          </>
                         ) : (
                           <>
+                            {tab !== "incoming" ? null : (
+                              <StatusBadge status={r.status} compact />
+                            )}
                             <Badge
                               variant="outline"
                               className="h-4 px-1 text-[10px] font-normal"
@@ -675,6 +689,11 @@ function FriendsPage() {
                               </span>
                             )}
                           </>
+                        )}
+                        {tab === "friends" && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {isOutgoing(r) ? "我方主动" : "对方主动"}
+                          </span>
                         )}
                       </div>
                     </div>
