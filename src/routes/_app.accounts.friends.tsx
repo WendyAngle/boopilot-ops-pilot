@@ -460,11 +460,35 @@ function FriendsPage() {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-3">
-      <div>
-        <h1 className="text-xl font-semibold">好友管理</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          统一查看各账号收到的加好友请求，通过或拒绝后附加备注/欢迎语，已通过的好友进入「好友列表」。
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold">好友管理</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            双向管理好友关系：处理对方发来的申请，同时跟踪我方账号主动发起的申请是否被通过，已成为好友的进入「好友列表」。
+          </p>
+        </div>
+        {activeAccount && (
+          <div className="flex items-center gap-4 rounded-lg border bg-card px-3 py-2 text-xs">
+            <span className="text-muted-foreground">
+              我方发起{" "}
+              <span className="font-semibold text-foreground">
+                {countsForActive.outgoing}
+              </span>
+            </span>
+            <span className="text-muted-foreground">
+              等待中{" "}
+              <span className="font-semibold text-foreground">
+                {countsForActive.outgoingWaiting}
+              </span>
+            </span>
+            <span className="text-muted-foreground">
+              通过率{" "}
+              <span className="font-semibold text-foreground">
+                {acceptRate === null ? "—" : `${acceptRate}%`}
+              </span>
+            </span>
+          </div>
+        )}
       </div>
 
       {reappGlobal > 0 && (
