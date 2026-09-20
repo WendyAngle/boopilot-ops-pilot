@@ -228,6 +228,7 @@ function FriendsPage() {
         .filter(
           (r) =>
             r.accountId === activeAccountId &&
+            isIncoming(r) &&
             r.status === "rejected" &&
             r.watchlisted,
         )
