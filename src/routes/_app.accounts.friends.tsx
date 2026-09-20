@@ -55,6 +55,8 @@ import {
   SOURCE_LABEL,
   OUTGOING_STATUS_LABEL,
   OUTGOING_ORIGIN_LABEL,
+  DAILY_OUTGOING_LIMIT,
+
   type FriendRequest,
   type FriendStatus,
   type OutgoingStatus,
@@ -66,6 +68,9 @@ import { useTenantScope } from "@/lib/tenant-scope";
 ensureActivityTasksSeeded();
 
 export const Route = createFileRoute("/_app/accounts/friends")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    peer: typeof search.peer === "string" ? search.peer : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "好友管理 — BooPilot" },
@@ -92,6 +97,13 @@ function daysSince(dt: string): number {
   return Math.max(0, Math.floor((Date.now() - t) / 86400000));
 }
 
+function todayStr(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+
 function FriendsPage() {
   const [tenantScope] = useTenantScope();
   const { accounts, requests: initial } = useMemo(
@@ -110,6 +122,7 @@ function FriendsPage() {
     setActiveId("");
   }, [initial, accounts]);
   const [keyword, setKeyword] = useState("");
+  const { peer } = Route.useSearch();
 
   const isIncoming = (r: FriendRequest) => r.direction !== "outgoing";
   const isOutgoing = (r: FriendRequest) => r.direction === "outgoing";
@@ -123,6 +136,7 @@ function FriendsPage() {
       }
     });
     return map;
+
   }, [requests]);
 
   // 「再次申请」映射：key = accountId::peerHandle
@@ -156,6 +170,17 @@ function FriendsPage() {
   // 全局再次申请数量（用于顶部横幅）
   const reappGlobal = reappMap.size;
 
+  // 账号维度「待跟进」计数：我方发起后长期未响应，需要撤回或重新发起
+  const followUpByAccount = useMemo(() => {
+    const map = new Map<string, number>();
+    requests.forEach((r) => {
+      if (isOutgoing(r) && r.outgoingStatus === "expired") {
+        map.set(r.accountId, (map.get(r.accountId) ?? 0) + 1);
+      }
+    });
+    return map;
+  }, [requests]);
+
   const countsForActive = useMemo(() => {
     const c = {
       incoming: 0,
@@ -166,12 +191,15 @@ function FriendsPage() {
       outgoingResponded: 0,
       friends: 0,
       watchlist: 0,
+      sentToday: 0,
     };
     requests
       .filter((r) => r.accountId === activeAccountId)
       .forEach((r) => {
+        if (r.watchlisted) c.watchlist++;
         if (isOutgoing(r)) {
           c.outgoing++;
+          if (r.requestedAt.startsWith(todayStr())) c.sentToday++;
           if (r.outgoingStatus === "waiting" || r.outgoingStatus === "expired") {
             c.outgoingWaiting++;
           }
@@ -186,7 +214,6 @@ function FriendsPage() {
         c.incoming++;
         if (r.status === "pending") c.incomingPending++;
         if (r.status === "accepted") c.friends++;
-        if (r.status === "rejected" && r.watchlisted) c.watchlist++;
       });
     return c;
   }, [requests, activeAccountId]);
@@ -199,14 +226,22 @@ function FriendsPage() {
         )
       : null;
 
-  // 计算某条 rejected+watchlisted 的紧迫度
+  const limitReached = countsForActive.sentToday >= DAILY_OUTGOING_LIMIT;
+
+
+  // 计算关注对象的紧迫度
   const urgencyOf = (r: FriendRequest): "reapplied" | "overdue" | "watching" => {
     const k = `${r.accountId}::${r.peerHandle}`;
-    if (reappMap.has(k)) return "reapplied";
-    const days = daysSince(r.decidedAt ?? r.requestedAt);
-    if (days > 30) return "overdue";
+    if (isIncoming(r) && r.status === "rejected" && reappMap.has(k)) {
+      return "reapplied";
+    }
+    if (isOutgoing(r) && r.outgoingStatus === "expired") return "overdue";
+    if (isIncoming(r) && r.status === "rejected") {
+      return daysSince(r.decidedAt ?? r.requestedAt) > 30 ? "overdue" : "watching";
+    }
     return "watching";
   };
+
 
   const listItems = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
@@ -225,13 +260,8 @@ function FriendsPage() {
         watching: 2,
       };
       return requests
-        .filter(
-          (r) =>
-            r.accountId === activeAccountId &&
-            isIncoming(r) &&
-            r.status === "rejected" &&
-            r.watchlisted,
-        )
+        .filter((r) => r.accountId === activeAccountId && r.watchlisted)
+
         .filter(matchKw)
         .sort((a, b) => {
           const ua = urgencyOf(a);
@@ -263,10 +293,12 @@ function FriendsPage() {
       const order: Record<OutgoingStatus, number> = {
         expired: 0,
         waiting: 1,
-        accepted: 2,
-        declined: 3,
-        withdrawn: 4,
+        withdrawing: 2,
+        accepted: 3,
+        declined: 4,
+        withdrawn: 5,
       };
+
       return mine
         .filter(isOutgoing)
         .sort(
@@ -404,25 +436,49 @@ function FriendsPage() {
     if (!active) return;
     const next = !active.watchlisted;
     patch(active.id, { watchlisted: next });
-    toast.success(next ? "已加入持续关注：对方再次申请将高亮提醒" : "已移出持续关注");
+    toast.success(next ? "已加入关注，将在「关注」分类中跟进" : "已取消关注");
   };
 
   const invitePeer = () => {
     if (!active || !activeAccount) return;
+    if (limitReached) {
+      toast.error(
+        `「${activeAccount.username}」今日发起的好友申请已达上限（${DAILY_OUTGOING_LIMIT} 条），请明天再试`,
+      );
+      return;
+    }
     toast.success(
       `已生成主动添加任务：将由「${activeAccount.username}」向「${active.peerName}」发起好友邀请`,
     );
   };
 
-  // ===== 我方发起的申请：撤回 / 重新发起 / 破冰私信 =====
+  // ===== 我方发起的申请：撤回（两态） / 重新发起 / 破冰私信 =====
   const withdrawOutgoing = () => {
     if (!active) return;
-    patch(active.id, { outgoingStatus: "withdrawn", withdrawnAt: now() });
-    toast.success("已撤回好友申请");
+    const id = active.id;
+    const peerName = active.peerName;
+    patch(id, { outgoingStatus: "withdrawing" });
+    toast.info(`撤回指令已下发，正在由托管设备执行…（对方：${peerName}）`);
+    setTimeout(() => {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id && r.outgoingStatus === "withdrawing"
+            ? { ...r, outgoingStatus: "withdrawn", withdrawnAt: now() }
+            : r,
+        ),
+      );
+      toast.success(`已撤回对「${peerName}」的好友申请`);
+    }, 2200);
   };
 
   const resendOutgoing = () => {
     if (!active || !activeAccount) return;
+    if (limitReached) {
+      toast.error(
+        `「${activeAccount.username}」今日发起的好友申请已达上限（${DAILY_OUTGOING_LIMIT} 条），请明天再试`,
+      );
+      return;
+    }
     patch(active.id, {
       outgoingStatus: "waiting",
       requestedAt: now(),
@@ -431,13 +487,6 @@ function FriendsPage() {
     });
     toast.success(
       `已重新发起：「${activeAccount.username}」向「${active.peerName}」再次发送好友申请`,
-    );
-  };
-
-  const icebreak = () => {
-    if (!active || !activeAccount) return;
-    toast.success(
-      `已生成破冰私信任务：由「${activeAccount.username}」向「${active.peerName}」发送开场私信`,
     );
   };
 
@@ -457,6 +506,31 @@ function FriendsPage() {
     setTab("incoming");
     setActiveId(first.id);
   };
+
+  // 从私信管理跳转过来：定位到该联系人的好友记录
+  useEffect(() => {
+    if (!peer) return;
+    const target = requests.find(
+      (r) => r.peerHandle.toLowerCase() === peer.toLowerCase(),
+    );
+    if (!target) {
+      toast.info(`「${peer}」暂无好友关系记录`);
+      return;
+    }
+    setActiveAccountId(target.accountId);
+    setTab(
+      isOutgoing(target)
+        ? target.outgoingStatus === "accepted"
+          ? "friends"
+          : "outgoing"
+        : target.status === "accepted"
+          ? "friends"
+          : "incoming",
+    );
+    setActiveId(target.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peer, requests.length]);
+
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-3">
@@ -487,6 +561,26 @@ function FriendsPage() {
                 {acceptRate === null ? "—" : `${acceptRate}%`}
               </span>
             </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    "rounded-md border px-2 py-0.5",
+                    limitReached
+                      ? "border-destructive/40 bg-destructive/10 text-destructive"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  今日已发起{" "}
+                  <span className="font-semibold tabular-nums">
+                    {countsForActive.sentToday}/{DAILY_OUTGOING_LIMIT}
+                  </span>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                单账号每日主动发起好友申请的风控上限，达到上限后将暂停发起与重新发起
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
       </div>
@@ -496,9 +590,10 @@ function FriendsPage() {
           <div className="flex items-center gap-2">
             <BellRing className="h-4 w-4 text-primary" />
             <span>
-              有 <span className="font-semibold text-primary">{reappGlobal}</span> 位「持续关注」对象再次发来好友申请
+              有 <span className="font-semibold text-primary">{reappGlobal}</span> 位「关注」对象再次发来好友申请
             </span>
           </div>
+
           <Button size="sm" variant="outline" onClick={jumpToFirstReapplication}>
             立即查看
           </Button>
@@ -516,6 +611,7 @@ function FriendsPage() {
               {accounts.map((a) => {
                 const meta = platformMeta(a.platform);
                 const pend = pendingByAccount.get(a.id) ?? 0;
+                const follow = followUpByAccount.get(a.id) ?? 0;
                 const isActive = a.id === activeAccountId;
                 return (
                   <button
@@ -549,14 +645,36 @@ function FriendsPage() {
                         {a.platformId}
                       </div>
                     </div>
-                    {pend > 0 && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-5 shrink-0 px-1.5 text-[10px]"
-                      >
-                        {pend}
-                      </Badge>
-                    )}
+                    <div className="flex shrink-0 items-center gap-1">
+                      {pend > 0 && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="destructive"
+                              className="h-5 min-w-5 px-1.5 text-[10px]"
+                            >
+                              {pend}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>{pend} 条收到的申请待我处理</TooltipContent>
+                        </Tooltip>
+                      )}
+                      {follow > 0 && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="h-5 min-w-5 px-1.5 text-[10px] font-normal text-muted-foreground"
+                            >
+                              {follow}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {follow} 条我方发起的申请长期未响应，待跟进
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
                   </button>
                 );
               })}
@@ -598,7 +716,8 @@ function FriendsPage() {
                   </span>
                 </TabsTrigger>
                 <TabsTrigger value="watchlist" className="gap-1 px-1.5 text-xs">
-                  持续关注
+                  关注
+
                   {countsForActive.watchlist > 0 && (
                     <span className="text-[10px] text-muted-foreground">
                       {countsForActive.watchlist}
@@ -709,7 +828,7 @@ function FriendsPage() {
                       ? "我方发起的申请"
                       : tab === "friends"
                         ? "好友"
-                        : "持续关注对象"}
+                        : "关注对象"}
                 </div>
               )}
             </div>
@@ -971,8 +1090,9 @@ function FriendsPage() {
                       {active.watchlisted && (
                         <div className="flex items-center gap-1.5 text-xs text-primary">
                           <BellRing className="h-3.5 w-3.5" />
-                          已加入持续关注，对方再次申请将高亮提醒
+                          已加入关注，对方再次申请将高亮提醒
                         </div>
+
                       )}
                       {active.publicReasonZh && (
                         <div className="rounded-md border p-3">
@@ -1022,38 +1142,99 @@ function FriendsPage() {
 
               {/* 底部操作栏 */}
               <div className="flex items-center justify-end gap-2 border-t bg-muted/30 px-4 py-3">
+                {!(isIncoming(active) && active.status === "rejected") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleWatchlist}
+                    className="mr-auto gap-1.5"
+                  >
+                    {active.watchlisted ? (
+                      <>
+                        <BellRing className="h-3.5 w-3.5 text-primary" />
+                        已关注
+                      </>
+                    ) : (
+                      <>
+                        <Bell className="h-3.5 w-3.5" />
+                        关注
+                      </>
+                    )}
+                  </Button>
+                )}
                 {isOutgoing(active) && (
                   <>
-                    {(active.outgoingStatus === "waiting" ||
-                      active.outgoingStatus === "expired") && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={withdrawOutgoing}
-                        className="gap-1.5"
-                      >
-                        <UserX className="h-3.5 w-3.5" />
-                        撤回申请
-                      </Button>
+                    {active.outgoingStatus !== "accepted" && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={
+                                active.outgoingStatus !== "waiting" &&
+                                active.outgoingStatus !== "expired"
+                              }
+                              onClick={withdrawOutgoing}
+                              className="gap-1.5"
+                            >
+                              <UserX className="h-3.5 w-3.5" />
+                              {active.outgoingStatus === "withdrawing"
+                                ? "撤回中…"
+                                : "撤回申请"}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {active.outgoingStatus === "withdrawing"
+                            ? "托管设备正在执行撤回，完成后状态变为「已撤回」"
+                            : active.outgoingStatus === "declined"
+                              ? "对方已处理该申请，无法撤回"
+                              : active.outgoingStatus === "withdrawn"
+                                ? "该申请已撤回"
+                                : "仅等待对方处理期间可撤回，撤回对对方静默无通知"}
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                     {(active.outgoingStatus === "declined" ||
                       active.outgoingStatus === "withdrawn" ||
                       active.outgoingStatus === "expired") && (
-                      <Button size="sm" onClick={resendOutgoing} className="gap-1.5">
-                        <UserPlus className="h-3.5 w-3.5" />
-                        重新发起申请
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              size="sm"
+                              disabled={limitReached}
+                              onClick={resendOutgoing}
+                              className="gap-1.5"
+                            >
+                              <UserPlus className="h-3.5 w-3.5" />
+                              重新发起申请
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {limitReached
+                            ? `该账号今日发起已达上限（${DAILY_OUTGOING_LIMIT} 条）`
+                            : "由托管设备重新向对方发送好友申请"}
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                     {active.outgoingStatus === "accepted" && (
                       <>
                         <Button
+                          asChild
                           variant="outline"
                           size="sm"
-                          onClick={icebreak}
                           className="gap-1.5"
                         >
-                          <MessageSquareText className="h-3.5 w-3.5" />
-                          发私信破冰
+                          <Link
+                            to="/accounts/messages"
+                            search={{ peer: active.peerHandle }}
+                          >
+                            <MessageSquareText className="h-3.5 w-3.5" />
+                            发私信破冰
+                          </Link>
                         </Button>
                         <Button
                           variant="outline"
@@ -1068,6 +1249,7 @@ function FriendsPage() {
                     )}
                   </>
                 )}
+
                 {isIncoming(active) && active.status === "pending" && (
                   <>
                     <Button
@@ -1090,16 +1272,28 @@ function FriendsPage() {
                   </>
                 )}
                 {isIncoming(active) && active.status === "accepted" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setRemoveOpen(true)}
-                    className="gap-1.5 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    解除好友
-                  </Button>
+                  <>
+                    <Button asChild variant="outline" size="sm" className="gap-1.5">
+                      <Link
+                        to="/accounts/messages"
+                        search={{ peer: active.peerHandle }}
+                      >
+                        <MessageSquareText className="h-3.5 w-3.5" />
+                        发私信
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRemoveOpen(true)}
+                      className="gap-1.5 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      解除好友
+                    </Button>
+                  </>
                 )}
+
                 {isIncoming(active) && active.status === "rejected" && (
                   <>
                     <Button
@@ -1116,7 +1310,8 @@ function FriendsPage() {
                       ) : (
                         <>
                           <Bell className="h-3.5 w-3.5" />
-                          标记持续关注
+                          标记关注
+
                         </>
                       )}
                     </Button>
@@ -1277,9 +1472,11 @@ function OutgoingStatusBadge({
     waiting: "border-warning/30 bg-warning/10 text-warning",
     accepted: "border-success/30 bg-success/10 text-success",
     declined: "border-destructive/30 bg-destructive/10 text-destructive",
+    withdrawing: "border-muted-foreground/30 bg-muted text-muted-foreground",
     withdrawn: "border-muted text-muted-foreground",
     expired: "border-primary/30 bg-primary/10 text-primary",
   };
+
   return (
     <Badge
       variant="outline"

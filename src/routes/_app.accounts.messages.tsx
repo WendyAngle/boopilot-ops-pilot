@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { Search, Send, Sparkles, Eraser, Languages, Loader2, CheckCheck, MessageSquare, AlertCircle, RotateCw, Star, ScrollText } from "lucide-react";
+import { Search, Send, Sparkles, Eraser, Languages, Loader2, CheckCheck, MessageSquare, AlertCircle, RotateCw, Star, ScrollText, MailOpen, UserCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,9 @@ import { useTenantScope } from "@/lib/tenant-scope";
 ensureActivityTasksSeeded();
 
 export const Route = createFileRoute("/_app/accounts/messages")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    peer: typeof search.peer === "string" ? search.peer : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "私信管理 — BooPilot" },
@@ -42,14 +45,20 @@ export const Route = createFileRoute("/_app/accounts/messages")({
 });
 
 type ScopeKey = "current" | "all";
-type FilterKey = "all" | "starred";
-type ReadFilterKey = "all" | "unread" | "read";
+type ListFilterKey = "all" | "todo" | "unread" | "starred";
 
-const READ_FILTERS: { key: ReadFilterKey; label: string }[] = [
+const LIST_FILTERS: { key: ListFilterKey; label: string }[] = [
   { key: "all", label: "全部" },
+  { key: "todo", label: "待我回复" },
   { key: "unread", label: "未读" },
-  { key: "read", label: "已读" },
+  { key: "starred", label: "关注" },
 ];
+
+/** 待我回复：最后一条是对方发来的消息 */
+function isTodoConv(c: Conversation) {
+  return c.messages[c.messages.length - 1]?.direction === "in";
+}
+
 
 function MessagesPage() {
   const [tenantScope] = useTenantScope();
@@ -67,10 +76,11 @@ function MessagesPage() {
     setActiveAccountId(accounts[0]?.id ?? "");
     setActiveConvId("");
   }, [initialConvs, accounts]);
+  const { peer } = Route.useSearch();
   const [keyword, setKeyword] = useState("");
   const [scope, setScope] = useState<ScopeKey>("current");
-  const [filter, setFilter] = useState<FilterKey>("all");
-  const [readFilter, setReadFilter] = useState<ReadFilterKey>("all");
+  const [listFilter, setListFilter] = useState<ListFilterKey>("all");
+
 
   const isAllScope = scope === "all";
 
@@ -83,31 +93,32 @@ function MessagesPage() {
     return map;
   }, [conversations]);
 
-  // 计数：当前作用范围下的 全部 / 标星
+  // 计数：当前作用范围下的各筛选项
   const scopedConvs = useMemo(
     () => (isAllScope ? conversations : conversations.filter((c) => c.accountId === activeAccountId)),
     [conversations, isAllScope, activeAccountId],
   );
-  const starredCount = useMemo(
-    () => scopedConvs.filter((c) => c.starred).length,
+  const filterCounts = useMemo(
+    () => ({
+      all: scopedConvs.length,
+      todo: scopedConvs.filter(isTodoConv).length,
+      unread: scopedConvs.filter((c) => c.unread > 0).length,
+      starred: scopedConvs.filter((c) => c.starred).length,
+    }),
     [scopedConvs],
   );
-  // 已读 / 未读会话数（基于当前标星筛选后的范围）
-  const readScopedConvs = useMemo(
-    () => scopedConvs.filter((c) => (filter === "starred" ? c.starred : true)),
-    [scopedConvs, filter],
-  );
-  const unreadConvCount = useMemo(
-    () => readScopedConvs.filter((c) => c.unread > 0).length,
-    [readScopedConvs],
-  );
-  const readConvCount = readScopedConvs.length - unreadConvCount;
 
   const accountConvs = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    return readScopedConvs
+    return scopedConvs
       .filter((c) =>
-        readFilter === "unread" ? c.unread > 0 : readFilter === "read" ? c.unread === 0 : true,
+        listFilter === "todo"
+          ? isTodoConv(c)
+          : listFilter === "unread"
+            ? c.unread > 0
+            : listFilter === "starred"
+              ? c.starred
+              : true,
       )
       .filter((c) =>
         kw
@@ -117,7 +128,8 @@ function MessagesPage() {
           : true,
       )
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  }, [readScopedConvs, keyword, readFilter]);
+  }, [scopedConvs, keyword, listFilter]);
+
 
   // 默认选中该账号的第一条会话
   useEffect(() => {
@@ -154,7 +166,7 @@ function MessagesPage() {
         return { ...c, starred: nextStarred };
       }),
     );
-    toast.success(nextStarred ? "已加入标星" : "已取消标星");
+    toast.success(nextStarred ? "已加入关注" : "已取消关注");
   };
 
   const markRead = (convId: string) => {
@@ -171,10 +183,71 @@ function MessagesPage() {
     );
   };
 
+  /** 标记为未读：把末尾连续的对方消息重新置为未读，便于稍后跟进 */
+  const markUnread = (convId: string) => {
+    let ok = false;
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== convId) return c;
+        const msgs = c.messages.map((m) => ({ ...m }));
+        let unread = 0;
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i].direction !== "in") break;
+          msgs[i].read = false;
+          unread += 1;
+        }
+        if (unread === 0) return c;
+        ok = true;
+        return { ...c, messages: msgs, unread };
+      }),
+    );
+    if (ok) {
+      if (convId === activeConvId) setActiveConvId("");
+      toast.success("已标记为未读");
+    } else {
+      toast.info("最后一条是我方发出的消息，无法标记为未读");
+    }
+  };
+
+  const markAllRead = () => {
+    const ids = new Set(accountConvs.filter((c) => c.unread > 0).map((c) => c.id));
+    if (ids.size === 0) return;
+    setConversations((prev) =>
+      prev.map((c) =>
+        ids.has(c.id)
+          ? {
+              ...c,
+              unread: 0,
+              messages: c.messages.map((m) => (m.direction === "in" ? { ...m, read: true } : m)),
+            }
+          : c,
+      ),
+    );
+    toast.success(`已将 ${ids.size} 个会话标记为已读`);
+  };
+
   const openConversation = (convId: string) => {
     setActiveConvId(convId);
     markRead(convId);
   };
+
+  // 从好友管理跳转过来：定位到该联系人的会话
+  useEffect(() => {
+    if (!peer) return;
+    const target = conversations.find(
+      (c) => c.peerHandle.toLowerCase() === peer.toLowerCase(),
+    );
+    if (!target) {
+      toast.info(`「${peer}」暂无私信会话，可从会话列表发起`);
+      return;
+    }
+    setScope("all");
+    setListFilter("all");
+    setActiveAccountId(target.accountId);
+    setActiveConvId(target.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peer, conversations.length]);
+
 
   const handleSend = (msg: DirectMessage) => {
     if (!activeConv) return;
@@ -287,43 +360,35 @@ function MessagesPage() {
           {/* Column 2: Conversations */}
           <div className="flex min-h-0 flex-col border-r">
             <div className="border-b p-2.5 space-y-2">
-              {/* 筛选 Tabs + 范围切换 */}
+              {/* 统一筛选：全部 / 待我回复 / 未读 / 关注 + 范围切换 */}
               <div className="flex items-center justify-between gap-2">
                 <div className="inline-flex items-center rounded-md bg-muted p-0.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setFilter("all")}
-                    className={cn(
-                      "flex items-center gap-1 rounded px-2 py-0.5 transition-colors",
-                      filter === "all"
-                        ? "bg-background shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    全部
-                    <span className="text-[10px] text-muted-foreground">
-                      {scopedConvs.length}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFilter("starred")}
-                    className={cn(
-                      "flex items-center gap-1 rounded px-2 py-0.5 transition-colors",
-                      filter === "starred"
-                        ? "bg-background text-amber-700 shadow-sm dark:text-amber-300"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <Star
-                      className="h-3 w-3"
-                      fill={filter === "starred" ? "currentColor" : "none"}
-                    />
-                    标星
-                    <span className="text-[10px] text-muted-foreground">
-                      {starredCount}
-                    </span>
-                  </button>
+                  {LIST_FILTERS.map((f) => {
+                    const on = listFilter === f.key;
+                    return (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setListFilter(f.key)}
+                        className={cn(
+                          "flex items-center gap-1 rounded px-2 py-0.5 transition-colors",
+                          on
+                            ? f.key === "starred"
+                              ? "bg-background text-amber-700 shadow-sm dark:text-amber-300"
+                              : "bg-background shadow-sm"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {f.key === "starred" && (
+                          <Star className="h-3 w-3" fill={on ? "currentColor" : "none"} />
+                        )}
+                        {f.label}
+                        <span className="text-[10px] tabular-nums text-muted-foreground">
+                          {filterCounts[f.key]}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="inline-flex items-center rounded-md border text-[11px]">
                   <button
@@ -369,34 +434,23 @@ function MessagesPage() {
                   {isAllScope && (
                     <span className="rounded bg-muted px-1.5 py-0.5">跨账号视图</span>
                   )}
-                  <div className="inline-flex items-center rounded-md border text-[11px]">
-                    {READ_FILTERS.map((f, i) => (
-                      <button
-                        key={f.key}
-                        type="button"
-                        onClick={() => setReadFilter(f.key)}
-                        className={cn(
-                          "px-2 py-0.5 transition-colors",
-                          i === 0 && "rounded-l-md",
-                          i === READ_FILTERS.length - 1 && "rounded-r-md",
-                          i > 0 && "border-l",
-                          readFilter === f.key
-                            ? "bg-accent text-foreground"
-                            : "text-muted-foreground hover:bg-accent/50",
-                        )}
-                      >
-                        {f.label}
-                        {f.key !== "all" && (
-                          <span className="ml-1 tabular-nums">
-                            {f.key === "unread" ? unreadConvCount : readConvCount}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={markAllRead}
+                    disabled={filterCounts.unread === 0}
+                    className={cn(
+                      "rounded-md border px-2 py-0.5 transition-colors",
+                      filterCounts.unread === 0
+                        ? "cursor-not-allowed opacity-50"
+                        : "hover:bg-accent/50 hover:text-foreground",
+                    )}
+                  >
+                    全部标为已读
+                  </button>
                 </div>
               </div>
             </div>
+
             <ScrollArea className="flex-1">
               <div className="p-1.5">
                 {accountConvs.map((c) => {
@@ -408,6 +462,7 @@ function MessagesPage() {
                       active={c.id === activeConvId}
                       onClick={() => openConversation(c.id)}
                       onToggleStar={() => toggleStar(c.id)}
+                      onMarkUnread={() => markUnread(c.id)}
                       accountLabel={
                         isAllScope && acc
                           ? `${acc.username} · ${acc.platform}`
@@ -419,17 +474,16 @@ function MessagesPage() {
                 {accountConvs.length === 0 && (
                   <div className="flex flex-col items-center gap-2 px-2 py-10 text-center text-xs text-muted-foreground">
                     <MessageSquare className="h-6 w-6 opacity-50" />
-                    {readFilter === "unread"
+                    {listFilter === "unread"
                       ? "暂无未读会话"
-                      : readFilter === "read"
-                        ? "暂无已读会话"
-                        : filter === "starred"
-                          ? isAllScope
-                            ? "暂无标星会话，点击会话卡片右上角的星标可加入"
-                            : "该账号下暂无标星会话"
+                      : listFilter === "todo"
+                        ? "没有等待回复的会话"
+                        : listFilter === "starred"
+                          ? "暂无关注会话，点击会话卡片右侧的星标可加入"
                           : "暂无私信会话"}
                   </div>
                 )}
+
               </div>
             </ScrollArea>
           </div>
@@ -466,14 +520,17 @@ function ConversationItem({
   active,
   onClick,
   onToggleStar,
+  onMarkUnread,
   accountLabel,
 }: {
   conv: Conversation;
   active: boolean;
   onClick: () => void;
   onToggleStar: () => void;
+  onMarkUnread: () => void;
   accountLabel?: string;
 }) {
+
   const last = conv.messages[conv.messages.length - 1];
   const failedCount = conv.messages.filter(
     (m) => m.direction === "out" && m.status === "failed",
@@ -551,23 +608,44 @@ function ConversationItem({
           ) : (
             <span aria-hidden="true" className="h-4 min-w-[16px]" />
           )}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStar();
-            }}
-            aria-label={conv.starred ? "取消标星" : "加入标星"}
-            className={cn(
-              "flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors",
-              conv.starred
-                ? "text-amber-500"
-                : "text-muted-foreground/40 opacity-0 hover:text-amber-500 group-hover:opacity-100",
+          <div className="flex items-center gap-0.5">
+            {conv.unread === 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMarkUnread();
+                    }}
+                    aria-label="标记为未读"
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground/40 opacity-0 transition-colors hover:text-primary group-hover:opacity-100"
+                  >
+                    <MailOpen className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>标记为未读，稍后跟进</TooltipContent>
+              </Tooltip>
             )}
-          >
-            <Star className="h-3.5 w-3.5" fill={conv.starred ? "currentColor" : "none"} />
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStar();
+              }}
+              aria-label={conv.starred ? "取消关注" : "加入关注"}
+              className={cn(
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors",
+                conv.starred
+                  ? "text-amber-500"
+                  : "text-muted-foreground/40 opacity-0 hover:text-amber-500 group-hover:opacity-100",
+              )}
+            >
+              <Star className="h-3.5 w-3.5" fill={conv.starred ? "currentColor" : "none"} />
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   );
@@ -735,6 +813,17 @@ function ChatWindow({
             {conv.peerHandle} · 通过账号「{accountName}」({accountPlatform})
           </div>
         </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button asChild size="sm" variant="ghost" className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-primary">
+              <Link to="/accounts/friends" search={{ peer: conv.peerHandle }}>
+                <UserCheck className="h-3.5 w-3.5" />
+                好友关系
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>在好友管理中查看与该联系人的好友关系</TooltipContent>
+        </Tooltip>
         {dmTaskId && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -763,9 +852,10 @@ function ChatWindow({
                 )}
                 fill={conv.starred ? "currentColor" : "none"}
               />
-              {conv.starred ? "已标星" : "标星"}
+              {conv.starred ? "已关注" : "关注"}
             </Button>
           </TooltipTrigger>
+
           <TooltipContent>
             {conv.starred ? "取消对该会话的重点关注" : "加入重点关注，便于稍后跟进"}
           </TooltipContent>
