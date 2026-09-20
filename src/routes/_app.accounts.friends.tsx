@@ -745,10 +745,12 @@ function FriendsPage() {
                       {active.peerHandle} · {LANG_LABEL[active.peerLang]}
                     </div>
                     <div className="mt-1 text-[11px] text-muted-foreground">
-                      请求账号：{activeAccount.username} · {activeAccount.platform}
+                      {isOutgoing(active) ? "发起账号" : "请求账号"}：
+                      {activeAccount.username} · {activeAccount.platform}
                     </div>
                   </div>
                   {(() => {
+                    if (isOutgoing(active)) return null;
                     const taskId =
                       active.status === "accepted"
                         ? approveTaskId
