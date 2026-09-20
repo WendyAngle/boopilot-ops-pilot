@@ -813,6 +813,17 @@ function ChatWindow({
             {conv.peerHandle} · 通过账号「{accountName}」({accountPlatform})
           </div>
         </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button asChild size="sm" variant="ghost" className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-primary">
+              <Link to="/accounts/friends" search={{ peer: conv.peerHandle }}>
+                <UserCheck className="h-3.5 w-3.5" />
+                好友关系
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>在好友管理中查看与该联系人的好友关系</TooltipContent>
+        </Tooltip>
         {dmTaskId && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -841,9 +852,10 @@ function ChatWindow({
                 )}
                 fill={conv.starred ? "currentColor" : "none"}
               />
-              {conv.starred ? "已标星" : "标星"}
+              {conv.starred ? "已关注" : "关注"}
             </Button>
           </TooltipTrigger>
+
           <TooltipContent>
             {conv.starred ? "取消对该会话的重点关注" : "加入重点关注，便于稍后跟进"}
           </TooltipContent>
