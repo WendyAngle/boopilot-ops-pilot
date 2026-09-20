@@ -462,6 +462,7 @@ function MessagesPage() {
                       active={c.id === activeConvId}
                       onClick={() => openConversation(c.id)}
                       onToggleStar={() => toggleStar(c.id)}
+                      onMarkUnread={() => markUnread(c.id)}
                       accountLabel={
                         isAllScope && acc
                           ? `${acc.username} · ${acc.platform}`
@@ -473,17 +474,16 @@ function MessagesPage() {
                 {accountConvs.length === 0 && (
                   <div className="flex flex-col items-center gap-2 px-2 py-10 text-center text-xs text-muted-foreground">
                     <MessageSquare className="h-6 w-6 opacity-50" />
-                    {readFilter === "unread"
+                    {listFilter === "unread"
                       ? "暂无未读会话"
-                      : readFilter === "read"
-                        ? "暂无已读会话"
-                        : filter === "starred"
-                          ? isAllScope
-                            ? "暂无标星会话，点击会话卡片右上角的星标可加入"
-                            : "该账号下暂无标星会话"
+                      : listFilter === "todo"
+                        ? "没有等待回复的会话"
+                        : listFilter === "starred"
+                          ? "暂无关注会话，点击会话卡片右侧的星标可加入"
                           : "暂无私信会话"}
                   </div>
                 )}
+
               </div>
             </ScrollArea>
           </div>
