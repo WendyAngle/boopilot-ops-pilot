@@ -922,7 +922,7 @@ function FriendsPage() {
                   )}
 
                   {/* 已通过：欢迎语与备注 */}
-                  {active.status === "accepted" && (
+                  {isIncoming(active) && active.status === "accepted" && (
                     <>
                       {active.welcomeZh && (
                         <div className="rounded-md border p-3">
