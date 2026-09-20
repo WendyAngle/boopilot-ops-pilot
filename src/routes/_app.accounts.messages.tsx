@@ -520,14 +520,17 @@ function ConversationItem({
   active,
   onClick,
   onToggleStar,
+  onMarkUnread,
   accountLabel,
 }: {
   conv: Conversation;
   active: boolean;
   onClick: () => void;
   onToggleStar: () => void;
+  onMarkUnread: () => void;
   accountLabel?: string;
 }) {
+
   const last = conv.messages[conv.messages.length - 1];
   const failedCount = conv.messages.filter(
     (m) => m.direction === "out" && m.status === "failed",
@@ -605,23 +608,44 @@ function ConversationItem({
           ) : (
             <span aria-hidden="true" className="h-4 min-w-[16px]" />
           )}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStar();
-            }}
-            aria-label={conv.starred ? "取消标星" : "加入标星"}
-            className={cn(
-              "flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors",
-              conv.starred
-                ? "text-amber-500"
-                : "text-muted-foreground/40 opacity-0 hover:text-amber-500 group-hover:opacity-100",
+          <div className="flex items-center gap-0.5">
+            {conv.unread === 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMarkUnread();
+                    }}
+                    aria-label="标记为未读"
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground/40 opacity-0 transition-colors hover:text-primary group-hover:opacity-100"
+                  >
+                    <MailOpen className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>标记为未读，稍后跟进</TooltipContent>
+              </Tooltip>
             )}
-          >
-            <Star className="h-3.5 w-3.5" fill={conv.starred ? "currentColor" : "none"} />
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStar();
+              }}
+              aria-label={conv.starred ? "取消关注" : "加入关注"}
+              className={cn(
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors",
+                conv.starred
+                  ? "text-amber-500"
+                  : "text-muted-foreground/40 opacity-0 hover:text-amber-500 group-hover:opacity-100",
+              )}
+            >
+              <Star className="h-3.5 w-3.5" fill={conv.starred ? "currentColor" : "none"} />
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   );
