@@ -13,6 +13,46 @@ export { LANG_LABEL, translateZhTo };
 export type { MsgLang };
 
 export type FriendStatus = "pending" | "accepted" | "rejected";
+
+/** 关系方向：incoming = 对方申请我方；outgoing = 我方主动申请对方 */
+export type FriendDirection = "incoming" | "outgoing";
+
+/** 我方发起申请后的状态 */
+export type OutgoingStatus =
+  | "waiting" // 等待对方处理
+  | "accepted" // 对方已通过
+  | "declined" // 对方已拒绝
+  | "withdrawn" // 我方已撤回
+  | "expired"; // 超 30 天未响应，视为失效
+
+export const OUTGOING_STATUS_LABEL: Record<OutgoingStatus, string> = {
+  waiting: "等待对方处理",
+  accepted: "对方已通过",
+  declined: "对方已拒绝",
+  withdrawn: "已撤回",
+  expired: "长期未响应",
+};
+
+/** 我方发起申请的来源 */
+export type OutgoingOrigin = "task" | "manual" | "recommend" | "profile_visit";
+
+export const OUTGOING_ORIGIN_LABEL: Record<OutgoingOrigin, string> = {
+  task: "社媒触达任务",
+  manual: "手动发起",
+  recommend: "平台推荐",
+  profile_visit: "主页访问",
+};
+
+/** 与任务模块一致的「加好友」触达任务名（Facebook 触达任务） */
+const REACH_TASK_NAMES = [
+  "Facebook 美国钢材进口商拓客",
+  "Facebook 德国光伏支架采购拓客",
+  "Facebook 巴西建材经销商拓客",
+  "Facebook 东南亚智能家居代理拓客",
+  "Facebook 越南工业铝型材拓客",
+  "Facebook 泰国建材群组拓客",
+  "Facebook 全球外贸潜客常态拓客",
+];
 export type FriendSource =
   | "profile_visit"
   | "post_engagement"
@@ -62,6 +102,24 @@ export interface FriendRequest {
   publicReasonText?: string;
   /** 已拒绝后是否加入「持续关注」名单：对方若再次申请将高亮提醒 */
   watchlisted?: boolean;
+
+  // ===== 方向相关（outgoing = 我方主动申请对方） =====
+  /** 方向，缺省视为 incoming */
+  direction: FriendDirection;
+  /** outgoing 专用：我方申请的当前状态 */
+  outgoingStatus?: OutgoingStatus;
+  /** outgoing 专用：发起来源 */
+  origin?: OutgoingOrigin;
+  /** outgoing 专用：来源任务名（origin = task 时） */
+  sourceTaskName?: string;
+  /** outgoing 专用：对方响应时间（通过/拒绝） */
+  respondedAt?: string;
+  /** outgoing 专用：我方撤回时间 */
+  withdrawnAt?: string;
+  /** outgoing 专用：申请附言中文原文 */
+  greetingZh?: string;
+  /** outgoing 专用：申请附言实际发送译文 */
+  greetingText?: string;
 }
 
 const PEER_POOL: Array<{
@@ -122,6 +180,7 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
       requests.push({
         id: `fr-${acc.id}-p${i}`,
         accountId: acc.id,
+        direction: "incoming",
         status: "pending",
         peerName: seed.name,
         peerHandle: seed.handle,
@@ -142,6 +201,7 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
       requests.push({
         id: `fr-${acc.id}-a${i}`,
         accountId: acc.id,
+        direction: "incoming",
         status: "accepted",
         peerName: seed.name,
         peerHandle: seed.handle,
@@ -174,6 +234,7 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
       requests.push({
         id: `fr-${acc.id}-r${i}`,
         accountId: acc.id,
+        direction: "incoming",
         status: "rejected",
         peerName,
         peerHandle,
@@ -193,6 +254,7 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
         requests.push({
           id: `fr-${acc.id}-reapp0`,
           accountId: acc.id,
+          direction: "incoming",
           status: "pending",
           peerName,
           peerHandle,
@@ -206,6 +268,87 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
         });
       }
     }
+
+    // ===== 我方主动发起的好友申请（outgoing） =====
+    // 每个账号 7 条：等待中 3（含 1 条超 30 天未响应）、对方已通过 2、对方已拒绝 1、已撤回 1
+    const OUT_SPECS: Array<{
+      key: string;
+      outgoingStatus: OutgoingStatus;
+      /** 发起距今天数 */
+      daysAgo: number;
+      /** 响应距今天数（有响应时） */
+      respondDaysAgo?: number;
+    }> = [
+      { key: "w0", outgoingStatus: "waiting", daysAgo: 2 },
+      { key: "w1", outgoingStatus: "waiting", daysAgo: 9 },
+      { key: "w2", outgoingStatus: "expired", daysAgo: 38 },
+      { key: "oa0", outgoingStatus: "accepted", daysAgo: 12, respondDaysAgo: 11 },
+      { key: "oa1", outgoingStatus: "accepted", daysAgo: 21, respondDaysAgo: 19 },
+      { key: "od0", outgoingStatus: "declined", daysAgo: 16, respondDaysAgo: 14 },
+      { key: "ow0", outgoingStatus: "withdrawn", daysAgo: 7, respondDaysAgo: 5 },
+    ];
+    OUT_SPECS.forEach((spec, i) => {
+      const seed = PEER_POOL[(aIdx * 4 + i + 2) % PEER_POOL.length];
+      // Facebook 账号的申请多来自「社媒触达任务」，其余账号为手动 / 推荐 / 主页访问
+      const isTaskDriven = acc.platform === "Facebook" && i % 5 !== 4;
+      const origin: OutgoingOrigin = isTaskDriven
+        ? "task"
+        : (["manual", "recommend", "profile_visit"] as OutgoingOrigin[])[
+            (aIdx + i) % 3
+          ];
+      const greetingZh =
+        origin === "task"
+          ? "你好，我们做跨境供应链，看到你在相关行业，方便加个好友交流吗？"
+          : "你好，很喜欢你分享的内容，想加个好友多交流～";
+      const peerHandle = `${seed.handle}_o${i}`;
+      requests.push({
+        id: `fr-${acc.id}-${spec.key}`,
+        accountId: acc.id,
+        direction: "outgoing",
+        // outgoing 记录的 status 仅用于「好友列表」归并：对方通过才算好友
+        status: spec.outgoingStatus === "accepted" ? "accepted" : "pending",
+        outgoingStatus: spec.outgoingStatus,
+        origin,
+        sourceTaskName:
+          origin === "task"
+            ? REACH_TASK_NAMES[(aIdx + i) % REACH_TASK_NAMES.length]
+            : undefined,
+        peerName: seed.name,
+        peerHandle,
+        peerAvatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(peerHandle)}`,
+        peerLang: seed.lang,
+        greetingZh,
+        greetingText:
+          seed.lang === "zh" ? greetingZh : translateZhTo(seed.lang, greetingZh),
+        mutualFriends: (aIdx + i * 2) % 9,
+        source: origin === "task" ? "search" : "recommend",
+        requestedAt: timeAgo(60 * 24 * spec.daysAgo + aIdx * 25),
+        respondedAt:
+          spec.respondDaysAgo !== undefined && spec.outgoingStatus !== "withdrawn"
+            ? timeAgo(60 * 24 * spec.respondDaysAgo + aIdx * 25)
+            : undefined,
+        withdrawnAt:
+          spec.outgoingStatus === "withdrawn"
+            ? timeAgo(60 * 24 * (spec.respondDaysAgo ?? 1) + aIdx * 25)
+            : undefined,
+        decidedAt:
+          spec.outgoingStatus === "accepted"
+            ? timeAgo(60 * 24 * (spec.respondDaysAgo ?? 1) + aIdx * 25)
+            : undefined,
+        lastInteractAt:
+          spec.outgoingStatus === "accepted"
+            ? timeAgo(60 * (i * 5 + 6) + aIdx * 12)
+            : undefined,
+        note:
+          spec.outgoingStatus === "declined"
+            ? "对方已拒绝，30 天内不再重复触达"
+            : spec.outgoingStatus === "withdrawn"
+              ? "目标画像不符，已撤回申请"
+              : spec.outgoingStatus === "expired"
+                ? "长期未响应，建议改用私信触达"
+                : undefined,
+      });
+    });
   });
 
   requests.sort((a, b) => (a.requestedAt < b.requestedAt ? 1 : -1));

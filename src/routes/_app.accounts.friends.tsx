@@ -53,8 +53,11 @@ import {
   translateZhTo,
   LANG_LABEL,
   SOURCE_LABEL,
+  OUTGOING_STATUS_LABEL,
+  OUTGOING_ORIGIN_LABEL,
   type FriendRequest,
   type FriendStatus,
+  type OutgoingStatus,
 } from "@/lib/friends-mock";
 import { useTasks } from "@/lib/operations-store";
 import { ensureActivityTasksSeeded, recordActivity } from "@/lib/activity-tasks";
@@ -80,7 +83,7 @@ export const Route = createFileRoute("/_app/accounts/friends")({
   component: FriendsPage,
 });
 
-type TabKey = FriendStatus | "watchlist";
+type TabKey = "incoming" | "outgoing" | "friends" | "watchlist";
 
 function daysSince(dt: string): number {
   // "YYYY-MM-DD HH:mm"
@@ -97,7 +100,7 @@ function FriendsPage() {
   );
   const [requests, setRequests] = useState<FriendRequest[]>(initial);
   const [activeAccountId, setActiveAccountId] = useState(accounts[0]?.id ?? "");
-  const [tab, setTab] = useState<TabKey>("pending");
+  const [tab, setTab] = useState<TabKey>("incoming");
   const [activeId, setActiveId] = useState<string>("");
 
   // 切换租户时重置为该租户下的数据与选中项
@@ -108,11 +111,14 @@ function FriendsPage() {
   }, [initial, accounts]);
   const [keyword, setKeyword] = useState("");
 
-  // 账号维度待处理计数
+  const isIncoming = (r: FriendRequest) => r.direction !== "outgoing";
+  const isOutgoing = (r: FriendRequest) => r.direction === "outgoing";
+
+  // 账号维度待处理计数（只统计需要人工处理的「收到的申请」）
   const pendingByAccount = useMemo(() => {
     const map = new Map<string, number>();
     requests.forEach((r) => {
-      if (r.status === "pending") {
+      if (isIncoming(r) && r.status === "pending") {
         map.set(r.accountId, (map.get(r.accountId) ?? 0) + 1);
       }
     });
@@ -122,13 +128,14 @@ function FriendsPage() {
   // 「再次申请」映射：key = accountId::peerHandle
   // 只有当同一账号下，该 peer 既有 pending 又有 rejected+watchlisted 时才算「再次申请」
   const reappMap = useMemo(() => {
+    const incoming = requests.filter(isIncoming);
     const pendingKeys = new Set(
-      requests
+      incoming
         .filter((r) => r.status === "pending")
         .map((r) => `${r.accountId}::${r.peerHandle}`),
     );
     const map = new Map<string, FriendRequest>(); // key -> pending 申请
-    requests.forEach((r) => {
+    incoming.forEach((r) => {
       const k = `${r.accountId}::${r.peerHandle}`;
       if (r.status === "pending" && pendingKeys.has(k)) {
         map.set(k, r);
@@ -136,7 +143,7 @@ function FriendsPage() {
     });
     // 仅保留同时存在 watchlisted rejected 的
     const result = new Map<string, FriendRequest>();
-    requests.forEach((r) => {
+    incoming.forEach((r) => {
       if (r.status === "rejected" && r.watchlisted) {
         const k = `${r.accountId}::${r.peerHandle}`;
         const p = map.get(k);
@@ -150,15 +157,47 @@ function FriendsPage() {
   const reappGlobal = reappMap.size;
 
   const countsForActive = useMemo(() => {
-    const c = { pending: 0, accepted: 0, rejected: 0, watchlist: 0 };
+    const c = {
+      incoming: 0,
+      incomingPending: 0,
+      outgoing: 0,
+      outgoingWaiting: 0,
+      outgoingAccepted: 0,
+      outgoingResponded: 0,
+      friends: 0,
+      watchlist: 0,
+    };
     requests
       .filter((r) => r.accountId === activeAccountId)
       .forEach((r) => {
-        c[r.status]++;
+        if (isOutgoing(r)) {
+          c.outgoing++;
+          if (r.outgoingStatus === "waiting" || r.outgoingStatus === "expired") {
+            c.outgoingWaiting++;
+          }
+          if (r.outgoingStatus === "accepted") {
+            c.outgoingAccepted++;
+            c.outgoingResponded++;
+            c.friends++;
+          }
+          if (r.outgoingStatus === "declined") c.outgoingResponded++;
+          return;
+        }
+        c.incoming++;
+        if (r.status === "pending") c.incomingPending++;
+        if (r.status === "accepted") c.friends++;
         if (r.status === "rejected" && r.watchlisted) c.watchlist++;
       });
     return c;
   }, [requests, activeAccountId]);
+
+  const acceptRate =
+    countsForActive.outgoingResponded > 0
+      ? Math.round(
+          (countsForActive.outgoingAccepted / countsForActive.outgoingResponded) *
+            100,
+        )
+      : null;
 
   // 计算某条 rejected+watchlisted 的紧迫度
   const urgencyOf = (r: FriendRequest): "reapplied" | "overdue" | "watching" => {
@@ -175,7 +214,9 @@ function FriendsPage() {
       kw
         ? r.peerName.toLowerCase().includes(kw) ||
           r.peerHandle.toLowerCase().includes(kw) ||
-          (r.requestText ?? "").toLowerCase().includes(kw)
+          (r.requestText ?? "").toLowerCase().includes(kw) ||
+          (r.greetingZh ?? "").toLowerCase().includes(kw) ||
+          (r.sourceTaskName ?? "").toLowerCase().includes(kw)
         : true;
     if (tab === "watchlist") {
       const order: Record<"reapplied" | "overdue" | "watching", number> = {
@@ -187,6 +228,7 @@ function FriendsPage() {
         .filter(
           (r) =>
             r.accountId === activeAccountId &&
+            isIncoming(r) &&
             r.status === "rejected" &&
             r.watchlisted,
         )
@@ -198,9 +240,54 @@ function FriendsPage() {
           return (b.decidedAt ?? "").localeCompare(a.decidedAt ?? "");
         });
     }
-    return requests
-      .filter((r) => r.accountId === activeAccountId && r.status === tab)
-      .filter(matchKw);
+    const mine = requests.filter(
+      (r) => r.accountId === activeAccountId && matchKw(r),
+    );
+    if (tab === "incoming") {
+      // 收到的申请：待处理优先，其次按时间倒序
+      const order: Record<FriendStatus, number> = {
+        pending: 0,
+        accepted: 1,
+        rejected: 2,
+      };
+      return mine
+        .filter(isIncoming)
+        .sort(
+          (a, b) =>
+            order[a.status] - order[b.status] ||
+            (b.requestedAt ?? "").localeCompare(a.requestedAt ?? ""),
+        );
+    }
+    if (tab === "outgoing") {
+      // 我发起的申请：等待中 / 长期未响应优先
+      const order: Record<OutgoingStatus, number> = {
+        expired: 0,
+        waiting: 1,
+        accepted: 2,
+        declined: 3,
+        withdrawn: 4,
+      };
+      return mine
+        .filter(isOutgoing)
+        .sort(
+          (a, b) =>
+            order[a.outgoingStatus ?? "waiting"] -
+              order[b.outgoingStatus ?? "waiting"] ||
+            (b.requestedAt ?? "").localeCompare(a.requestedAt ?? ""),
+        );
+    }
+    // 好友列表：双向已成为好友
+    return mine
+      .filter(
+        (r) =>
+          (isIncoming(r) && r.status === "accepted") ||
+          (isOutgoing(r) && r.outgoingStatus === "accepted"),
+      )
+      .sort((a, b) =>
+        (b.lastInteractAt ?? b.decidedAt ?? "").localeCompare(
+          a.lastInteractAt ?? a.decidedAt ?? "",
+        ),
+      );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requests, activeAccountId, tab, keyword, reappMap]);
 
@@ -327,6 +414,33 @@ function FriendsPage() {
     );
   };
 
+  // ===== 我方发起的申请：撤回 / 重新发起 / 破冰私信 =====
+  const withdrawOutgoing = () => {
+    if (!active) return;
+    patch(active.id, { outgoingStatus: "withdrawn", withdrawnAt: now() });
+    toast.success("已撤回好友申请");
+  };
+
+  const resendOutgoing = () => {
+    if (!active || !activeAccount) return;
+    patch(active.id, {
+      outgoingStatus: "waiting",
+      requestedAt: now(),
+      withdrawnAt: undefined,
+      respondedAt: undefined,
+    });
+    toast.success(
+      `已重新发起：「${activeAccount.username}」向「${active.peerName}」再次发送好友申请`,
+    );
+  };
+
+  const icebreak = () => {
+    if (!active || !activeAccount) return;
+    toast.success(
+      `已生成破冰私信任务：由「${activeAccount.username}」向「${active.peerName}」发送开场私信`,
+    );
+  };
+
   const removeFriend = () => {
     if (!active) return;
     setRequests((prev) => prev.filter((r) => r.id !== active.id));
@@ -340,17 +454,41 @@ function FriendsPage() {
     if (first.accountId !== activeAccountId) {
       setActiveAccountId(first.accountId);
     }
-    setTab("pending");
+    setTab("incoming");
     setActiveId(first.id);
   };
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-3">
-      <div>
-        <h1 className="text-xl font-semibold">好友管理</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          统一查看各账号收到的加好友请求，通过或拒绝后附加备注/欢迎语，已通过的好友进入「好友列表」。
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold">好友管理</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            双向管理好友关系：处理对方发来的申请，同时跟踪我方账号主动发起的申请是否被通过，已成为好友的进入「好友列表」。
+          </p>
+        </div>
+        {activeAccount && (
+          <div className="flex items-center gap-4 rounded-lg border bg-card px-3 py-2 text-xs">
+            <span className="text-muted-foreground">
+              我方发起{" "}
+              <span className="font-semibold text-foreground">
+                {countsForActive.outgoing}
+              </span>
+            </span>
+            <span className="text-muted-foreground">
+              等待中{" "}
+              <span className="font-semibold text-foreground">
+                {countsForActive.outgoingWaiting}
+              </span>
+            </span>
+            <span className="text-muted-foreground">
+              通过率{" "}
+              <span className="font-semibold text-foreground">
+                {acceptRate === null ? "—" : `${acceptRate}%`}
+              </span>
+            </span>
+          </div>
+        )}
       </div>
 
       {reappGlobal > 0 && (
@@ -436,27 +574,27 @@ function FriendsPage() {
           <div className="border-b p-2">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
               <TabsList className="grid w-full grid-cols-4 gap-0.5">
-                <TabsTrigger value="pending" className="gap-1 px-1.5 text-xs">
-                  待处理
-                  {countsForActive.pending > 0 && (
+                <TabsTrigger value="incoming" className="gap-1 px-1.5 text-xs">
+                  收到的
+                  {countsForActive.incomingPending > 0 && (
                     <Badge
                       variant="destructive"
                       className="h-4 min-w-4 px-1 text-[10px]"
                     >
-                      {countsForActive.pending}
+                      {countsForActive.incomingPending}
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="accepted" className="gap-1 px-1.5 text-xs">
-                  好友
+                <TabsTrigger value="outgoing" className="gap-1 px-1.5 text-xs">
+                  我发起的
                   <span className="text-[10px] text-muted-foreground">
-                    {countsForActive.accepted}
+                    {countsForActive.outgoing}
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="rejected" className="gap-1 px-1.5 text-xs">
-                  已拒绝
+                <TabsTrigger value="friends" className="gap-1 px-1.5 text-xs">
+                  好友
                   <span className="text-[10px] text-muted-foreground">
-                    {countsForActive.rejected}
+                    {countsForActive.friends}
                   </span>
                 </TabsTrigger>
                 <TabsTrigger value="watchlist" className="gap-1 px-1.5 text-xs">
@@ -523,8 +661,22 @@ function FriendsPage() {
                           <span className="text-[10px] text-muted-foreground">
                             拒绝已 {days} 天
                           </span>
+                        ) : isOutgoing(r) ? (
+                          <>
+                            <OutgoingStatusBadge
+                              status={r.outgoingStatus ?? "waiting"}
+                            />
+                            <span className="truncate text-[10px] text-muted-foreground">
+                              {r.origin === "task" && r.sourceTaskName
+                                ? r.sourceTaskName
+                                : OUTGOING_ORIGIN_LABEL[r.origin ?? "manual"]}
+                            </span>
+                          </>
                         ) : (
                           <>
+                            {tab !== "incoming" ? null : (
+                              <StatusBadge status={r.status} compact />
+                            )}
                             <Badge
                               variant="outline"
                               className="h-4 px-1 text-[10px] font-normal"
@@ -538,6 +690,11 @@ function FriendsPage() {
                             )}
                           </>
                         )}
+                        {tab === "friends" && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {isOutgoing(r) ? "我方主动" : "对方主动"}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -546,12 +703,12 @@ function FriendsPage() {
               {listItems.length === 0 && (
                 <div className="px-3 py-12 text-center text-xs text-muted-foreground">
                   暂无
-                  {tab === "pending"
-                    ? "待处理申请"
-                    : tab === "accepted"
-                      ? "好友"
-                      : tab === "rejected"
-                        ? "已拒绝记录"
+                  {tab === "incoming"
+                    ? "收到的好友申请"
+                    : tab === "outgoing"
+                      ? "我方发起的申请"
+                      : tab === "friends"
+                        ? "好友"
                         : "持续关注对象"}
                 </div>
               )}
@@ -575,16 +732,25 @@ function FriendsPage() {
                       <div className="text-base font-semibold">
                         {active.peerName}
                       </div>
-                      <StatusBadge status={active.status} />
+                      {isOutgoing(active) ? (
+                        <OutgoingStatusBadge
+                          status={active.outgoingStatus ?? "waiting"}
+                          compact={false}
+                        />
+                      ) : (
+                        <StatusBadge status={active.status} />
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {active.peerHandle} · {LANG_LABEL[active.peerLang]}
                     </div>
                     <div className="mt-1 text-[11px] text-muted-foreground">
-                      请求账号：{activeAccount.username} · {activeAccount.platform}
+                      {isOutgoing(active) ? "发起账号" : "请求账号"}：
+                      {activeAccount.username} · {activeAccount.platform}
                     </div>
                   </div>
                   {(() => {
+                    if (isOutgoing(active)) return null;
                     const taskId =
                       active.status === "accepted"
                         ? approveTaskId
@@ -624,26 +790,114 @@ function FriendsPage() {
               <ScrollArea className="flex-1">
                 <div className="space-y-4 p-4">
                   {/* 元信息 */}
-                  <div className="grid grid-cols-3 gap-3 text-xs">
-                    <MetaCell
-                      icon={<Users className="h-3.5 w-3.5" />}
-                      label="共同好友"
-                      value={String(active.mutualFriends)}
-                    />
-                    <MetaCell
-                      icon={<Sparkles className="h-3.5 w-3.5" />}
-                      label="来源"
-                      value={SOURCE_LABEL[active.source]}
-                    />
-                    <MetaCell
-                      icon={<MessageSquareText className="h-3.5 w-3.5" />}
-                      label="申请时间"
-                      value={active.requestedAt}
-                    />
-                  </div>
+                  {isOutgoing(active) ? (
+                    <>
+                      <div className="grid grid-cols-3 gap-3 text-xs">
+                        <MetaCell
+                          icon={<Users className="h-3.5 w-3.5" />}
+                          label="共同好友"
+                          value={String(active.mutualFriends)}
+                        />
+                        <MetaCell
+                          icon={<Sparkles className="h-3.5 w-3.5" />}
+                          label="发起来源"
+                          value={
+                            OUTGOING_ORIGIN_LABEL[active.origin ?? "manual"]
+                          }
+                        />
+                        <MetaCell
+                          icon={<MessageSquareText className="h-3.5 w-3.5" />}
+                          label="发起时间"
+                          value={active.requestedAt}
+                        />
+                      </div>
+                      {active.origin === "task" && active.sourceTaskName && (
+                        <MetaLine
+                          label="来源任务"
+                          value={active.sourceTaskName}
+                        />
+                      )}
+                      {active.outgoingStatus === "waiting" && (
+                        <MetaLine
+                          label="等待时长"
+                          value={`已等待 ${daysSince(active.requestedAt)} 天`}
+                        />
+                      )}
+                      {active.outgoingStatus === "expired" && (
+                        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                          <Info className="mt-0.5 h-3.5 w-3.5 flex-none" />
+                          <div className="leading-relaxed">
+                            已发起 {daysSince(active.requestedAt)} 天仍未响应，建议撤回后择机重新发起，避免占用平台待处理申请额度。
+                          </div>
+                        </div>
+                      )}
+                      {active.respondedAt && (
+                        <MetaLine
+                          label={
+                            active.outgoingStatus === "accepted"
+                              ? "对方通过时间"
+                              : "对方拒绝时间"
+                          }
+                          value={active.respondedAt}
+                        />
+                      )}
+                      {active.withdrawnAt && (
+                        <MetaLine label="撤回时间" value={active.withdrawnAt} />
+                      )}
+                      {active.outgoingStatus === "accepted" &&
+                        active.lastInteractAt && (
+                          <MetaLine
+                            label="最近互动"
+                            value={active.lastInteractAt}
+                          />
+                        )}
+                      {active.greetingZh && (
+                        <div className="rounded-md border bg-muted/30 p-3">
+                          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                            <MessageSquareText className="h-3 w-3" />
+                            申请附言（中文原文）
+                          </div>
+                          <div className="text-sm leading-relaxed">
+                            {active.greetingZh}
+                          </div>
+                          {active.greetingText &&
+                            active.greetingText !== active.greetingZh && (
+                              <>
+                                <Separator className="my-2" />
+                                <div className="mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                  <Languages className="h-3 w-3" />
+                                  实际发送 · {LANG_LABEL[active.peerLang]}
+                                </div>
+                                <div className="text-sm leading-relaxed text-muted-foreground">
+                                  {active.greetingText}
+                                </div>
+                              </>
+                            )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <MetaCell
+                        icon={<Users className="h-3.5 w-3.5" />}
+                        label="共同好友"
+                        value={String(active.mutualFriends)}
+                      />
+                      <MetaCell
+                        icon={<Sparkles className="h-3.5 w-3.5" />}
+                        label="来源"
+                        value={SOURCE_LABEL[active.source]}
+                      />
+                      <MetaCell
+                        icon={<MessageSquareText className="h-3.5 w-3.5" />}
+                        label="申请时间"
+                        value={active.requestedAt}
+                      />
+                    </div>
+                  )}
 
                   {/* 申请留言 */}
-                  {active.requestText && (
+                  {isIncoming(active) && active.requestText && (
                     <div className="rounded-md border bg-muted/30 p-3">
                       <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
                         <MessageSquareText className="h-3 w-3" />
@@ -668,7 +922,7 @@ function FriendsPage() {
                   )}
 
                   {/* 已通过：欢迎语与备注 */}
-                  {active.status === "accepted" && (
+                  {isIncoming(active) && active.status === "accepted" && (
                     <>
                       {active.welcomeZh && (
                         <div className="rounded-md border p-3">
@@ -698,7 +952,7 @@ function FriendsPage() {
                   )}
 
                   {/* 已拒绝：平台事实说明 + 拒绝时间 + 对外说明 */}
-                  {active.status === "rejected" && (
+                  {isIncoming(active) && active.status === "rejected" && (
                     <>
                       <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
                         <Info className="mt-0.5 h-3.5 w-3.5 flex-none" />
@@ -738,13 +992,16 @@ function FriendsPage() {
                   )}
 
                   {/* 内部备注 */}
-                  {(active.status !== "pending" || active.note) && (
+                  {(isOutgoing(active) ||
+                    active.status !== "pending" ||
+                    active.note) && (
                     <div className="rounded-md border border-dashed p-3">
                       <div className="mb-1.5 flex items-center justify-between">
                         <span className="text-[11px] font-medium text-muted-foreground">
                           内部备注（仅自己可见）
                         </span>
-                        {active.status === "accepted" && (
+                        {(isOutgoing(active) ||
+                          active.status === "accepted") && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -765,7 +1022,53 @@ function FriendsPage() {
 
               {/* 底部操作栏 */}
               <div className="flex items-center justify-end gap-2 border-t bg-muted/30 px-4 py-3">
-                {active.status === "pending" && (
+                {isOutgoing(active) && (
+                  <>
+                    {(active.outgoingStatus === "waiting" ||
+                      active.outgoingStatus === "expired") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={withdrawOutgoing}
+                        className="gap-1.5"
+                      >
+                        <UserX className="h-3.5 w-3.5" />
+                        撤回申请
+                      </Button>
+                    )}
+                    {(active.outgoingStatus === "declined" ||
+                      active.outgoingStatus === "withdrawn" ||
+                      active.outgoingStatus === "expired") && (
+                      <Button size="sm" onClick={resendOutgoing} className="gap-1.5">
+                        <UserPlus className="h-3.5 w-3.5" />
+                        重新发起申请
+                      </Button>
+                    )}
+                    {active.outgoingStatus === "accepted" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={icebreak}
+                          className="gap-1.5"
+                        >
+                          <MessageSquareText className="h-3.5 w-3.5" />
+                          发私信破冰
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRemoveOpen(true)}
+                          className="gap-1.5 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          解除好友
+                        </Button>
+                      </>
+                    )}
+                  </>
+                )}
+                {isIncoming(active) && active.status === "pending" && (
                   <>
                     <Button
                       variant="outline"
@@ -786,7 +1089,7 @@ function FriendsPage() {
                     </Button>
                   </>
                 )}
-                {active.status === "accepted" && (
+                {isIncoming(active) && active.status === "accepted" && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -797,7 +1100,7 @@ function FriendsPage() {
                     解除好友
                   </Button>
                 )}
-                {active.status === "rejected" && (
+                {isIncoming(active) && active.status === "rejected" && (
                   <>
                     <Button
                       variant="ghost"
@@ -927,22 +1230,62 @@ function UrgencyBadge({
   );
 }
 
-function StatusBadge({ status }: { status: FriendStatus }) {
+function StatusBadge({
+  status,
+  compact,
+}: {
+  status: FriendStatus;
+  compact?: boolean;
+}) {
+  const cls = compact ? "h-4 px-1 text-[10px] font-normal" : "";
   if (status === "pending")
     return (
-      <Badge className="border-warning/30 bg-warning/10 text-warning" variant="outline">
+      <Badge
+        className={cn("border-warning/30 bg-warning/10 text-warning", cls)}
+        variant="outline"
+      >
         待处理
       </Badge>
     );
   if (status === "accepted")
     return (
-      <Badge className="border-success/30 bg-success/10 text-success" variant="outline">
+      <Badge
+        className={cn("border-success/30 bg-success/10 text-success", cls)}
+        variant="outline"
+      >
         好友
       </Badge>
     );
   return (
-    <Badge className="border-muted text-muted-foreground" variant="outline">
+    <Badge
+      className={cn("border-muted text-muted-foreground", cls)}
+      variant="outline"
+    >
       已拒绝
+    </Badge>
+  );
+}
+
+function OutgoingStatusBadge({
+  status,
+  compact = true,
+}: {
+  status: OutgoingStatus;
+  compact?: boolean;
+}) {
+  const map: Record<OutgoingStatus, string> = {
+    waiting: "border-warning/30 bg-warning/10 text-warning",
+    accepted: "border-success/30 bg-success/10 text-success",
+    declined: "border-destructive/30 bg-destructive/10 text-destructive",
+    withdrawn: "border-muted text-muted-foreground",
+    expired: "border-primary/30 bg-primary/10 text-primary",
+  };
+  return (
+    <Badge
+      variant="outline"
+      className={cn(map[status], compact && "h-4 px-1 text-[10px] font-normal")}
+    >
+      {OUTGOING_STATUS_LABEL[status]}
     </Badge>
   );
 }
