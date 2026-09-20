@@ -25,6 +25,7 @@ import {
   recordActivity,
 } from "@/lib/activity-tasks";
 import type { Platform } from "@/lib/managed-account-mock";
+import { useTenantScope } from "@/lib/tenant-scope";
 
 ensureActivityTasksSeeded();
 

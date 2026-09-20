@@ -58,6 +58,7 @@ import {
 } from "@/lib/friends-mock";
 import { useTasks } from "@/lib/operations-store";
 import { ensureActivityTasksSeeded, recordActivity } from "@/lib/activity-tasks";
+import { useTenantScope } from "@/lib/tenant-scope";
 
 ensureActivityTasksSeeded();
 
