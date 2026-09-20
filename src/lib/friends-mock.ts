@@ -180,6 +180,7 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
       requests.push({
         id: `fr-${acc.id}-p${i}`,
         accountId: acc.id,
+        direction: "incoming",
         status: "pending",
         peerName: seed.name,
         peerHandle: seed.handle,
@@ -200,6 +201,7 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
       requests.push({
         id: `fr-${acc.id}-a${i}`,
         accountId: acc.id,
+        direction: "incoming",
         status: "accepted",
         peerName: seed.name,
         peerHandle: seed.handle,
@@ -232,6 +234,7 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
       requests.push({
         id: `fr-${acc.id}-r${i}`,
         accountId: acc.id,
+        direction: "incoming",
         status: "rejected",
         peerName,
         peerHandle,
@@ -251,6 +254,7 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
         requests.push({
           id: `fr-${acc.id}-reapp0`,
           accountId: acc.id,
+          direction: "incoming",
           status: "pending",
           peerName,
           peerHandle,
