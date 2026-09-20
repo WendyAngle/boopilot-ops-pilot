@@ -952,7 +952,7 @@ function FriendsPage() {
                   )}
 
                   {/* 已拒绝：平台事实说明 + 拒绝时间 + 对外说明 */}
-                  {active.status === "rejected" && (
+                  {isIncoming(active) && active.status === "rejected" && (
                     <>
                       <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
                         <Info className="mt-0.5 h-3.5 w-3.5 flex-none" />
