@@ -166,7 +166,7 @@ function MessagesPage() {
         return { ...c, starred: nextStarred };
       }),
     );
-    toast.success(nextStarred ? "已加入标星" : "已取消标星");
+    toast.success(nextStarred ? "已加入关注" : "已取消关注");
   };
 
   const markRead = (convId: string) => {
@@ -183,10 +183,71 @@ function MessagesPage() {
     );
   };
 
+  /** 标记为未读：把末尾连续的对方消息重新置为未读，便于稍后跟进 */
+  const markUnread = (convId: string) => {
+    let ok = false;
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== convId) return c;
+        const msgs = c.messages.map((m) => ({ ...m }));
+        let unread = 0;
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i].direction !== "in") break;
+          msgs[i].read = false;
+          unread += 1;
+        }
+        if (unread === 0) return c;
+        ok = true;
+        return { ...c, messages: msgs, unread };
+      }),
+    );
+    if (ok) {
+      if (convId === activeConvId) setActiveConvId("");
+      toast.success("已标记为未读");
+    } else {
+      toast.info("最后一条是我方发出的消息，无法标记为未读");
+    }
+  };
+
+  const markAllRead = () => {
+    const ids = new Set(accountConvs.filter((c) => c.unread > 0).map((c) => c.id));
+    if (ids.size === 0) return;
+    setConversations((prev) =>
+      prev.map((c) =>
+        ids.has(c.id)
+          ? {
+              ...c,
+              unread: 0,
+              messages: c.messages.map((m) => (m.direction === "in" ? { ...m, read: true } : m)),
+            }
+          : c,
+      ),
+    );
+    toast.success(`已将 ${ids.size} 个会话标记为已读`);
+  };
+
   const openConversation = (convId: string) => {
     setActiveConvId(convId);
     markRead(convId);
   };
+
+  // 从好友管理跳转过来：定位到该联系人的会话
+  useEffect(() => {
+    if (!peer) return;
+    const target = conversations.find(
+      (c) => c.peerHandle.toLowerCase() === peer.toLowerCase(),
+    );
+    if (!target) {
+      toast.info(`「${peer}」暂无私信会话，可从会话列表发起`);
+      return;
+    }
+    setScope("all");
+    setListFilter("all");
+    setActiveAccountId(target.accountId);
+    setActiveConvId(target.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peer, conversations.length]);
+
 
   const handleSend = (msg: DirectMessage) => {
     if (!activeConv) return;
