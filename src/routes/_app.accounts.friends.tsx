@@ -732,7 +732,14 @@ function FriendsPage() {
                       <div className="text-base font-semibold">
                         {active.peerName}
                       </div>
-                      <StatusBadge status={active.status} />
+                      {isOutgoing(active) ? (
+                        <OutgoingStatusBadge
+                          status={active.outgoingStatus ?? "waiting"}
+                          compact={false}
+                        />
+                      ) : (
+                        <StatusBadge status={active.status} />
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {active.peerHandle} · {LANG_LABEL[active.peerLang]}
