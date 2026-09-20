@@ -561,6 +561,26 @@ function FriendsPage() {
                 {acceptRate === null ? "—" : `${acceptRate}%`}
               </span>
             </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    "rounded-md border px-2 py-0.5",
+                    limitReached
+                      ? "border-destructive/40 bg-destructive/10 text-destructive"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  今日已发起{" "}
+                  <span className="font-semibold tabular-nums">
+                    {countsForActive.sentToday}/{DAILY_OUTGOING_LIMIT}
+                  </span>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                单账号每日主动发起好友申请的风控上限，达到上限后将暂停发起与重新发起
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
       </div>
@@ -570,9 +590,10 @@ function FriendsPage() {
           <div className="flex items-center gap-2">
             <BellRing className="h-4 w-4 text-primary" />
             <span>
-              有 <span className="font-semibold text-primary">{reappGlobal}</span> 位「持续关注」对象再次发来好友申请
+              有 <span className="font-semibold text-primary">{reappGlobal}</span> 位「关注」对象再次发来好友申请
             </span>
           </div>
+
           <Button size="sm" variant="outline" onClick={jumpToFirstReapplication}>
             立即查看
           </Button>
