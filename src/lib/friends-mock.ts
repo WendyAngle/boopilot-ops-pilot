@@ -13,6 +13,46 @@ export { LANG_LABEL, translateZhTo };
 export type { MsgLang };
 
 export type FriendStatus = "pending" | "accepted" | "rejected";
+
+/** 关系方向：incoming = 对方申请我方；outgoing = 我方主动申请对方 */
+export type FriendDirection = "incoming" | "outgoing";
+
+/** 我方发起申请后的状态 */
+export type OutgoingStatus =
+  | "waiting" // 等待对方处理
+  | "accepted" // 对方已通过
+  | "declined" // 对方已拒绝
+  | "withdrawn" // 我方已撤回
+  | "expired"; // 超 30 天未响应，视为失效
+
+export const OUTGOING_STATUS_LABEL: Record<OutgoingStatus, string> = {
+  waiting: "等待对方处理",
+  accepted: "对方已通过",
+  declined: "对方已拒绝",
+  withdrawn: "已撤回",
+  expired: "长期未响应",
+};
+
+/** 我方发起申请的来源 */
+export type OutgoingOrigin = "task" | "manual" | "recommend" | "profile_visit";
+
+export const OUTGOING_ORIGIN_LABEL: Record<OutgoingOrigin, string> = {
+  task: "社媒触达任务",
+  manual: "手动发起",
+  recommend: "平台推荐",
+  profile_visit: "主页访问",
+};
+
+/** 与任务模块一致的「加好友」触达任务名（Facebook 触达任务） */
+const REACH_TASK_NAMES = [
+  "Facebook 美国钢材进口商拓客",
+  "Facebook 德国光伏支架采购拓客",
+  "Facebook 巴西建材经销商拓客",
+  "Facebook 东南亚智能家居代理拓客",
+  "Facebook 越南工业铝型材拓客",
+  "Facebook 泰国建材群组拓客",
+  "Facebook 全球外贸潜客常态拓客",
+];
 export type FriendSource =
   | "profile_visit"
   | "post_engagement"
