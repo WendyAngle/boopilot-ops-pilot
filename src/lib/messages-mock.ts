@@ -184,7 +184,7 @@ function buildAll(): { accounts: ManagedAccount[]; conversations: Conversation[]
         text: opening.text,
         translation: seed.lang === "zh" ? undefined : opening.zh,
         time: timeAgo(t0),
-        read: false,
+        read: true,
       });
 
       // 若非最新一条，追加账号侧的回复 + 对方追问，模拟多轮
@@ -238,7 +238,7 @@ function buildAll(): { accounts: ManagedAccount[]; conversations: Conversation[]
           text: followUp.text,
           translation: seed.lang === "zh" ? undefined : followUp.zh,
           time: timeAgo(t0 - 60),
-          read: false,
+          read: true,
         });
       }
 
@@ -273,7 +273,18 @@ function buildAll(): { accounts: ManagedAccount[]; conversations: Conversation[]
 
 
       const lastMsg = msgs[msgs.length - 1];
-      const unread = msgs.filter((m) => m.direction === "in" && !m.read).length;
+      // 未读口径：只有「对方最后回复且我方尚未查看」才算未读。
+      // 末尾若是我方发出的消息（含发送中/发送失败），该会话一定为已读。
+      let unread = 0;
+      if (lastMsg.direction === "in" && (aIdx + c) % 3 !== 0) {
+        // 标记末尾连续的对方消息为未读
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          const m = msgs[i];
+          if (m.direction !== "in") break;
+          m.read = false;
+          unread += 1;
+        }
+      }
       // Seed starred：每个账号的第 0 条会话默认标星；每 3 个账号的第 2 条也标星，覆盖跨账号场景
       const starred = c === 0 || (aIdx % 3 === 0 && c === 2);
       const starredNote = starred
