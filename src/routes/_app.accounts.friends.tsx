@@ -989,7 +989,7 @@ function FriendsPage() {
                     </Button>
                   </>
                 )}
-                {active.status === "accepted" && (
+                {isIncoming(active) && active.status === "accepted" && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -1000,7 +1000,7 @@ function FriendsPage() {
                     解除好友
                   </Button>
                 )}
-                {active.status === "rejected" && (
+                {isIncoming(active) && active.status === "rejected" && (
                   <>
                     <Button
                       variant="ghost"
