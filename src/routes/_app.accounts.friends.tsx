@@ -55,6 +55,8 @@ import {
   SOURCE_LABEL,
   OUTGOING_STATUS_LABEL,
   OUTGOING_ORIGIN_LABEL,
+  DAILY_OUTGOING_LIMIT,
+
   type FriendRequest,
   type FriendStatus,
   type OutgoingStatus,
@@ -1307,9 +1309,11 @@ function OutgoingStatusBadge({
     waiting: "border-warning/30 bg-warning/10 text-warning",
     accepted: "border-success/30 bg-success/10 text-success",
     declined: "border-destructive/30 bg-destructive/10 text-destructive",
+    withdrawing: "border-muted-foreground/30 bg-muted text-muted-foreground",
     withdrawn: "border-muted text-muted-foreground",
     expired: "border-primary/30 bg-primary/10 text-primary",
   };
+
   return (
     <Badge
       variant="outline"
