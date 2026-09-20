@@ -159,10 +159,10 @@ function MessagesPage() {
     );
   };
 
-  useEffect(() => {
-    if (activeConvId) markRead(activeConvId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConvId]);
+  const openConversation = (convId: string) => {
+    setActiveConvId(convId);
+    markRead(convId);
+  };
 
   const handleSend = (msg: DirectMessage) => {
     if (!activeConv) return;
@@ -394,7 +394,7 @@ function MessagesPage() {
                       key={c.id}
                       conv={c}
                       active={c.id === activeConvId}
-                      onClick={() => setActiveConvId(c.id)}
+                      onClick={() => openConversation(c.id)}
                       onToggleStar={() => toggleStar(c.id)}
                       accountLabel={
                         isAllScope && acc
