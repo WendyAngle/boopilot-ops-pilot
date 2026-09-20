@@ -120,6 +120,7 @@ function FriendsPage() {
     setActiveId("");
   }, [initial, accounts]);
   const [keyword, setKeyword] = useState("");
+  const { peer } = Route.useSearch();
 
   const isIncoming = (r: FriendRequest) => r.direction !== "outgoing";
   const isOutgoing = (r: FriendRequest) => r.direction === "outgoing";
@@ -133,6 +134,7 @@ function FriendsPage() {
       }
     });
     return map;
+
   }, [requests]);
 
   // 「再次申请」映射：key = accountId::peerHandle
