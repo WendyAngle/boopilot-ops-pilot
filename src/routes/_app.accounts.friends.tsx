@@ -1000,7 +1000,8 @@ function FriendsPage() {
                         <span className="text-[11px] font-medium text-muted-foreground">
                           内部备注（仅自己可见）
                         </span>
-                        {active.status === "accepted" && (
+                        {(isOutgoing(active) ||
+                          active.status === "accepted") && (
                           <Button
                             variant="ghost"
                             size="sm"
