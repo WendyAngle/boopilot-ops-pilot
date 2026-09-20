@@ -678,10 +678,6 @@ function FriendsPage() {
                   </button>
                 );
               })}
-
-                  </button>
-                );
-              })}
               {accounts.length === 0 && (
                 <div className="px-3 py-8 text-center text-xs text-muted-foreground">
                   当前租户下暂无账号
