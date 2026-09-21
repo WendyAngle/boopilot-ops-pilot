@@ -1137,8 +1137,7 @@ function FriendsPage() {
                   )}
 
                   {/* 内部备注 */}
-                  {(isOutgoing(active) || active.status !== "pending" || active.note || active.notes?.length) && (
-                    <div className="rounded-md border border-dashed p-3">
+                  <div className="rounded-md border border-dashed p-3">
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[11px] font-medium text-muted-foreground">
@@ -1200,8 +1199,7 @@ function FriendsPage() {
                           ))}
                         </div>
                       )}
-                    </div>
-                  )}
+                  </div>
                 </div>
               </ScrollArea>
 
