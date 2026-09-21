@@ -361,60 +361,74 @@ function MessagesPage() {
           <div className="flex min-h-0 flex-col border-r">
             <div className="border-b p-2.5 space-y-2">
               {/* 统一筛选：全部 / 待我回复 / 未读 / 关注 + 范围切换 */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="inline-flex items-center rounded-md bg-muted p-0.5 text-xs">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {LIST_FILTERS.map((f) => {
                     const on = listFilter === f.key;
                     return (
-                      <button
+                      <Button
                         key={f.key}
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setListFilter(f.key)}
                         className={cn(
-                          "flex items-center gap-1 rounded px-2 py-0.5 transition-colors",
+                          "h-7 shrink-0 gap-1 rounded-md px-1.5 text-[11px] font-medium whitespace-nowrap shadow-none",
                           on
                             ? f.key === "starred"
-                              ? "bg-background text-amber-700 shadow-sm dark:text-amber-300"
-                              : "bg-background shadow-sm"
-                            : "text-muted-foreground hover:text-foreground",
+                              ? "bg-accent text-warning-foreground hover:bg-accent"
+                              : "bg-accent text-primary hover:bg-accent"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
                         )}
                       >
                         {f.key === "starred" && (
-                          <Star className="h-3 w-3" fill={on ? "currentColor" : "none"} />
+                          <Star className="h-3 w-3 shrink-0" fill={on ? "currentColor" : "none"} />
                         )}
-                        {f.label}
-                        <span className="text-[10px] tabular-nums text-muted-foreground">
+                        <span>{f.label}</span>
+                        <span
+                          className={cn(
+                            "inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-muted px-1 text-[9px] leading-none tabular-nums text-muted-foreground",
+                            on && "bg-primary text-primary-foreground",
+                          )}
+                        >
                           {filterCounts[f.key]}
                         </span>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
-                <div className="inline-flex items-center rounded-md border text-[11px]">
-                  <button
+                <div className="flex shrink-0 items-center gap-2">
+                  <Separator orientation="vertical" className="h-5" />
+                  <div className="inline-flex items-center rounded-md bg-muted p-0.5">
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setScope("current")}
                     className={cn(
-                      "rounded-l-md px-2 py-0.5 transition-colors",
+                      "h-6 rounded px-1.5 text-[10px] whitespace-nowrap shadow-none",
                       scope === "current"
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent/50",
+                        ? "bg-background text-foreground shadow-sm hover:bg-background"
+                        : "text-muted-foreground hover:bg-background/60",
                     )}
                   >
                     当前账号
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setScope("all")}
                     className={cn(
-                      "rounded-r-md border-l px-2 py-0.5 transition-colors",
+                      "h-6 rounded px-1.5 text-[10px] whitespace-nowrap shadow-none",
                       scope === "all"
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent/50",
+                        ? "bg-background text-foreground shadow-sm hover:bg-background"
+                        : "text-muted-foreground hover:bg-background/60",
                     )}
                   >
                     全部账号
-                  </button>
+                  </Button>
+                  </div>
                 </div>
               </div>
 
