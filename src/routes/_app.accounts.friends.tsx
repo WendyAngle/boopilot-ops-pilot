@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import {
   Search,
+  Plus,
+  Pencil,
   UserPlus,
   UserCheck,
   UserX,
@@ -58,6 +60,7 @@ import {
   DAILY_OUTGOING_LIMIT,
 
   type FriendRequest,
+  type FriendNote,
   type FriendStatus,
   type OutgoingStatus,
 } from "@/lib/friends-mock";
@@ -349,7 +352,9 @@ function FriendsPage() {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   
-  const [noteEditOpen, setNoteEditOpen] = useState(false);
+  const [noteEditorOpen, setNoteEditorOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<FriendNote | null>(null);
+  const [deletingNote, setDeletingNote] = useState<FriendNote | null>(null);
 
   const patch = (id: string, p: Partial<FriendRequest>) => {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...p } : r)));
@@ -359,6 +364,24 @@ function FriendsPage() {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const notesFor = (request: FriendRequest): FriendNote[] =>
+    [...(request.notes ?? [])].sort((a, b) =>
+      (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt),
+    );
+
+  const appendInitialNote = (request: FriendRequest, content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return request.notes;
+    return [
+      ...(request.notes ?? []),
+      {
+        id: `${request.id}-note-${Date.now()}`,
+        content: trimmed,
+        createdAt: now(),
+      },
+    ];
   };
 
   const approve = (welcomeZh: string, note: string) => {
@@ -374,6 +397,7 @@ function FriendsPage() {
       welcomeZh: welcomeZh.trim() || undefined,
       welcomeText,
       note: note.trim() || undefined,
+      notes: appendInitialNote(active, note),
     });
     recordActivity({
       accountId: activeAccount.id,
@@ -404,6 +428,7 @@ function FriendsPage() {
       publicReasonZh: publicReasonZh.trim() || undefined,
       publicReasonText,
       note: note.trim() || undefined,
+      notes: appendInitialNote(active, note),
     });
     recordActivity({
       accountId: activeAccount.id,
@@ -1112,29 +1137,69 @@ function FriendsPage() {
                   )}
 
                   {/* 内部备注 */}
-                  {(isOutgoing(active) ||
-                    active.status !== "pending" ||
-                    active.note) && (
+                  {(isOutgoing(active) || active.status !== "pending" || active.note || active.notes?.length) && (
                     <div className="rounded-md border border-dashed p-3">
-                      <div className="mb-1.5 flex items-center justify-between">
-                        <span className="text-[11px] font-medium text-muted-foreground">
-                          内部备注（仅自己可见）
-                        </span>
-                        {(isOutgoing(active) ||
-                          active.status === "accepted") && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 text-xs"
-                            onClick={() => setNoteEditOpen(true)}
-                          >
-                            编辑
-                          </Button>
-                        )}
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] font-medium text-muted-foreground">
+                            内部备注（仅自己可见）
+                          </span>
+                          <Badge variant="secondary" className="h-4 px-1.5 text-[9px]">
+                            {notesFor(active).length}
+                          </Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 gap-1 px-2 text-xs"
+                          onClick={() => {
+                            setEditingNote(null);
+                            setNoteEditorOpen(true);
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          新增备注
+                        </Button>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {active.note || "暂无备注"}
-                      </div>
+                      {notesFor(active).length === 0 ? (
+                        <div className="py-2 text-center text-xs text-muted-foreground">暂无备注</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {notesFor(active).map((note) => (
+                            <div key={note.id} className="group rounded-md bg-muted/40 px-2.5 py-2">
+                              <div className="flex items-start gap-2">
+                                <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-relaxed">{note.content}</p>
+                                <div className="flex shrink-0 items-center gap-0.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground"
+                                    title="编辑备注"
+                                    onClick={() => {
+                                      setEditingNote(note);
+                                      setNoteEditorOpen(true);
+                                    }}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                    title="删除备注"
+                                    onClick={() => setDeletingNote(note)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="mt-1 text-[10px] text-muted-foreground">
+                                {note.updatedAt ? `更新于 ${note.updatedAt}` : note.createdAt}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1352,16 +1417,65 @@ function FriendsPage() {
             request={active}
             onConfirm={reject}
           />
-          <NoteEditDialog
-            open={noteEditOpen}
-            onOpenChange={setNoteEditOpen}
-            defaultValue={active.note ?? ""}
-            onConfirm={(note) => {
-              patch(active.id, { note: note.trim() || undefined });
-              toast.success("备注已更新");
-              setNoteEditOpen(false);
+          <NoteEditorDialog
+            open={noteEditorOpen}
+            onOpenChange={setNoteEditorOpen}
+            note={editingNote}
+            onConfirm={(content) => {
+              const trimmed = content.trim();
+              if (!trimmed) return;
+              const currentNotes = active.notes ?? [];
+              const notes = editingNote
+                ? currentNotes.map((note) =>
+                    note.id === editingNote.id
+                      ? { ...note, content: trimmed, updatedAt: now() }
+                      : note,
+                  )
+                : [
+                    ...currentNotes,
+                    {
+                      id: `${active.id}-note-${Date.now()}`,
+                      content: trimmed,
+                      createdAt: now(),
+                    },
+                  ];
+              patch(active.id, { notes });
+              toast.success(editingNote ? "备注已更新" : "备注已新增");
+              setNoteEditorOpen(false);
+              setEditingNote(null);
             }}
           />
+          <AlertDialog
+            open={Boolean(deletingNote)}
+            onOpenChange={(open) => {
+              if (!open) setDeletingNote(null);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>确认删除这条备注？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  删除后无法恢复，其他备注不会受到影响。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => {
+                    if (!deletingNote) return;
+                    patch(active.id, {
+                      notes: (active.notes ?? []).filter((note) => note.id !== deletingNote.id),
+                    });
+                    toast.success("备注已删除");
+                    setDeletingNote(null);
+                  }}
+                >
+                  删除备注
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -1692,27 +1806,27 @@ function RejectDialog({
   );
 }
 
-function NoteEditDialog({
+function NoteEditorDialog({
   open,
   onOpenChange,
-  defaultValue,
+  note: currentNote,
   onConfirm,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  defaultValue: string;
+  note: FriendNote | null;
   onConfirm: (note: string) => void;
 }) {
-  const [note, setNote] = useState(defaultValue);
+  const [note, setNote] = useState(currentNote?.content ?? "");
   useEffect(() => {
-    if (open) setNote(defaultValue);
-  }, [open, defaultValue]);
+    if (open) setNote(currentNote?.content ?? "");
+  }, [open, currentNote]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>编辑内部备注</DialogTitle>
+          <DialogTitle>{currentNote ? "编辑内部备注" : "新增内部备注"}</DialogTitle>
           <DialogDescription>备注仅自己可见，不会发送给对方。</DialogDescription>
         </DialogHeader>
         <Textarea
@@ -1720,12 +1834,15 @@ function NoteEditDialog({
           onChange={(e) => setNote(e.target.value)}
           rows={3}
           className="text-sm"
+          placeholder="请输入需要记录的跟进信息"
         />
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             取消
           </Button>
-          <Button onClick={() => onConfirm(note)}>保存</Button>
+          <Button disabled={!note.trim()} onClick={() => onConfirm(note)}>
+            {currentNote ? "保存修改" : "新增备注"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

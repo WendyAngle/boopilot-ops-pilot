@@ -76,6 +76,13 @@ export const SOURCE_LABEL: Record<FriendSource, string> = {
   recommend: "平台推荐",
 };
 
+export interface FriendNote {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface FriendRequest {
   id: string;
   accountId: string;
@@ -102,6 +109,8 @@ export interface FriendRequest {
   welcomeText?: string;
   /** 内部备注（通过/拒绝均可填） */
   note?: string;
+  /** 结构化内部备注，按时间记录，可追加、编辑和删除 */
+  notes?: FriendNote[];
   /** 拒绝时对外说明（中文原文，展示给对方） */
   publicReasonZh?: string;
   /** 拒绝时对外说明（对方语种译文） */
@@ -355,6 +364,27 @@ function build(): { accounts: ManagedAccount[]; requests: FriendRequest[] } {
                 : undefined,
       });
     });
+  });
+
+  // 将历史单条备注兼容为备注列表，并为部分记录补充连续跟进备注。
+  requests.forEach((request, index) => {
+    if (!request.note) return;
+    request.notes = [
+      {
+        id: `${request.id}-note-1`,
+        content: request.note,
+        createdAt: request.decidedAt ?? request.respondedAt ?? request.requestedAt,
+      },
+      ...(index % 7 === 0
+        ? [
+            {
+              id: `${request.id}-note-2`,
+              content: "已复核对方近期动态，后续按当前跟进策略继续观察",
+              createdAt: timeAgo(60 * 8 + index),
+            },
+          ]
+        : []),
+    ];
   });
 
   requests.sort((a, b) => (a.requestedAt < b.requestedAt ? 1 : -1));
