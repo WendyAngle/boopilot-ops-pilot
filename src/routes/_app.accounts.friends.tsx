@@ -14,8 +14,8 @@ import {
   Trash2,
   Sparkles,
   Info,
-  Bell,
   BellRing,
+  Star,
   Clock,
   AlertCircle,
   ScrollText,
@@ -461,7 +461,7 @@ function FriendsPage() {
     if (!active) return;
     const next = !active.watchlisted;
     patch(active.id, { watchlisted: next });
-    toast.success(next ? "已加入关注，将在「关注」分类中跟进" : "已取消关注");
+    toast.success(next ? "已加入关注" : "已取消关注");
   };
 
   const invitePeer = () => {
@@ -741,8 +741,11 @@ function FriendsPage() {
                   </span>
                 </TabsTrigger>
                 <TabsTrigger value="watchlist" className="gap-1 px-1.5 text-xs">
+                  <Star
+                    className="h-3 w-3 shrink-0"
+                    fill={tab === "watchlist" ? "currentColor" : "none"}
+                  />
                   关注
-
                   {countsForActive.watchlist > 0 && (
                     <span className="text-[10px] text-muted-foreground">
                       {countsForActive.watchlist}
@@ -1205,26 +1208,32 @@ function FriendsPage() {
 
               {/* 底部操作栏 */}
               <div className="flex items-center justify-end gap-2 border-t bg-muted/30 px-4 py-3">
-                {!(isIncoming(active) && active.status === "rejected") && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleWatchlist}
-                    className="mr-auto gap-1.5"
-                  >
-                    {active.watchlisted ? (
-                      <>
-                        <BellRing className="h-3.5 w-3.5 text-primary" />
-                        已关注
-                      </>
-                    ) : (
-                      <>
-                        <Bell className="h-3.5 w-3.5" />
-                        关注
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleWatchlist}
+                      className="mr-auto gap-1.5"
+                    >
+                      <Star
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          active.watchlisted
+                            ? "text-amber-500"
+                            : "text-muted-foreground",
+                        )}
+                        fill={active.watchlisted ? "currentColor" : "none"}
+                      />
+                      {active.watchlisted ? "已关注" : "关注"}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {active.watchlisted
+                      ? "取消对该好友关系的重点关注"
+                      : "加入重点关注，可在「关注」分类中集中跟进"}
+                  </TooltipContent>
+                </Tooltip>
                 {isOutgoing(active) && (
                   <>
                     {active.outgoingStatus !== "accepted" && (
@@ -1358,35 +1367,14 @@ function FriendsPage() {
                 )}
 
                 {isIncoming(active) && active.status === "rejected" && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleWatchlist}
-                      className="gap-1.5"
-                    >
-                      {active.watchlisted ? (
-                        <>
-                          <BellRing className="h-3.5 w-3.5 text-primary" />
-                          取消关注
-                        </>
-                      ) : (
-                        <>
-                          <Bell className="h-3.5 w-3.5" />
-                          标记关注
-
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={invitePeer}
-                      className="gap-1.5"
-                    >
-                      <UserPlus className="h-3.5 w-3.5" />
-                      主动向 TA 发起邀请
-                    </Button>
-                  </>
+                  <Button
+                    size="sm"
+                    onClick={invitePeer}
+                    className="gap-1.5"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    主动向 TA 发起邀请
+                  </Button>
                 )}
               </div>
             </>
