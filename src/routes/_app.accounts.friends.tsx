@@ -464,6 +464,12 @@ function FriendsPage() {
     toast.success(next ? "已加入关注" : "已取消关注");
   };
 
+  const toggleListWatchlist = (request: FriendRequest) => {
+    const next = !request.watchlisted;
+    patch(request.id, { watchlisted: next });
+    toast.success(next ? "已加入关注" : "已取消关注");
+  };
+
   const invitePeer = () => {
     if (!active || !activeAccount) return;
     if (limitReached) {
@@ -773,11 +779,19 @@ function FriendsPage() {
                     ? daysSince(r.decidedAt ?? r.requestedAt)
                     : 0;
                 return (
-                  <button
+                  <div
                     key={r.id}
                     onClick={() => setActiveId(r.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setActiveId(r.id);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                     className={cn(
-                      "flex w-full items-start gap-2 rounded-md border p-2 text-left transition-colors",
+                      "group flex w-full items-start gap-2 rounded-md border p-2 text-left transition-colors",
                       r.id === activeId
                         ? "border-primary bg-accent"
                         : "border-transparent hover:bg-accent/50",
@@ -796,8 +810,40 @@ function FriendsPage() {
                           </div>
                           {urgency && <UrgencyBadge urgency={urgency} />}
                         </div>
-                        <div className="shrink-0 text-[10px] text-muted-foreground">
-                          {r.decidedAt ?? r.requestedAt}
+                        <div className="flex shrink-0 items-center gap-1">
+                          <div className="text-[10px] text-muted-foreground">
+                            {r.decidedAt ?? r.requestedAt}
+                          </div>
+                          {tab === "friends" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label={r.watchlisted ? "取消关注" : "加入关注"}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    toggleListWatchlist(r);
+                                  }}
+                                  className={cn(
+                                    "h-5 w-5 shrink-0",
+                                    r.watchlisted
+                                      ? "text-amber-500 hover:text-amber-500"
+                                      : "text-muted-foreground/40 opacity-0 hover:text-amber-500 group-hover:opacity-100 focus-visible:opacity-100",
+                                  )}
+                                >
+                                  <Star
+                                    className="h-3.5 w-3.5"
+                                    fill={r.watchlisted ? "currentColor" : "none"}
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {r.watchlisted ? "取消关注" : "加入关注"}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                         </div>
                       </div>
                       <div className="truncate text-xs text-muted-foreground">
@@ -844,7 +890,7 @@ function FriendsPage() {
                         )}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
               {listItems.length === 0 && (
