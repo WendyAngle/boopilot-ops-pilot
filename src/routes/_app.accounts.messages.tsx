@@ -10,12 +10,20 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   getInboxData,
   platformMeta,
   aiSuggestReplies,
-  translateZhTo,
+  translateZhToTarget,
+  translateLangLabel,
+  translateLangShortLabel,
+  msgLangToTranslateLang,
+  translateLangToMsgLang,
+  TRANSLATE_LANGS,
   LANG_LABEL,
+  type TranslateLang,
   type Conversation,
   type DirectMessage,
 } from "@/lib/messages-mock";
@@ -691,11 +699,20 @@ function ChatWindow({
   const [aiOptions, setAiOptions] = useState<{ zh: string; translated: string }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // 默认目标语言：对方最近一条回复所用语言；对方从未回复时默认英语
+  const defaultTargetLang: TranslateLang = useMemo(() => {
+    const lastIn = [...conv.messages].reverse().find((m) => m.direction === "in");
+    return lastIn ? msgLangToTranslateLang(lastIn.lang) : "en";
+  }, [conv.messages]);
+  const [targetLang, setTargetLang] = useState<TranslateLang>(defaultTargetLang);
+
   useEffect(() => {
-    // 会话切换时清空
+    // 会话切换时清空并重置目标语言
     setDraftZh("");
     setTranslated("");
     setAiOptions([]);
+    setTargetLang(defaultTargetLang);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conv.id]);
 
   useEffect(() => {
@@ -705,17 +722,19 @@ function ChatWindow({
     });
   }, [conv.messages.length]);
 
+  const noTranslateNeeded = targetLang === "zh-CN";
+
   // 自动翻译（防抖）
   useEffect(() => {
-    if (!autoTranslate || !draftZh.trim() || conv.peerLang === "zh") {
-      setTranslated(conv.peerLang === "zh" ? draftZh : "");
+    if (!autoTranslate || !draftZh.trim() || targetLang === "zh-CN") {
+      setTranslated(targetLang === "zh-CN" ? draftZh : "");
       return;
     }
     const t = setTimeout(() => {
-      setTranslated(translateZhTo(conv.peerLang, draftZh));
+      setTranslated(translateZhToTarget(targetLang, draftZh));
     }, 250);
     return () => clearTimeout(t);
-  }, [draftZh, autoTranslate, conv.peerLang]);
+  }, [draftZh, autoTranslate, targetLang]);
 
   const handleAiGenerate = () => {
     setAiLoading(true);
@@ -793,7 +812,8 @@ function ChatWindow({
   const handleSend = () => {
     const zh = draftZh.trim();
     if (!zh) return;
-    const finalText = conv.peerLang === "zh" ? zh : translated || translateZhTo(conv.peerLang, zh);
+    const finalText =
+      !autoTranslate || noTranslateNeeded ? zh : translated || translateZhToTarget(targetLang, zh);
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     const time = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
@@ -801,7 +821,7 @@ function ChatWindow({
     onSend({
       id: msgId,
       direction: "out",
-      lang: conv.peerLang,
+      lang: !autoTranslate ? "zh" : translateLangToMsgLang(targetLang),
       text: finalText,
       sourceZh: zh,
       time,
@@ -919,8 +939,10 @@ function ChatWindow({
                 className="w-full rounded-md border bg-card px-2.5 py-1.5 text-left text-xs transition-colors hover:border-primary hover:bg-accent"
               >
                 <div>{opt.zh}</div>
-                {conv.peerLang !== "zh" && (
-                  <div className="mt-0.5 text-muted-foreground">{opt.translated}</div>
+                {autoTranslate && !noTranslateNeeded && (
+                  <div className="mt-0.5 text-muted-foreground">
+                    {translateZhToTarget(targetLang, opt.zh)}
+                  </div>
                 )}
               </button>
             ))}
@@ -928,20 +950,38 @@ function ChatWindow({
         )}
 
         <div className="p-3">
-          <div className="flex items-center justify-between pb-1.5">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Languages className="h-3 w-3" />
-              使用中文输入，
-              <button
-                onClick={() => setAutoTranslate((v) => !v)}
-                className={cn(
-                  "underline-offset-2 hover:underline",
-                  autoTranslate ? "text-primary" : "",
-                )}
-              >
-                自动翻译为 {LANG_LABEL[conv.peerLang]}
-                {autoTranslate ? "（已开启）" : "（已关闭）"}
-              </button>
+          <div className="flex items-center justify-between gap-2 pb-1.5">
+            <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Languages className="h-3.5 w-3.5" />
+                <span className="text-foreground">自动翻译</span>
+                <Switch
+                  checked={autoTranslate}
+                  onCheckedChange={setAutoTranslate}
+                  aria-label="自动翻译"
+                  className="scale-90"
+                />
+              </div>
+              {autoTranslate && (
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <span className="shrink-0">翻译为</span>
+                  <Select
+                    value={targetLang}
+                    onValueChange={(v) => setTargetLang(v as TranslateLang)}
+                  >
+                    <SelectTrigger className="h-7 w-[200px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {TRANSLATE_LANGS.map((l) => (
+                        <SelectItem key={l.code} value={l.code} className="text-xs">
+                          {translateLangLabel(l.code)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-1">
               <Tooltip>
@@ -984,7 +1024,11 @@ function ChatWindow({
           <Textarea
             value={draftZh}
             onChange={(e) => setDraftZh(e.target.value)}
-            placeholder="输入中文，系统将自动翻译为对方语言…（Ctrl/⌘ + Enter 发送）"
+            placeholder={
+              autoTranslate && !noTranslateNeeded
+                ? `输入中文，发送时自动翻译为${translateLangShortLabel(targetLang)}…（Ctrl/⌘ + Enter 发送）`
+                : "输入要发送的内容…（Ctrl/⌘ + Enter 发送）"
+            }
             rows={3}
             className="resize-none bg-card text-sm"
             onKeyDown={(e) => {
@@ -995,11 +1039,11 @@ function ChatWindow({
             }}
           />
 
-          {autoTranslate && conv.peerLang !== "zh" && draftZh.trim() && (
+          {autoTranslate && !noTranslateNeeded && draftZh.trim() && (
             <div className="mt-2 rounded-md border border-dashed bg-card px-2.5 py-1.5">
               <div className="mb-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
                 <Languages className="h-3 w-3" />
-                将发送为 {LANG_LABEL[conv.peerLang]}
+                将发送为 {translateLangLabel(targetLang)}
               </div>
               <div className="text-sm">{translated || "…"}</div>
             </div>
