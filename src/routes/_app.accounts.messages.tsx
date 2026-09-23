@@ -641,7 +641,7 @@ function ConversationItem({
                       onMarkUnread();
                     }}
                     aria-label="标记为未读"
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground/40 opacity-0 transition-colors hover:text-primary group-hover:opacity-100"
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-primary"
                   >
                     <MailOpen className="h-3.5 w-3.5" />
                   </button>
