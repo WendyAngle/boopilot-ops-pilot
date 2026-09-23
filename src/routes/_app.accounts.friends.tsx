@@ -827,14 +827,14 @@ function FriendsPage() {
                                     toggleListWatchlist(r);
                                   }}
                                   className={cn(
-                                    "h-5 w-5 shrink-0",
+                                    "h-6 w-6 shrink-0 rounded text-muted-foreground transition-colors hover:text-amber-500",
                                     r.watchlisted
                                       ? "text-amber-500 hover:text-amber-500"
-                                      : "text-muted-foreground/40 opacity-0 hover:text-amber-500 group-hover:opacity-100 focus-visible:opacity-100",
+                                      : "text-muted-foreground",
                                   )}
                                 >
                                   <Star
-                                    className="h-3.5 w-3.5"
+                                    className="h-4 w-4"
                                     fill={r.watchlisted ? "currentColor" : "none"}
                                   />
                                 </Button>
