@@ -508,3 +508,76 @@ export function aiSuggestReplies(
     translated: translateZhTo(conv.peerLang, zh),
   }));
 }
+
+// ---- 回复区可选的翻译目标语言（与产品附件一致） ----
+export type TranslateLang =
+  | "zh-CN" | "zh-HK" | "en" | "ja" | "ko" | "ru" | "fr" | "de" | "es" | "it"
+  | "id" | "ms" | "th" | "vi" | "fil" | "pt" | "nl" | "pl" | "ar" | "sv" | "da" | "no";
+
+export interface TranslateLangOption {
+  code: TranslateLang;
+  zh: string;
+  en: string;
+}
+
+export const TRANSLATE_LANGS: TranslateLangOption[] = [
+  { code: "zh-CN", zh: "中文普通话", en: "Chinese (Mandarin, Simplified)" },
+  { code: "zh-HK", zh: "中文粤语", en: "Chinese (Cantonese)" },
+  { code: "en", zh: "英语", en: "English" },
+  { code: "ja", zh: "日语", en: "Japanese" },
+  { code: "ko", zh: "韩语", en: "Korean" },
+  { code: "ru", zh: "俄语", en: "Russian" },
+  { code: "fr", zh: "法语", en: "French" },
+  { code: "de", zh: "德语", en: "German" },
+  { code: "es", zh: "西班牙语", en: "Spanish" },
+  { code: "it", zh: "意大利语", en: "Italian" },
+  { code: "id", zh: "印度尼西亚语", en: "Indonesian" },
+  { code: "ms", zh: "马来语", en: "Malay" },
+  { code: "th", zh: "泰语", en: "Thai" },
+  { code: "vi", zh: "越南语", en: "Vietnamese" },
+  { code: "fil", zh: "菲律宾语", en: "Filipino" },
+  { code: "pt", zh: "葡萄牙语", en: "Portuguese" },
+  { code: "nl", zh: "荷兰语", en: "Dutch" },
+  { code: "pl", zh: "波兰语", en: "Polish" },
+  { code: "ar", zh: "阿拉伯语", en: "Arabic" },
+  { code: "sv", zh: "瑞典语", en: "Swedish" },
+  { code: "da", zh: "丹麦语", en: "Danish" },
+  { code: "no", zh: "挪威语", en: "Norwegian" },
+];
+
+/** 目标语言展示名：中文名（English） */
+export function translateLangLabel(code: TranslateLang): string {
+  const hit = TRANSLATE_LANGS.find((l) => l.code === code);
+  return hit ? `${hit.zh}（${hit.en}）` : code;
+}
+
+/** 目标语言简名（用于占位符等紧凑场景） */
+export function translateLangShortLabel(code: TranslateLang): string {
+  return TRANSLATE_LANGS.find((l) => l.code === code)?.zh ?? code;
+}
+
+/** 消息语言 -> 翻译目标语言（对方未回复时调用方使用 en） */
+export function msgLangToTranslateLang(lang: MsgLang): TranslateLang {
+  return lang === "zh" ? "zh-CN" : (lang as TranslateLang);
+}
+
+/** 翻译目标语言 -> 消息语言（用于消息记录，超出范围的语种按英语存档展示） */
+export function translateLangToMsgLang(code: TranslateLang): MsgLang {
+  if (code === "zh-CN" || code === "zh-HK") return "zh";
+  if (code === "en" || code === "ja" || code === "id" || code === "ms" || code === "th") return code;
+  return "en";
+}
+
+/** mock 翻译：命中已有词条沿用译文，其余语种走兜底模板 */
+export function translateZhToTarget(code: TranslateLang, zh: string): string {
+  const trimmed = zh.trim();
+  if (!trimmed) return "";
+  if (code === "zh-CN") return trimmed;
+  if (code === "zh-HK") return `${trimmed}（粵語）`;
+  const asMsgLang = code as MsgLang;
+  const hit = PHRASE_DICT[trimmed]?.[asMsgLang];
+  if (hit) return hit;
+  if (FALLBACK_TEMPLATE[asMsgLang]) return FALLBACK_TEMPLATE[asMsgLang](trimmed);
+  const name = TRANSLATE_LANGS.find((l) => l.code === code)?.en ?? code;
+  return `(Auto-translated · ${name}) ${trimmed}`;
+}
