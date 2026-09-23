@@ -814,36 +814,34 @@ function FriendsPage() {
                           <div className="text-[10px] text-muted-foreground">
                             {r.decidedAt ?? r.requestedAt}
                           </div>
-                          {tab === "friends" && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  aria-label={r.watchlisted ? "取消关注" : "加入关注"}
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    toggleListWatchlist(r);
-                                  }}
-                                  className={cn(
-                                    "h-6 w-6 shrink-0 rounded text-muted-foreground transition-colors hover:text-amber-500",
-                                    r.watchlisted
-                                      ? "text-amber-500 hover:text-amber-500"
-                                      : "text-muted-foreground",
-                                  )}
-                                >
-                                  <Star
-                                    className="h-4 w-4"
-                                    fill={r.watchlisted ? "currentColor" : "none"}
-                                  />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {r.watchlisted ? "取消关注" : "加入关注"}
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label={r.watchlisted ? "取消关注" : "加入关注"}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  toggleListWatchlist(r);
+                                }}
+                                className={cn(
+                                  "h-5 w-5 shrink-0 rounded p-0 transition-colors hover:text-amber-500",
+                                  r.watchlisted
+                                    ? "text-amber-500 hover:text-amber-500"
+                                    : "text-muted-foreground/40",
+                                )}
+                              >
+                                <Star
+                                  className="h-3.5 w-3.5"
+                                  fill={r.watchlisted ? "currentColor" : "none"}
+                                />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {r.watchlisted ? "取消关注" : "加入关注"}
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </div>
                       <div className="truncate text-xs text-muted-foreground">
