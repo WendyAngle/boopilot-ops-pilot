@@ -333,6 +333,7 @@ function BasicInfoCard({ account, derived }: { account: ManagedAccount; derived:
 
   const initial = {
     username: account.username,
+    displayName: account.displayName ?? account.username,
     country: account.country,
     accountCountry: account.accountCountry,
     tenantId: account.tenantId,
@@ -371,7 +372,7 @@ function BasicInfoCard({ account, derived }: { account: ManagedAccount; derived:
     { label: "账号ID", value: <Mono>{account.id.replace("m-", "20664414804354826")}</Mono> },
     { label: "平台", value: <Badge variant="outline" className="bg-primary/10 text-primary">{account.platform}</Badge> },
     {
-      label: "账号名",
+      label: "账号昵称",
       value: editable(
         "username",
         <Input
@@ -380,6 +381,18 @@ function BasicInfoCard({ account, derived }: { account: ManagedAccount; derived:
           className="h-8"
         />,
         account.username,
+      ),
+    },
+    {
+      label: "账号名",
+      value: editable(
+        "displayName",
+        <Input
+          value={form.displayName}
+          onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+          className="h-8"
+        />,
+        account.displayName ?? account.username,
       ),
     },
     { label: "平台账号ID", value: <Mono>{account.platformId}</Mono> },

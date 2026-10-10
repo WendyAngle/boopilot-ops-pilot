@@ -161,14 +161,14 @@ export function MirrorWorkbench({
           </div>
 
           <div className="space-y-3">
-            <Field label="账号昵称（平台用户名）">
+            <Field label="账号昵称">
               <Input
                 value={draft.username}
                 onChange={(e) => setDraft({ ...draft, username: e.target.value })}
                 placeholder="如 boo.daily"
               />
             </Field>
-            <Field label="账号显示名">
+            <Field label="账号名">
               <Input
                 value={draft.displayName}
                 onChange={(e) =>

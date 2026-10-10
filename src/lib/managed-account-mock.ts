@@ -268,7 +268,7 @@ export function seedManagedAccounts(): ManagedAccount[] {
       platformId: `${1000123456 + i * 7919}`,
       avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=managed-${i}`,
       remark: i % 4 === 0 ? "重点托管账号" : i % 3 === 0 ? "矩阵号" : "--",
-      displayName: username,
+      displayName: toDisplayName(username),
       language: ACCOUNT_LANGUAGES[i % ACCOUNT_LANGUAGES.length],
       region: ACCOUNT_REGIONS[i % ACCOUNT_REGIONS.length],
       interests: Array.from(
