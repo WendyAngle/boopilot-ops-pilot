@@ -130,6 +130,7 @@ import {
   OPERATOR_RECORDS,
   PERSONAS,
   COUNTRIES,
+  ACCOUNT_LANGUAGES,
   seedManagedAccounts,
   ACCOUNT_ACTIONS,
   defaultAccountActions,
@@ -1706,6 +1707,9 @@ function EditDialog({
 }) {
   const [platform, setPlatform] = useState<Platform>("Facebook");
   const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [language, setLanguage] = useState("");
   const [platformId, setPlatformId] = useState("");
   const [accountStatus, setAccountStatus] = useState<AccountStatus>("normal");
   
