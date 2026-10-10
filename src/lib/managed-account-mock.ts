@@ -223,6 +223,15 @@ export const USERNAMES = [
   "GadgetReview",
 ];
 
+/**
+ * 账号名（平台展示名）：由账号昵称派生，去掉 handle 符号（@ . _），
+ * 让「账号昵称」与「账号名」在演示数据中可区分。
+ */
+function toDisplayName(username: string) {
+  const base = username.replace(/^@/, "").replace(/[._]/g, " ");
+  return base.replace(/(^|\s)([a-z])/g, (_, s: string, c: string) => s + c.toUpperCase());
+}
+
 export function seedManagedAccounts(): ManagedAccount[] {
   const rows: ManagedAccount[] = [];
   const tenantPendingCount = new Map<string, number>();
@@ -268,7 +277,7 @@ export function seedManagedAccounts(): ManagedAccount[] {
       platformId: `${1000123456 + i * 7919}`,
       avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=managed-${i}`,
       remark: i % 4 === 0 ? "重点托管账号" : i % 3 === 0 ? "矩阵号" : "--",
-      displayName: username,
+      displayName: toDisplayName(username),
       language: ACCOUNT_LANGUAGES[i % ACCOUNT_LANGUAGES.length],
       region: ACCOUNT_REGIONS[i % ACCOUNT_REGIONS.length],
       interests: Array.from(
