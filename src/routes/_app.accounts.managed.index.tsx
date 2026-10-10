@@ -2780,7 +2780,7 @@ function ImportAccountsDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const REQUIRED_FIELDS = ["平台", "账号", "平台账号ID", "密码", "2FA", "设备类型", "账号所属地区", "代理国家/地区"];
-  const OPTIONAL_FIELDS = ["电话", "邮箱", "邮箱密码", "备注", "Cookie值"];
+  const OPTIONAL_FIELDS = ["账号昵称", "个人简介", "语言", "电话", "邮箱", "邮箱密码", "备注", "Cookie值"];
   const DEVICE_TYPE_OPTIONS = ["云机", "指纹浏览器"];
 
   const [file, setFile] = useState<File | null>(null);
@@ -2814,7 +2814,7 @@ function ImportAccountsDialog({
 
   const handleDownloadTemplate = () => {
     const headers = [...REQUIRED_FIELDS.map((f) => `${f}(必填)`), ...OPTIONAL_FIELDS.map((f) => `${f}(选填)`)];
-    const sample = ["Facebook", "demo_user", "1000123456789", "Pass@123", "JBSWY3DPEHPK3PXP", "云机", "美国", "US / California", "+1 555-0100", "demo@example.com", "MailPwd@123", "示例账号", "c_user=1000xxx; xs=xxx; datr=xxx"];
+    const sample = ["Facebook", "demo_user", "1000123456789", "Pass@123", "JBSWY3DPEHPK3PXP", "云机", "美国", "US / California", "Demo User", "Love travel and music", "English (US)", "+1 555-0100", "demo@example.com", "MailPwd@123", "示例账号", "c_user=1000xxx; xs=xxx; datr=xxx"];
     const csv = headers.join(",") + "\n" + sample.join(",") + "\n";
     const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -2893,6 +2893,9 @@ function ImportAccountsDialog({
               </div>
               <div className="text-[11px] text-muted-foreground">
                 设备类型可选值: {DEVICE_TYPE_OPTIONS.join(" / ")}
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                语言可选值: {ACCOUNT_LANGUAGES.join(" / ")}
               </div>
             </div>
           </div>
