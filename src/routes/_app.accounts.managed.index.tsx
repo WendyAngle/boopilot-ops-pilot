@@ -1735,6 +1735,9 @@ function EditDialog({
     if (item) {
       setPlatform(item.platform);
       setUsername(item.username);
+      setDisplayName(item.displayName ?? "");
+      setBio(item.bio ?? "");
+      setLanguage(item.language ?? "");
       setPlatformId(item.platformId ?? "");
       setAccountStatus(item.accountStatus);
       
@@ -1749,6 +1752,9 @@ function EditDialog({
     } else {
       setPlatform("Facebook");
       setUsername("");
+      setDisplayName("");
+      setBio("");
+      setLanguage("");
       setPlatformId("");
       setAccountStatus("normal");
       
