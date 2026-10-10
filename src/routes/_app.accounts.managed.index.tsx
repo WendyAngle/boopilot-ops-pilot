@@ -1787,14 +1787,14 @@ function EditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-h-[88vh] gap-5 overflow-y-auto sm:max-w-[1160px]">
         <DialogHeader>
           <DialogTitle>{item ? "编辑账号" : "新增账号"}</DialogTitle>
           <DialogDescription>
             维护托管账号的平台资料、状态、标签、负责人与租户信息。
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
           <Field label="平台" required>
             <Select value={platform} onValueChange={(v) => setPlatform(v as Platform)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -2036,7 +2036,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className={full ? "col-span-2" : ""}>
+    <div className={full ? "col-span-full" : ""}>
       <Label className="text-xs text-muted-foreground">
         {required && <span className="mr-1 text-destructive">*</span>}
         {label}
