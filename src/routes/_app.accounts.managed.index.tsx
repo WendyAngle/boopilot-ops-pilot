@@ -1999,6 +1999,9 @@ function EditDialog({
               onConfirm({
                 platform,
                 username,
+                displayName: displayName.trim() || undefined,
+                bio: bio.trim() || undefined,
+                language: language || undefined,
                 platformId: platformId.trim(),
                 accountStatus,
                 country,
