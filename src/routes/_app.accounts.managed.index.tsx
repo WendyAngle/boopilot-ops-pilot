@@ -30,7 +30,6 @@ import {
   Server,
   Bell,
   MessageSquare,
-  CheckCheck,
   RefreshCw,
   MoreHorizontal,
   LayoutGrid,
@@ -873,7 +872,7 @@ function ManagedAccountsPage() {
 
           {viewMode === "list" ? (
           <div className="w-full overflow-x-auto">
-            <Table className="min-w-[1900px]">
+            <Table className="min-w-[1640px]">
               <TableHeader>
                 <TableRow className="bg-muted/40">
                   <TableHead className="w-12 pl-4">
@@ -881,7 +880,6 @@ function ManagedAccountsPage() {
                   </TableHead>
                   <TableHead className="min-w-[180px] whitespace-nowrap">账号</TableHead>
                   <TableHead className="w-[110px] whitespace-nowrap">账号状态</TableHead>
-                  <TableHead className="w-[260px] whitespace-nowrap">待处理事项</TableHead>
                   <TableHead className="w-[160px] whitespace-nowrap">标签</TableHead>
                   <TableHead className="w-[160px] whitespace-nowrap">备注</TableHead>
                   <TableHead className="w-[90px] whitespace-nowrap text-right">粉丝</TableHead>

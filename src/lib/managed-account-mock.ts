@@ -223,6 +223,15 @@ export const USERNAMES = [
   "GadgetReview",
 ];
 
+/**
+ * 账号名（平台展示名）：由账号昵称派生，去掉 handle 符号（@ . _），
+ * 让「账号昵称」与「账号名」在演示数据中可区分。
+ */
+function toDisplayName(username: string) {
+  const base = username.replace(/^@/, "").replace(/[._]/g, " ");
+  return base.replace(/(^|\s)([a-z])/g, (_, s: string, c: string) => s + c.toUpperCase());
+}
+
 export function seedManagedAccounts(): ManagedAccount[] {
   const rows: ManagedAccount[] = [];
   const tenantPendingCount = new Map<string, number>();
