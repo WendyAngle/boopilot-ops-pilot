@@ -1819,6 +1819,24 @@ function EditDialog({
               onChange={(e) => setPlatformId(e.target.value)}
             />
           </Field>
+          <Field label="账号昵称">
+            <Input
+              placeholder="选填,平台侧展示的昵称"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
+          </Field>
+          <Field label="语言">
+            <Select value={language || "__none"} onValueChange={(v) => setLanguage(v === "__none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="选填,平台侧语言" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none">未设置</SelectItem>
+                {ACCOUNT_LANGUAGES.map((l) => (
+                  <SelectItem key={l} value={l}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="密码" required>
             <Input
               type="password"
@@ -1937,6 +1955,15 @@ function EditDialog({
               value={tags}
               onChange={setTags}
               placeholder="选择或新增标签"
+            />
+          </Field>
+          <Field label="个人简介" full>
+            <Textarea
+              rows={2}
+              placeholder="选填,平台侧个人简介(Bio)"
+              maxLength={500}
+              value={bio}
+              onChange={(e) => setBio(e.target.value.slice(0, 500))}
             />
           </Field>
           <Field label="备注" full>
