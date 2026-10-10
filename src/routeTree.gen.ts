@@ -9,50 +9,51 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AppRouteImport } from './routes/_app'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
-import { Route as AppAccountsFriendsRouteImport } from './routes/_app.accounts.friends'
-import { Route as AppAccountsHealthRouteImport } from './routes/_app.accounts.health'
-import { Route as AppAccountsMessagesRouteImport } from './routes/_app.accounts.messages'
-import { Route as AppAgentsListRouteImport } from './routes/_app.agents.list'
-import { Route as AppAgentsModelsRouteImport } from './routes/_app.agents.models'
-import { Route as AppAgentsWorkspaceRouteImport } from './routes/_app.agents.workspace'
-import { Route as AppAiEraseRouteImport } from './routes/_app.ai.erase'
-import { Route as AppAiImageRouteImport } from './routes/_app.ai.image'
-import { Route as AppAiLibraryRouteImport } from './routes/_app.ai.library'
-import { Route as AppAiMaterialsRouteImport } from './routes/_app.ai.materials'
-import { Route as AppAiRemixRouteImport } from './routes/_app.ai.remix'
-import { Route as AppAiReplicateRouteImport } from './routes/_app.ai.replicate'
-import { Route as AppAiVideoRouteImport } from './routes/_app.ai.video'
-import { Route as AppBillingDiscountsRouteImport } from './routes/_app.billing.discounts'
-import { Route as AppBillingPlansRouteImport } from './routes/_app.billing.plans'
-import { Route as AppMaterialsPostsRouteImport } from './routes/_app.materials.posts'
-import { Route as AppResourcesDevicesRouteImport } from './routes/_app.resources.devices'
-import { Route as AppResourcesImagesRouteImport } from './routes/_app.resources.images'
-import { Route as AppResourcesIpsRouteImport } from './routes/_app.resources.ips'
-import { Route as AppSystemAiPresetsRouteImport } from './routes/_app.system.ai-presets'
-import { Route as AppSystemMenusRouteImport } from './routes/_app.system.menus'
-import { Route as AppSystemModelsRouteImport } from './routes/_app.system.models'
-import { Route as AppSystemRolesRouteImport } from './routes/_app.system.roles'
-import { Route as AppSystemUsersRouteImport } from './routes/_app.system.users'
-import { Route as AppTagsListRouteImport } from './routes/_app.tags.list'
-import { Route as AppTasksTaskIdRouteImport } from './routes/_app.tasks.$taskId'
-import { Route as AppTasksDiagnosticsRouteImport } from './routes/_app.tasks.diagnostics'
-import { Route as AppTasksListRouteImport } from './routes/_app.tasks.list'
-import { Route as AppTasksTemplatesRouteImport } from './routes/_app.tasks.templates'
-import { Route as AppTenantsListRouteImport } from './routes/_app.tenants.list'
-import { Route as AppTenantsResourcesRouteImport } from './routes/_app.tenants.resources'
 import { Route as ApiPublicBootstrapDemoRouteImport } from './routes/api/public/bootstrap-demo'
+import { Route as AppTenantsResourcesRouteImport } from './routes/_app.tenants.resources'
+import { Route as AppTenantsListRouteImport } from './routes/_app.tenants.list'
+import { Route as AppTasksTemplatesRouteImport } from './routes/_app.tasks.templates'
+import { Route as AppTasksListRouteImport } from './routes/_app.tasks.list'
+import { Route as AppTasksDiagnosticsRouteImport } from './routes/_app.tasks.diagnostics'
+import { Route as AppTasksTaskIdRouteImport } from './routes/_app.tasks.$taskId'
+import { Route as AppTagsListRouteImport } from './routes/_app.tags.list'
+import { Route as AppSystemUsersRouteImport } from './routes/_app.system.users'
+import { Route as AppSystemRolesRouteImport } from './routes/_app.system.roles'
+import { Route as AppSystemModelsRouteImport } from './routes/_app.system.models'
+import { Route as AppSystemMenusRouteImport } from './routes/_app.system.menus'
+import { Route as AppSystemAiPresetsRouteImport } from './routes/_app.system.ai-presets'
+import { Route as AppResourcesIpsRouteImport } from './routes/_app.resources.ips'
+import { Route as AppResourcesImagesRouteImport } from './routes/_app.resources.images'
+import { Route as AppResourcesDevicesRouteImport } from './routes/_app.resources.devices'
+import { Route as AppMaterialsPostsRouteImport } from './routes/_app.materials.posts'
+import { Route as AppBillingPlansRouteImport } from './routes/_app.billing.plans'
+import { Route as AppBillingDiscountsRouteImport } from './routes/_app.billing.discounts'
+import { Route as AppAiVideoRouteImport } from './routes/_app.ai.video'
+import { Route as AppAiReplicateRouteImport } from './routes/_app.ai.replicate'
+import { Route as AppAiRemixRouteImport } from './routes/_app.ai.remix'
+import { Route as AppAiMaterialsRouteImport } from './routes/_app.ai.materials'
+import { Route as AppAiLibraryRouteImport } from './routes/_app.ai.library'
+import { Route as AppAiImageRouteImport } from './routes/_app.ai.image'
+import { Route as AppAiEraseRouteImport } from './routes/_app.ai.erase'
+import { Route as AppAgentsWorkspaceRouteImport } from './routes/_app.agents.workspace'
+import { Route as AppAgentsModelsRouteImport } from './routes/_app.agents.models'
+import { Route as AppAgentsListRouteImport } from './routes/_app.agents.list'
+import { Route as AppAccountsMessagesRouteImport } from './routes/_app.accounts.messages'
+import { Route as AppAccountsHealthRouteImport } from './routes/_app.accounts.health'
+import { Route as AppAccountsFriendsRouteImport } from './routes/_app.accounts.friends'
 import { Route as AppAccountsManagedIndexRouteImport } from './routes/_app.accounts.managed.index'
 import { Route as AppAccountsManagedIdRouteImport } from './routes/_app.accounts.managed.$id'
 import { Route as AppTasksTaskIdLogsIndexRouteImport } from './routes/_app.tasks.$taskId_.logs.index'
 import { Route as AppTasksTaskIdLogsLogIdRouteImport } from './routes/_app.tasks.$taskId_.logs.$logId'
 import { Route as AppTasksTaskIdLogsSubSubIdRouteImport } from './routes/_app.tasks.$taskId_.logs.sub.$subId'
 
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -60,9 +61,8 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -70,149 +70,14 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAccountsFriendsRoute = AppAccountsFriendsRouteImport.update({
-  id: '/accounts/friends',
-  path: '/accounts/friends',
-  getParentRoute: () => AppRoute,
+const ApiPublicBootstrapDemoRoute = ApiPublicBootstrapDemoRouteImport.update({
+  id: '/api/public/bootstrap-demo',
+  path: '/api/public/bootstrap-demo',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AppAccountsHealthRoute = AppAccountsHealthRouteImport.update({
-  id: '/accounts/health',
-  path: '/accounts/health',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAccountsMessagesRoute = AppAccountsMessagesRouteImport.update({
-  id: '/accounts/messages',
-  path: '/accounts/messages',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAgentsListRoute = AppAgentsListRouteImport.update({
-  id: '/agents/list',
-  path: '/agents/list',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAgentsModelsRoute = AppAgentsModelsRouteImport.update({
-  id: '/agents/models',
-  path: '/agents/models',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAgentsWorkspaceRoute = AppAgentsWorkspaceRouteImport.update({
-  id: '/agents/workspace',
-  path: '/agents/workspace',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAiEraseRoute = AppAiEraseRouteImport.update({
-  id: '/ai/erase',
-  path: '/ai/erase',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAiImageRoute = AppAiImageRouteImport.update({
-  id: '/ai/image',
-  path: '/ai/image',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAiLibraryRoute = AppAiLibraryRouteImport.update({
-  id: '/ai/library',
-  path: '/ai/library',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAiMaterialsRoute = AppAiMaterialsRouteImport.update({
-  id: '/ai/materials',
-  path: '/ai/materials',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAiRemixRoute = AppAiRemixRouteImport.update({
-  id: '/ai/remix',
-  path: '/ai/remix',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAiReplicateRoute = AppAiReplicateRouteImport.update({
-  id: '/ai/replicate',
-  path: '/ai/replicate',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAiVideoRoute = AppAiVideoRouteImport.update({
-  id: '/ai/video',
-  path: '/ai/video',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppBillingDiscountsRoute = AppBillingDiscountsRouteImport.update({
-  id: '/billing/discounts',
-  path: '/billing/discounts',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppBillingPlansRoute = AppBillingPlansRouteImport.update({
-  id: '/billing/plans',
-  path: '/billing/plans',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMaterialsPostsRoute = AppMaterialsPostsRouteImport.update({
-  id: '/materials/posts',
-  path: '/materials/posts',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppResourcesDevicesRoute = AppResourcesDevicesRouteImport.update({
-  id: '/resources/devices',
-  path: '/resources/devices',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppResourcesImagesRoute = AppResourcesImagesRouteImport.update({
-  id: '/resources/images',
-  path: '/resources/images',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppResourcesIpsRoute = AppResourcesIpsRouteImport.update({
-  id: '/resources/ips',
-  path: '/resources/ips',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSystemAiPresetsRoute = AppSystemAiPresetsRouteImport.update({
-  id: '/system/ai-presets',
-  path: '/system/ai-presets',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSystemMenusRoute = AppSystemMenusRouteImport.update({
-  id: '/system/menus',
-  path: '/system/menus',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSystemModelsRoute = AppSystemModelsRouteImport.update({
-  id: '/system/models',
-  path: '/system/models',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSystemRolesRoute = AppSystemRolesRouteImport.update({
-  id: '/system/roles',
-  path: '/system/roles',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSystemUsersRoute = AppSystemUsersRouteImport.update({
-  id: '/system/users',
-  path: '/system/users',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTagsListRoute = AppTagsListRouteImport.update({
-  id: '/tags/list',
-  path: '/tags/list',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTasksTaskIdRoute = AppTasksTaskIdRouteImport.update({
-  id: '/tasks/$taskId',
-  path: '/tasks/$taskId',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTasksDiagnosticsRoute = AppTasksDiagnosticsRouteImport.update({
-  id: '/tasks/diagnostics',
-  path: '/tasks/diagnostics',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTasksListRoute = AppTasksListRouteImport.update({
-  id: '/tasks/list',
-  path: '/tasks/list',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTasksTemplatesRoute = AppTasksTemplatesRouteImport.update({
-  id: '/tasks/templates',
-  path: '/tasks/templates',
+const AppTenantsResourcesRoute = AppTenantsResourcesRouteImport.update({
+  id: '/tenants/resources',
+  path: '/tenants/resources',
   getParentRoute: () => AppRoute,
 } as any)
 const AppTenantsListRoute = AppTenantsListRouteImport.update({
@@ -220,15 +85,150 @@ const AppTenantsListRoute = AppTenantsListRouteImport.update({
   path: '/tenants/list',
   getParentRoute: () => AppRoute,
 } as any)
-const AppTenantsResourcesRoute = AppTenantsResourcesRouteImport.update({
-  id: '/tenants/resources',
-  path: '/tenants/resources',
+const AppTasksTemplatesRoute = AppTasksTemplatesRouteImport.update({
+  id: '/tasks/templates',
+  path: '/tasks/templates',
   getParentRoute: () => AppRoute,
 } as any)
-const ApiPublicBootstrapDemoRoute = ApiPublicBootstrapDemoRouteImport.update({
-  id: '/api/public/bootstrap-demo',
-  path: '/api/public/bootstrap-demo',
-  getParentRoute: () => rootRouteImport,
+const AppTasksListRoute = AppTasksListRouteImport.update({
+  id: '/tasks/list',
+  path: '/tasks/list',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksDiagnosticsRoute = AppTasksDiagnosticsRouteImport.update({
+  id: '/tasks/diagnostics',
+  path: '/tasks/diagnostics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksTaskIdRoute = AppTasksTaskIdRouteImport.update({
+  id: '/tasks/$taskId',
+  path: '/tasks/$taskId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTagsListRoute = AppTagsListRouteImport.update({
+  id: '/tags/list',
+  path: '/tags/list',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSystemUsersRoute = AppSystemUsersRouteImport.update({
+  id: '/system/users',
+  path: '/system/users',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSystemRolesRoute = AppSystemRolesRouteImport.update({
+  id: '/system/roles',
+  path: '/system/roles',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSystemModelsRoute = AppSystemModelsRouteImport.update({
+  id: '/system/models',
+  path: '/system/models',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSystemMenusRoute = AppSystemMenusRouteImport.update({
+  id: '/system/menus',
+  path: '/system/menus',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSystemAiPresetsRoute = AppSystemAiPresetsRouteImport.update({
+  id: '/system/ai-presets',
+  path: '/system/ai-presets',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppResourcesIpsRoute = AppResourcesIpsRouteImport.update({
+  id: '/resources/ips',
+  path: '/resources/ips',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppResourcesImagesRoute = AppResourcesImagesRouteImport.update({
+  id: '/resources/images',
+  path: '/resources/images',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppResourcesDevicesRoute = AppResourcesDevicesRouteImport.update({
+  id: '/resources/devices',
+  path: '/resources/devices',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMaterialsPostsRoute = AppMaterialsPostsRouteImport.update({
+  id: '/materials/posts',
+  path: '/materials/posts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBillingPlansRoute = AppBillingPlansRouteImport.update({
+  id: '/billing/plans',
+  path: '/billing/plans',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBillingDiscountsRoute = AppBillingDiscountsRouteImport.update({
+  id: '/billing/discounts',
+  path: '/billing/discounts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiVideoRoute = AppAiVideoRouteImport.update({
+  id: '/ai/video',
+  path: '/ai/video',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiReplicateRoute = AppAiReplicateRouteImport.update({
+  id: '/ai/replicate',
+  path: '/ai/replicate',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiRemixRoute = AppAiRemixRouteImport.update({
+  id: '/ai/remix',
+  path: '/ai/remix',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiMaterialsRoute = AppAiMaterialsRouteImport.update({
+  id: '/ai/materials',
+  path: '/ai/materials',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiLibraryRoute = AppAiLibraryRouteImport.update({
+  id: '/ai/library',
+  path: '/ai/library',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiImageRoute = AppAiImageRouteImport.update({
+  id: '/ai/image',
+  path: '/ai/image',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAiEraseRoute = AppAiEraseRouteImport.update({
+  id: '/ai/erase',
+  path: '/ai/erase',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAgentsWorkspaceRoute = AppAgentsWorkspaceRouteImport.update({
+  id: '/agents/workspace',
+  path: '/agents/workspace',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAgentsModelsRoute = AppAgentsModelsRouteImport.update({
+  id: '/agents/models',
+  path: '/agents/models',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAgentsListRoute = AppAgentsListRouteImport.update({
+  id: '/agents/list',
+  path: '/agents/list',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAccountsMessagesRoute = AppAccountsMessagesRouteImport.update({
+  id: '/accounts/messages',
+  path: '/accounts/messages',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAccountsHealthRoute = AppAccountsHealthRouteImport.update({
+  id: '/accounts/health',
+  path: '/accounts/health',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAccountsFriendsRoute = AppAccountsFriendsRouteImport.update({
+  id: '/accounts/friends',
+  path: '/accounts/friends',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppAccountsManagedIndexRoute = AppAccountsManagedIndexRouteImport.update({
   id: '/accounts/managed/',
@@ -524,11 +524,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -538,11 +538,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -552,207 +552,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/accounts/friends': {
-      id: '/_app/accounts/friends'
-      path: '/accounts/friends'
-      fullPath: '/accounts/friends'
-      preLoaderRoute: typeof AppAccountsFriendsRouteImport
-      parentRoute: typeof AppRoute
+    '/api/public/bootstrap-demo': {
+      id: '/api/public/bootstrap-demo'
+      path: '/api/public/bootstrap-demo'
+      fullPath: '/api/public/bootstrap-demo'
+      preLoaderRoute: typeof ApiPublicBootstrapDemoRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_app/accounts/health': {
-      id: '/_app/accounts/health'
-      path: '/accounts/health'
-      fullPath: '/accounts/health'
-      preLoaderRoute: typeof AppAccountsHealthRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/accounts/messages': {
-      id: '/_app/accounts/messages'
-      path: '/accounts/messages'
-      fullPath: '/accounts/messages'
-      preLoaderRoute: typeof AppAccountsMessagesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/agents/list': {
-      id: '/_app/agents/list'
-      path: '/agents/list'
-      fullPath: '/agents/list'
-      preLoaderRoute: typeof AppAgentsListRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/agents/models': {
-      id: '/_app/agents/models'
-      path: '/agents/models'
-      fullPath: '/agents/models'
-      preLoaderRoute: typeof AppAgentsModelsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/agents/workspace': {
-      id: '/_app/agents/workspace'
-      path: '/agents/workspace'
-      fullPath: '/agents/workspace'
-      preLoaderRoute: typeof AppAgentsWorkspaceRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/ai/erase': {
-      id: '/_app/ai/erase'
-      path: '/ai/erase'
-      fullPath: '/ai/erase'
-      preLoaderRoute: typeof AppAiEraseRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/ai/image': {
-      id: '/_app/ai/image'
-      path: '/ai/image'
-      fullPath: '/ai/image'
-      preLoaderRoute: typeof AppAiImageRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/ai/library': {
-      id: '/_app/ai/library'
-      path: '/ai/library'
-      fullPath: '/ai/library'
-      preLoaderRoute: typeof AppAiLibraryRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/ai/materials': {
-      id: '/_app/ai/materials'
-      path: '/ai/materials'
-      fullPath: '/ai/materials'
-      preLoaderRoute: typeof AppAiMaterialsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/ai/remix': {
-      id: '/_app/ai/remix'
-      path: '/ai/remix'
-      fullPath: '/ai/remix'
-      preLoaderRoute: typeof AppAiRemixRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/ai/replicate': {
-      id: '/_app/ai/replicate'
-      path: '/ai/replicate'
-      fullPath: '/ai/replicate'
-      preLoaderRoute: typeof AppAiReplicateRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/ai/video': {
-      id: '/_app/ai/video'
-      path: '/ai/video'
-      fullPath: '/ai/video'
-      preLoaderRoute: typeof AppAiVideoRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/billing/discounts': {
-      id: '/_app/billing/discounts'
-      path: '/billing/discounts'
-      fullPath: '/billing/discounts'
-      preLoaderRoute: typeof AppBillingDiscountsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/billing/plans': {
-      id: '/_app/billing/plans'
-      path: '/billing/plans'
-      fullPath: '/billing/plans'
-      preLoaderRoute: typeof AppBillingPlansRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/materials/posts': {
-      id: '/_app/materials/posts'
-      path: '/materials/posts'
-      fullPath: '/materials/posts'
-      preLoaderRoute: typeof AppMaterialsPostsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/resources/devices': {
-      id: '/_app/resources/devices'
-      path: '/resources/devices'
-      fullPath: '/resources/devices'
-      preLoaderRoute: typeof AppResourcesDevicesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/resources/images': {
-      id: '/_app/resources/images'
-      path: '/resources/images'
-      fullPath: '/resources/images'
-      preLoaderRoute: typeof AppResourcesImagesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/resources/ips': {
-      id: '/_app/resources/ips'
-      path: '/resources/ips'
-      fullPath: '/resources/ips'
-      preLoaderRoute: typeof AppResourcesIpsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/system/ai-presets': {
-      id: '/_app/system/ai-presets'
-      path: '/system/ai-presets'
-      fullPath: '/system/ai-presets'
-      preLoaderRoute: typeof AppSystemAiPresetsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/system/menus': {
-      id: '/_app/system/menus'
-      path: '/system/menus'
-      fullPath: '/system/menus'
-      preLoaderRoute: typeof AppSystemMenusRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/system/models': {
-      id: '/_app/system/models'
-      path: '/system/models'
-      fullPath: '/system/models'
-      preLoaderRoute: typeof AppSystemModelsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/system/roles': {
-      id: '/_app/system/roles'
-      path: '/system/roles'
-      fullPath: '/system/roles'
-      preLoaderRoute: typeof AppSystemRolesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/system/users': {
-      id: '/_app/system/users'
-      path: '/system/users'
-      fullPath: '/system/users'
-      preLoaderRoute: typeof AppSystemUsersRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/tags/list': {
-      id: '/_app/tags/list'
-      path: '/tags/list'
-      fullPath: '/tags/list'
-      preLoaderRoute: typeof AppTagsListRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/tasks/$taskId': {
-      id: '/_app/tasks/$taskId'
-      path: '/tasks/$taskId'
-      fullPath: '/tasks/$taskId'
-      preLoaderRoute: typeof AppTasksTaskIdRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/tasks/diagnostics': {
-      id: '/_app/tasks/diagnostics'
-      path: '/tasks/diagnostics'
-      fullPath: '/tasks/diagnostics'
-      preLoaderRoute: typeof AppTasksDiagnosticsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/tasks/list': {
-      id: '/_app/tasks/list'
-      path: '/tasks/list'
-      fullPath: '/tasks/list'
-      preLoaderRoute: typeof AppTasksListRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/tasks/templates': {
-      id: '/_app/tasks/templates'
-      path: '/tasks/templates'
-      fullPath: '/tasks/templates'
-      preLoaderRoute: typeof AppTasksTemplatesRouteImport
+    '/_app/tenants/resources': {
+      id: '/_app/tenants/resources'
+      path: '/tenants/resources'
+      fullPath: '/tenants/resources'
+      preLoaderRoute: typeof AppTenantsResourcesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/tenants/list': {
@@ -762,19 +573,208 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTenantsListRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/tenants/resources': {
-      id: '/_app/tenants/resources'
-      path: '/tenants/resources'
-      fullPath: '/tenants/resources'
-      preLoaderRoute: typeof AppTenantsResourcesRouteImport
+    '/_app/tasks/templates': {
+      id: '/_app/tasks/templates'
+      path: '/tasks/templates'
+      fullPath: '/tasks/templates'
+      preLoaderRoute: typeof AppTasksTemplatesRouteImport
       parentRoute: typeof AppRoute
     }
-    '/api/public/bootstrap-demo': {
-      id: '/api/public/bootstrap-demo'
-      path: '/api/public/bootstrap-demo'
-      fullPath: '/api/public/bootstrap-demo'
-      preLoaderRoute: typeof ApiPublicBootstrapDemoRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_app/tasks/list': {
+      id: '/_app/tasks/list'
+      path: '/tasks/list'
+      fullPath: '/tasks/list'
+      preLoaderRoute: typeof AppTasksListRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tasks/diagnostics': {
+      id: '/_app/tasks/diagnostics'
+      path: '/tasks/diagnostics'
+      fullPath: '/tasks/diagnostics'
+      preLoaderRoute: typeof AppTasksDiagnosticsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tasks/$taskId': {
+      id: '/_app/tasks/$taskId'
+      path: '/tasks/$taskId'
+      fullPath: '/tasks/$taskId'
+      preLoaderRoute: typeof AppTasksTaskIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tags/list': {
+      id: '/_app/tags/list'
+      path: '/tags/list'
+      fullPath: '/tags/list'
+      preLoaderRoute: typeof AppTagsListRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/system/users': {
+      id: '/_app/system/users'
+      path: '/system/users'
+      fullPath: '/system/users'
+      preLoaderRoute: typeof AppSystemUsersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/system/roles': {
+      id: '/_app/system/roles'
+      path: '/system/roles'
+      fullPath: '/system/roles'
+      preLoaderRoute: typeof AppSystemRolesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/system/models': {
+      id: '/_app/system/models'
+      path: '/system/models'
+      fullPath: '/system/models'
+      preLoaderRoute: typeof AppSystemModelsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/system/menus': {
+      id: '/_app/system/menus'
+      path: '/system/menus'
+      fullPath: '/system/menus'
+      preLoaderRoute: typeof AppSystemMenusRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/system/ai-presets': {
+      id: '/_app/system/ai-presets'
+      path: '/system/ai-presets'
+      fullPath: '/system/ai-presets'
+      preLoaderRoute: typeof AppSystemAiPresetsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/resources/ips': {
+      id: '/_app/resources/ips'
+      path: '/resources/ips'
+      fullPath: '/resources/ips'
+      preLoaderRoute: typeof AppResourcesIpsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/resources/images': {
+      id: '/_app/resources/images'
+      path: '/resources/images'
+      fullPath: '/resources/images'
+      preLoaderRoute: typeof AppResourcesImagesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/resources/devices': {
+      id: '/_app/resources/devices'
+      path: '/resources/devices'
+      fullPath: '/resources/devices'
+      preLoaderRoute: typeof AppResourcesDevicesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/materials/posts': {
+      id: '/_app/materials/posts'
+      path: '/materials/posts'
+      fullPath: '/materials/posts'
+      preLoaderRoute: typeof AppMaterialsPostsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/billing/plans': {
+      id: '/_app/billing/plans'
+      path: '/billing/plans'
+      fullPath: '/billing/plans'
+      preLoaderRoute: typeof AppBillingPlansRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/billing/discounts': {
+      id: '/_app/billing/discounts'
+      path: '/billing/discounts'
+      fullPath: '/billing/discounts'
+      preLoaderRoute: typeof AppBillingDiscountsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/video': {
+      id: '/_app/ai/video'
+      path: '/ai/video'
+      fullPath: '/ai/video'
+      preLoaderRoute: typeof AppAiVideoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/replicate': {
+      id: '/_app/ai/replicate'
+      path: '/ai/replicate'
+      fullPath: '/ai/replicate'
+      preLoaderRoute: typeof AppAiReplicateRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/remix': {
+      id: '/_app/ai/remix'
+      path: '/ai/remix'
+      fullPath: '/ai/remix'
+      preLoaderRoute: typeof AppAiRemixRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/materials': {
+      id: '/_app/ai/materials'
+      path: '/ai/materials'
+      fullPath: '/ai/materials'
+      preLoaderRoute: typeof AppAiMaterialsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/library': {
+      id: '/_app/ai/library'
+      path: '/ai/library'
+      fullPath: '/ai/library'
+      preLoaderRoute: typeof AppAiLibraryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/image': {
+      id: '/_app/ai/image'
+      path: '/ai/image'
+      fullPath: '/ai/image'
+      preLoaderRoute: typeof AppAiImageRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ai/erase': {
+      id: '/_app/ai/erase'
+      path: '/ai/erase'
+      fullPath: '/ai/erase'
+      preLoaderRoute: typeof AppAiEraseRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/agents/workspace': {
+      id: '/_app/agents/workspace'
+      path: '/agents/workspace'
+      fullPath: '/agents/workspace'
+      preLoaderRoute: typeof AppAgentsWorkspaceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/agents/models': {
+      id: '/_app/agents/models'
+      path: '/agents/models'
+      fullPath: '/agents/models'
+      preLoaderRoute: typeof AppAgentsModelsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/agents/list': {
+      id: '/_app/agents/list'
+      path: '/agents/list'
+      fullPath: '/agents/list'
+      preLoaderRoute: typeof AppAgentsListRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/accounts/messages': {
+      id: '/_app/accounts/messages'
+      path: '/accounts/messages'
+      fullPath: '/accounts/messages'
+      preLoaderRoute: typeof AppAccountsMessagesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/accounts/health': {
+      id: '/_app/accounts/health'
+      path: '/accounts/health'
+      fullPath: '/accounts/health'
+      preLoaderRoute: typeof AppAccountsHealthRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/accounts/friends': {
+      id: '/_app/accounts/friends'
+      path: '/accounts/friends'
+      fullPath: '/accounts/friends'
+      preLoaderRoute: typeof AppAccountsFriendsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/accounts/managed/': {
       id: '/_app/accounts/managed/'
